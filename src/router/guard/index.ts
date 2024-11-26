@@ -7,6 +7,8 @@ function setupPageGuard(router: Router) {
   router.beforeEach(async (to) => {
     // emit route change
     setRouteEmitter(to);
+    // 修改网页标题
+    document.title = `${to.meta.title} - Free-Fs`;
   });
 }
 
