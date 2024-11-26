@@ -16,20 +16,7 @@
         class="list-col"
         style="min-height: 162px"
       >
-        <CardWrap
-          :loading="loading"
-          :title="item.name"
-          :description="item.desc"
-          :default-value="item.isEnabled"
-          :action-type="item.actionType"
-          :expires="item.expires"
-          open-txt="开通服务"
-          close-txt="取消服务"
-          expires-text="续约"
-          tag-text="已开通"
-          expires-tag-text="已过期"
-          :icon="item.icon"
-        >
+        <CardWrap :loading="loading" :item-data="item">
           <template #skeleton>
             <a-skeleton :animation="true">
               <a-skeleton-line :widths="['100%', '40%', '100%']" :rows="3" />
@@ -48,12 +35,19 @@
   import { StoragePlatformRecord } from '@/types/modules/storage';
   import CardWrap from './card-wrap.vue';
 
+  const props = defineProps({
+    type: {
+      type: Number,
+      default: 1,
+    },
+  });
+
   const loading = ref(true);
   const renderData = ref<StoragePlatformRecord[]>([]);
 
   const fetchData = async () => {
     try {
-      const { data } = await getStoragePlatforms(1);
+      const { data } = await getStoragePlatforms(props.type);
       renderData.value = data;
     } finally {
       loading.value = false;

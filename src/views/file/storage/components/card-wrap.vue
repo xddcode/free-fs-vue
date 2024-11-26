@@ -3,75 +3,73 @@
     <a-card v-if="loading" :bordered="false" hoverable>
       <slot name="skeleton"></slot>
     </a-card>
+
     <a-card v-else :bordered="false" hoverable>
-      <a-space align="start">
+      <a-space align="start" fill>
         <a-avatar
-          v-if="icon"
+          v-if="itemData.icon"
           :size="32"
           style="margin-right: 8px; background-color: #626aea"
         >
-          <icon-font :type="icon" :size="32" />
+          <icon-font :type="itemData.icon" :size="32" />
         </a-avatar>
-        <a-card-meta>
-          <template #title>
-            <a-typography-text style="margin-right: 10px">
-              {{ title }}
-            </a-typography-text>
-            <template>
-              <a-tag size="small" color="green">
+        <a-watermark content="系统默认" v-bind="watermarkForm">
+          <a-card-meta>
+            <template #title>
+              {{ itemData.name }}
+              <a-tag
+                v-if="itemData.isEnabled === 1"
+                size="small"
+                color="green"
+                style="margin-left: 10px"
+              >
                 <template #icon>
                   <icon-check-circle-fill />
                 </template>
-                <span>sdfsd</span>
+                <span>已开通</span>
               </a-tag>
-              <!--              <a-tag v-else-if="isExpires" size="small" color="red">-->
-              <!--                <template #icon>-->
-              <!--                  <icon-check-circle-fill />-->
-              <!--                </template>-->
-              <!--                <span>{{ expiresTagText }}</span>-->
-              <!--              </a-tag>-->
+              <a-tag
+                v-if="itemData.isEnabled === 1 && itemData.isSetting === 0"
+                size="small"
+                color="gold"
+                style="margin-left: 10px"
+              >
+                <template #icon>
+                  <icon-exclamation-circle-fill />
+                </template>
+                <span>待配置</span>
+              </a-tag>
             </template>
-          </template>
-          <template #description>
-            <a-typography-paragraph
-              :ellipsis="{
-                rows: 2,
-                showTooltip: true,
-              }"
-            >
-              {{ description }}
-            </a-typography-paragraph>
-            <slot></slot>
-          </template>
-        </a-card-meta>
+            <template #description>
+              <a-typography-paragraph
+                :ellipsis="{
+                  rows: 2,
+                  showTooltip: true,
+                }"
+              >
+                {{ itemData.desc }}
+              </a-typography-paragraph>
+              <slot></slot>
+            </template>
+          </a-card-meta>
+        </a-watermark>
       </a-space>
       <template #actions>
-        <a-switch v-if="actionType === 'switch'" v-model="open" />
-        <a-space v-else-if="actionType === 'button'">
-          <template v-if="isExpires">
-            <a-button type="outline" @click="renew">
-              {{ expiresText }}
-            </a-button>
-          </template>
-          <template v-else>
-            <a-button v-if="open" @click="handleToggle">
-              {{ closeTxt }}
-            </a-button>
-            <a-button v-else-if="!open" type="outline" @click="handleToggle">
-              {{ openTxt }}
-            </a-button>
-          </template>
+        <a-space>
+          <a-button
+            v-if="itemData.isEnabled === 1"
+            size="small"
+            @click="toggle(false)"
+            >取消开通</a-button
+          >
+          <a-button
+            v-else
+            type="primary"
+            size="small"
+            @click="handleOpenStorage(item.identifier)"
+            >开通</a-button
+          >
         </a-space>
-        <div v-else>
-          <a-space>
-            <a-button @click="toggle(false)">
-              {{ closeTxt }}
-            </a-button>
-            <a-button type="primary" @click="toggle(true)">
-              {{ openTxt }}
-            </a-button>
-          </a-space>
-        </div>
       </template>
     </a-card>
   </div>
@@ -79,11 +77,22 @@
 
 <script lang="ts" setup>
   import { Icon } from '@arco-design/web-vue';
-  import { ref } from 'vue';
-  import { useToggle } from '@vueuse/core';
+  import { PropType, reactive } from 'vue';
+  import { StoragePlatformRecord } from '@/types/modules/storage';
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',
+  });
+
+  const watermarkForm = reactive({
+    rotate: -25,
+    gap: [50, 50],
+    offset: [],
+    font: { fontSize: 16 },
+    zIndex: 6,
+    alpha: 0.7,
+    repeat: true,
+    staggered: true,
   });
 
   const props = defineProps({
@@ -91,63 +100,21 @@
       type: Boolean,
       default: false,
     },
-    title: {
-      type: String,
-      default: '',
-    },
-    description: {
-      type: String,
-      default: '',
-    },
-    actionType: {
-      type: String,
-      default: '',
-    },
-    defaultValue: {
-      type: Boolean,
-      default: false,
-    },
-    openTxt: {
-      type: String,
-      default: '',
-    },
-    closeTxt: {
-      type: String,
-      default: '',
-    },
-    expiresText: {
-      type: String,
-      default: '',
-    },
-    icon: {
-      type: String,
-      default: '',
-    },
-    showTag: {
-      type: Boolean,
-      default: true,
-    },
-    tagText: {
-      type: String,
-      default: '',
-    },
-    expires: {
-      type: Boolean,
-      default: false,
-    },
-    expiresTagText: {
-      type: String,
-      default: '',
+    itemData: {
+      type: Object as PropType<StoragePlatformRecord>,
+      default: () => ({}),
     },
   });
-  const [open, toggle] = useToggle(props.defaultValue);
-  const handleToggle = () => {
-    toggle();
-  };
-  const isExpires = ref(props.expires);
-  const renew = () => {
-    isExpires.value = false;
-  };
+
+  /**
+   * 开通存储平台
+   * @param identifier
+   */
+  const handleOpenStorage = async (identifier: string) => {};
+  // const isExpires = ref(props.expires);
+  // const renew = () => {
+  //   isExpires.value = false;
+  // };
 </script>
 
 <style scoped lang="less">
@@ -187,12 +154,13 @@
 
               .arco-card-meta-content {
                 flex: 1;
-
                 .arco-card-meta-description {
-                  margin-top: 8px;
-                  color: rgb(var(--gray-6));
-                  line-height: 20px;
-                  font-size: 12px;
+                  .arco-typography {
+                    margin-top: 8px;
+                    color: rgb(var(--gray-6));
+                    line-height: 20px;
+                    font-size: 12px;
+                  }
                 }
               }
 
@@ -208,7 +176,6 @@
     :deep(.arco-card-meta-title) {
       display: flex;
       align-items: center;
-
       // To prevent the shaking
       line-height: 28px;
     }

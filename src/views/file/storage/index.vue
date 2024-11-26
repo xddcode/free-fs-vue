@@ -8,15 +8,13 @@
             <a-col :span="24">
               <a-tabs :default-active-tab="1" type="rounded">
                 <a-tab-pane key="1" title="全部">
-                  <DefaultStoragePlatforms />
+                  <StoragePlatforms />
                 </a-tab-pane>
                 <a-tab-pane key="2" title="系统默认">
-                  <DefaultStoragePlatforms />
+                  <StoragePlatforms :type="1" />
                 </a-tab-pane>
                 <a-tab-pane key="3" title="自定义"></a-tab-pane>
-                <!--                <a-tab-pane key="4" :title="$t('cardList.tab.title.preset')">-->
-                <!--                  <RulesPreset />-->
-                <!--                </a-tab-pane>-->
+                <StoragePlatforms :type="0" />
               </a-tabs>
             </a-col>
             <a-input-search
@@ -31,9 +29,7 @@
 </template>
 
 <script lang="ts" setup>
-  // import QualityInspection from './components/quality-inspection.vue';
-  import DefaultStoragePlatforms from './components/default-storage-platforms.vue';
-  // import RulesPreset from './components/rules-preset.vue';
+  import StoragePlatforms from './components/storage-platforms.vue';
 </script>
 
 <script lang="ts">
