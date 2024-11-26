@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { RouteRecordNormalized } from 'vue-router';
 import { UserState } from '@/store/modules/user/types';
+import qs from 'query-string';
 
 export interface LoginData {
   username: string;
@@ -8,20 +9,65 @@ export interface LoginData {
 }
 
 export interface LoginRes {
-  token: string;
+  accessToken: string;
 }
+
+export interface UserRecord {
+  id: string;
+  username: string;
+  nickname: string;
+  email: string;
+  roleCode: string;
+  avatar: string;
+  status: number;
+  lastLoginTime: string;
+  createTime: string;
+  updateTime: string;
+}
+
+export interface UserPageParams extends Partial<UserRecord> {
+  page: number;
+  pageSize: number;
+}
+
+export interface UserListRes {
+  data: UserRecord[];
+  total: number;
+}
+
 export function login(data: LoginData) {
-  return axios.post<LoginRes>('/api/user/login', data);
+  return axios.post<LoginRes>('/apis/auth/login', data);
 }
 
 export function logout() {
-  return axios.post<LoginRes>('/api/user/logout');
+  return axios.post<LoginRes>('/apis/auth/logout');
 }
 
 export function getUserInfo() {
-  return axios.post<UserState>('/api/user/info');
+  return axios.get<UserState>('/apis/user/info');
 }
 
 export function getMenuList() {
   return axios.post<RouteRecordNormalized[]>('/api/user/menu');
+}
+
+export function getUserPages(params: UserPageParams) {
+  return axios.get<UserListRes>('/apis/user/pages', {
+    params,
+    paramsSerializer: (obj) => {
+      return qs.stringify(obj);
+    },
+  });
+}
+
+export function editUserStatus(userId: string, status: number) {
+  return axios.put('/apis/user/status', { userId, status });
+}
+
+export function deleteUser(userId: string) {
+  return axios.delete(`/apis/user/${userId}`);
+}
+
+export function resetUserPassword(userId: string) {
+  return axios.put(`/apis/user/reset-password/${userId}`);
 }

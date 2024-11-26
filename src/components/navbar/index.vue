@@ -10,7 +10,7 @@
           :style="{ margin: 0, fontSize: '18px' }"
           :heading="5"
         >
-          Arco Pro
+          Free Fs
         </a-typography-title>
         <icon-menu-fold
           v-if="!topMenu && appStore.device === 'mobile'"
@@ -24,49 +24,9 @@
     </div>
     <ul class="right-side">
       <li>
-        <a-tooltip :content="$t('settings.search')">
-          <a-button class="nav-btn" type="outline" :shape="'circle'">
-            <template #icon>
-              <icon-search />
-            </template>
-          </a-button>
-        </a-tooltip>
-      </li>
-      <li>
-        <a-tooltip :content="$t('settings.language')">
-          <a-button
-            class="nav-btn"
-            type="outline"
-            :shape="'circle'"
-            @click="setDropDownVisible"
-          >
-            <template #icon>
-              <icon-language />
-            </template>
-          </a-button>
-        </a-tooltip>
-        <a-dropdown trigger="click" @select="changeLocale as any">
-          <div ref="triggerBtn" class="trigger-btn"></div>
-          <template #content>
-            <a-doption
-              v-for="item in locales"
-              :key="item.value"
-              :value="item.value"
-            >
-              <template #icon>
-                <icon-check v-show="item.value === currentLocale" />
-              </template>
-              {{ item.label }}
-            </a-doption>
-          </template>
-        </a-dropdown>
-      </li>
-      <li>
         <a-tooltip
           :content="
-            theme === 'light'
-              ? $t('settings.navbar.theme.toDark')
-              : $t('settings.navbar.theme.toLight')
+            theme === 'light' ? '点击切换为暗黑模式' : '点击切换为亮色模式'
           "
         >
           <a-button
@@ -83,39 +43,8 @@
         </a-tooltip>
       </li>
       <li>
-        <a-tooltip :content="$t('settings.navbar.alerts')">
-          <div class="message-box-trigger">
-            <a-badge :count="9" dot>
-              <a-button
-                class="nav-btn"
-                type="outline"
-                :shape="'circle'"
-                @click="setPopoverVisible"
-              >
-                <icon-notification />
-              </a-button>
-            </a-badge>
-          </div>
-        </a-tooltip>
-        <a-popover
-          trigger="click"
-          :arrow-style="{ display: 'none' }"
-          :content-style="{ padding: 0, minWidth: '400px' }"
-          content-class="message-popover"
-        >
-          <div ref="refBtn" class="ref-btn"></div>
-          <template #content>
-            <message-box />
-          </template>
-        </a-popover>
-      </li>
-      <li>
         <a-tooltip
-          :content="
-            isFullscreen
-              ? $t('settings.navbar.screen.toExit')
-              : $t('settings.navbar.screen.toFull')
-          "
+          :content="isFullscreen ? '点击退出全屏模式' : '点击切换为全屏模式'"
         >
           <a-button
             class="nav-btn"
@@ -131,7 +60,7 @@
         </a-tooltip>
       </li>
       <li>
-        <a-tooltip :content="$t('settings.title')">
+        <a-tooltip content="页面配置">
           <a-button
             class="nav-btn"
             type="outline"
@@ -154,35 +83,21 @@
           </a-avatar>
           <template #content>
             <a-doption>
-              <a-space @click="switchRoles">
-                <icon-tag />
-                <span>
-                  {{ $t('messageBox.switchRoles') }}
-                </span>
-              </a-space>
-            </a-doption>
-            <a-doption>
               <a-space @click="$router.push({ name: 'Info' })">
                 <icon-user />
-                <span>
-                  {{ $t('messageBox.userCenter') }}
-                </span>
+                <span> 用户中心 </span>
               </a-space>
             </a-doption>
             <a-doption>
               <a-space @click="$router.push({ name: 'Setting' })">
                 <icon-settings />
-                <span>
-                  {{ $t('messageBox.userSettings') }}
-                </span>
+                <span> 用户设置 </span>
               </a-space>
             </a-doption>
             <a-doption>
               <a-space @click="handleLogout">
                 <icon-export />
-                <span>
-                  {{ $t('messageBox.logout') }}
-                </span>
+                <span> 退出 </span>
               </a-space>
             </a-doption>
           </template>
@@ -193,22 +108,16 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, inject } from 'vue';
-  import { Message } from '@arco-design/web-vue';
+  import { computed, inject } from 'vue';
   import { useDark, useToggle, useFullscreen } from '@vueuse/core';
   import { useAppStore, useUserStore } from '@/store';
-  import { LOCALE_OPTIONS } from '@/locale';
-  import useLocale from '@/hooks/locale';
   import useUser from '@/hooks/user';
   import Menu from '@/components/menu/index.vue';
-  import MessageBox from '../message-box/index.vue';
 
   const appStore = useAppStore();
   const userStore = useUserStore();
   const { logout } = useUser();
-  const { changeLocale, currentLocale } = useLocale();
   const { isFullscreen, toggle: toggleFullScreen } = useFullscreen();
-  const locales = [...LOCALE_OPTIONS];
   const avatar = computed(() => {
     return userStore.avatar;
   });
@@ -234,31 +143,11 @@
   const setVisible = () => {
     appStore.updateSettings({ globalSettings: true });
   };
-  const refBtn = ref();
-  const triggerBtn = ref();
-  const setPopoverVisible = () => {
-    const event = new MouseEvent('click', {
-      view: window,
-      bubbles: true,
-      cancelable: true,
-    });
-    refBtn.value.dispatchEvent(event);
-  };
+
   const handleLogout = () => {
     logout();
   };
-  const setDropDownVisible = () => {
-    const event = new MouseEvent('click', {
-      view: window,
-      bubbles: true,
-      cancelable: true,
-    });
-    triggerBtn.value.dispatchEvent(event);
-  };
-  const switchRoles = async () => {
-    const res = await userStore.switchRoles();
-    Message.success(res as string);
-  };
+
   const toggleDrawerMenu = inject('toggleDrawerMenu') as () => void;
 </script>
 
@@ -285,9 +174,11 @@
     display: flex;
     padding-right: 20px;
     list-style: none;
+
     :deep(.locale-select) {
       border-radius: 20px;
     }
+
     li {
       display: flex;
       align-items: center;
@@ -298,16 +189,19 @@
       color: var(--color-text-1);
       text-decoration: none;
     }
+
     .nav-btn {
       border-color: rgb(var(--gray-2));
       color: rgb(var(--gray-8));
       font-size: 16px;
     }
+
     .trigger-btn,
     .ref-btn {
       position: absolute;
       bottom: 14px;
     }
+
     .trigger-btn {
       margin-left: 14px;
     }

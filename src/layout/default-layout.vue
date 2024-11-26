@@ -87,7 +87,7 @@
     appStore.updateSettings({ menuCollapse: val });
   };
   watch(
-    () => userStore.role,
+    () => userStore.roleCode,
     (roleValue) => {
       if (roleValue && !permission.accessRouter(route))
         router.push({ name: 'notFound' });
@@ -130,6 +130,7 @@
     z-index: 99;
     height: 100%;
     transition: all 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+
     &::after {
       position: absolute;
       top: 0;
@@ -150,6 +151,7 @@
     height: 100%;
     overflow: auto;
     overflow-x: hidden;
+
     :deep(.arco-menu) {
       ::-webkit-scrollbar {
         width: 12px;
