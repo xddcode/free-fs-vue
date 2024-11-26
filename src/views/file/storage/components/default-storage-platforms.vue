@@ -48,11 +48,16 @@
   import { StoragePlatformRecord } from '@/types/modules/storage';
   import CardWrap from './card-wrap.vue';
 
+  const loading = ref(true);
   const renderData = ref<StoragePlatformRecord[]>([]);
 
   const fetchData = async () => {
-    const { data } = await getStoragePlatforms(1);
-    renderData.value = data;
+    try {
+      const { data } = await getStoragePlatforms(1);
+      renderData.value = data;
+    } finally {
+      loading.value = false;
+    }
   };
 
   fetchData();

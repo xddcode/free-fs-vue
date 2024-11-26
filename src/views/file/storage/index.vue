@@ -8,9 +8,7 @@
             <a-col :span="24">
               <a-tabs :default-active-tab="1" type="rounded">
                 <a-tab-pane key="1" title="全部">
-                  <!--                  <QualityInspection />-->
-                  <!--                  <TheService />-->
-                  <!--                  <RulesPreset />-->
+                  <DefaultStoragePlatforms />
                 </a-tab-pane>
                 <a-tab-pane key="2" title="系统默认">
                   <DefaultStoragePlatforms />

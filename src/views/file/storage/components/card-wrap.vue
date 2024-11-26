@@ -17,23 +17,19 @@
             <a-typography-text style="margin-right: 10px">
               {{ title }}
             </a-typography-text>
-            <template v-if="showTag">
-              <a-tag
-                v-if="open && isExpires === false"
-                size="small"
-                color="green"
-              >
+            <template>
+              <a-tag size="small" color="green">
                 <template #icon>
                   <icon-check-circle-fill />
                 </template>
-                <span>{{ tagText }}</span>
+                <span>sdfsd</span>
               </a-tag>
-              <a-tag v-else-if="isExpires" size="small" color="red">
-                <template #icon>
-                  <icon-check-circle-fill />
-                </template>
-                <span>{{ expiresTagText }}</span>
-              </a-tag>
+              <!--              <a-tag v-else-if="isExpires" size="small" color="red">-->
+              <!--                <template #icon>-->
+              <!--                  <icon-check-circle-fill />-->
+              <!--                </template>-->
+              <!--                <span>{{ expiresTagText }}</span>-->
+              <!--              </a-tag>-->
             </template>
           </template>
           <template #description>

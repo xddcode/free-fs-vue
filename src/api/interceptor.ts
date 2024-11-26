@@ -51,13 +51,13 @@ axios.interceptors.response.use(
           okText: '重新登录',
           async onOk() {
             const userStore = useUserStore();
-
             await userStore.logout();
             window.location.reload();
           },
         });
+      } else {
+        return Promise.reject(new Error(res.msg || 'Error'));
       }
-      return Promise.reject(new Error(res.msg || 'Error'));
     }
     return res;
   },
