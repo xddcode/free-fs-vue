@@ -1,6 +1,6 @@
 <template>
   <div class="card-wrap">
-    <a-card v-if="loading" :bordered="false" hoverable>
+    <a-card v-if="props.loading" :bordered="false" hoverable>
       <slot name="skeleton"></slot>
     </a-card>
 
@@ -17,6 +17,14 @@
           <a-card-meta>
             <template #title>
               {{ itemData.name }}
+              <a-link
+                v-if="itemData.link"
+                :href="itemData.link"
+                icon
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ itemData.identifier }}</a-link
+              >
               <a-tag
                 v-if="itemData.isEnabled === 1"
                 size="small"
@@ -66,18 +74,49 @@
             v-else
             type="primary"
             size="small"
-            @click="handleOpenStorage(item.identifier)"
+            @click="handleOpenStorage(itemData)"
             >开通</a-button
           >
+          <a-button v-if="itemData.isSetting === 1" type="primary" size="small">
+            <template #icon>
+              <icon-settings />
+            </template>
+          </a-button>
         </a-space>
       </template>
     </a-card>
+
+    <a-modal
+      :visible="modalVisible"
+      title="存储平台配置"
+      :mask-closable="false"
+      ok-text="确认开通"
+      @ok="handleOk"
+      @cancel="handleCancel"
+    >
+      <a-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        :auto-label-width="true"
+      >
+        <div v-for="field in schemes" :key="field.identifier">
+          <a-form-item :field="field.identifier" :label="field.label">
+            <a-input
+              v-model="formData[field.identifier]"
+              :placeholder="'请输入' + field.label"
+              allow-clear
+            />
+          </a-form-item>
+        </div>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { Icon } from '@arco-design/web-vue';
-  import { PropType, reactive } from 'vue';
+  import { PropType, reactive, ref } from 'vue';
   import { StoragePlatformRecord } from '@/types/modules/storage';
 
   const IconFont = Icon.addFromIconFontCn({
@@ -106,15 +145,60 @@
     },
   });
 
+  const modalVisible = ref(false);
+
+  interface ConfigScheme {
+    identifier: string;
+    label: string;
+    dataType: string;
+    validation: {
+      required: boolean;
+    };
+  }
+
+  const formRef = ref();
+  const rules = reactive<any>({});
+  const schemes = ref<ConfigScheme[]>([]);
+  const formData = reactive<Record<string, string>>({});
+
+  // 初始化表单数据
+  const resetFormData = async () => {
+    schemes.value.forEach((field) => {
+      formData[field.identifier] = '';
+      rules[field.identifier] = {
+        required: field.validation.required,
+        message: `请输入${field.label}`,
+      };
+    });
+  };
+
   /**
    * 开通存储平台
-   * @param identifier
+   * @param itemData
    */
-  const handleOpenStorage = async (identifier: string) => {};
-  // const isExpires = ref(props.expires);
-  // const renew = () => {
-  //   isExpires.value = false;
-  // };
+  const handleOpenStorage = async (itemData: StoragePlatformRecord) => {
+    const { isSetting, configScheme } = itemData;
+    if (isSetting === 0) {
+      modalVisible.value = true;
+      schemes.value = JSON.parse(configScheme);
+      await resetFormData();
+    }
+    // 如果已经配置过了，则直接修改
+  };
+
+  const handleOk = () => {
+    if (formRef.value) {
+      formRef.value.validate().then(async (errors: any) => {
+        if (!errors) {
+          alert(1);
+        }
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    modalVisible.value = false;
+  };
 </script>
 
 <style scoped lang="less">
