@@ -40,6 +40,10 @@
       type: Number,
       default: 1,
     },
+    keywords: {
+      type: String,
+      default: '',
+    },
   });
 
   const loading = ref(true);
@@ -47,7 +51,7 @@
 
   const fetchData = async () => {
     try {
-      const { data } = await getStoragePlatforms(props.type);
+      const { data } = await getStoragePlatforms(props.type, props.keywords);
       renderData.value = data;
     } finally {
       loading.value = false;

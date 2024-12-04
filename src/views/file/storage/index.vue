@@ -7,19 +7,21 @@
           <a-row justify="space-between">
             <a-col :span="24">
               <a-tabs :default-active-tab="1" type="rounded">
-                <a-tab-pane key="1" title="全部">
+                <a-tab-pane key="1" title="全部" :keywords="keywords">
                   <StoragePlatforms />
                 </a-tab-pane>
                 <a-tab-pane key="2" title="系统默认">
-                  <StoragePlatforms :type="1" />
+                  <StoragePlatforms :type="1" :keywords="keywords" />
                 </a-tab-pane>
                 <a-tab-pane key="3" title="自定义"></a-tab-pane>
-                <StoragePlatforms :type="0" />
+                <StoragePlatforms :type="0" :keywords="keywords" />
               </a-tabs>
             </a-col>
             <a-input-search
+              allow-clear
               placeholder="搜索"
               style="width: 240px; position: absolute; top: 60px; right: 20px"
+              @search="search"
             />
           </a-row>
         </a-card>
@@ -29,7 +31,14 @@
 </template>
 
 <script lang="ts" setup>
+  import { ref } from 'vue';
   import StoragePlatforms from './components/storage-platforms.vue';
+
+  const keywords = ref('');
+
+  const search = (value: string) => {
+    keywords.value = value;
+  };
 </script>
 
 <script lang="ts">

@@ -2,17 +2,20 @@
   <a-modal
     :visible="visible"
     :title="title"
+    :mask-closable="false"
+    ok-text="提交"
+    @ok="handleOk"
     @cancel="handleCancel"
     @close="handleClose"
   >
-    <a-form ref="formRef" :model="formData">
+    <a-form ref="userFormRef" :model="userFormData">
       <a-form-item
         field="username"
         label="账号"
         :rules="[{ required: true, message: '请输入账号' }]"
       >
         <a-input
-          v-model="formData.username"
+          v-model="userFormData.username"
           placeholder="请输入账号"
           allow-clear
         />
@@ -20,10 +23,13 @@
       <a-form-item
         field="email"
         label="邮箱"
-        :rules="[{ required: true, message: '请输入邮箱' }]"
+        :rules="[
+          { required: true, message: '请输入邮箱' },
+          { type: 'email', message: '请输入有效的邮箱地址' },
+        ]"
       >
         <a-input
-          v-model="formData.email"
+          v-model="userFormData.email"
           placeholder="请输入邮箱"
           allow-clear
         />
@@ -35,14 +41,18 @@
         :rules="[{ required: true, message: '请选择一个角色' }]"
       >
         <a-select
-          v-model="formData.roleCode"
+          v-model="userFormData.roleCode"
           :options="roleOptions"
           placeholder="请选择一个角色"
           allow-clear
         />
       </a-form-item>
       <a-form-item field="nickname" label="昵称">
-        <a-input v-model="formData.nickname" placeholder="昵称" allow-clear />
+        <a-input
+          v-model="userFormData.nickname"
+          placeholder="昵称"
+          allow-clear
+        />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -58,37 +68,44 @@
     computed,
     reactive,
   } from 'vue';
-  import { getRoleList, RoleRecord } from '@/api/role';
+  import { addUser, editUser } from '@/api/user';
+  import { getRoleList } from '@/api/role';
   import { SelectOptionData } from '@arco-design/web-vue/es/select/interface';
   import { UserParams } from '@/types/modules/user';
+  import { RoleRecord } from '@/types/modules/role';
+  import { Message } from '@arco-design/web-vue';
 
   const props = defineProps({
     visible: {
       type: Boolean,
       required: true,
     },
-    title: {
-      type: String,
-      default: 'Edit/Create Form',
-    },
-    initialData: {
+    editData: {
       type: Object as PropType<UserParams>,
       default: () => ({}),
     },
   });
 
-  const emit = defineEmits(['update:visible', 'save', 'cancel']);
+  const emit = defineEmits(['update:visible', 'refresh']);
 
-  const formRef = ref(null);
+  const userFormRef = ref<any>(null);
 
-  const initialFormData = {
+  const getInitialFormData = (): UserParams => ({
+    id: '',
     username: '',
     email: '',
     nickname: '',
     roleCode: '',
-  };
+  });
 
-  const formData = reactive<UserParams>({ ...initialFormData });
+  const userFormData = reactive<UserParams>(getInitialFormData());
+
+  const resetForm = () => {
+    Object.assign(userFormData, getInitialFormData());
+    if (userFormRef.value) {
+      userFormRef.value.resetFields();
+    }
+  };
 
   const roleOptions = ref<SelectOptionData[]>([]);
 
@@ -106,32 +123,66 @@
 
   const handleClose = () => {
     emit('update:visible', false);
+    resetForm();
   };
 
   const handleCancel = () => {
     handleClose();
-    emit('cancel');
   };
 
-  const resetForm = () => {
-    formData.value = { ...initialFormData };
-    if (formRef.value) {
-      formRef.value.resetFields();
+  const isEdit = computed(() => Object.keys(props.editData).length > 0);
+
+  const title = computed(() => (isEdit.value ? '编辑用户' : '创建用户'));
+
+  const handleOk = () => {
+    if (userFormRef.value) {
+      userFormRef.value.validate().then(async (errors: any) => {
+        if (!errors) {
+          if (isEdit.value) {
+            await editUser(userFormData);
+            Message.success('用户编辑成功');
+          } else {
+            await addUser(userFormData);
+            Message.success('用户创建成功');
+          }
+          handleClose();
+          emit('refresh');
+        }
+      });
     }
   };
 
-  const isEdit = computed(() => Object.keys(props.initialData).length > 0);
+  const setEditData = (data: UserParams) => {
+    Object.assign(userFormData, {
+      id: data.id,
+      username: data.username,
+      email: data.email,
+      nickname: data.nickname,
+      roleCode: data.roleCode,
+    });
+  };
 
   watch(
     () => props.visible,
     (newVisible) => {
       if (newVisible) {
+        setRoleOptions();
         if (isEdit.value) {
-          formData.value = { ...props.initialData };
+          setEditData(props.editData);
         } else {
           resetForm();
         }
-        setRoleOptions();
+      } else {
+        resetForm();
+      }
+    }
+  );
+
+  watch(
+    () => props.editData,
+    (newEditData) => {
+      if (Object.keys(newEditData).length > 0) {
+        setEditData(newEditData);
       }
     }
   );

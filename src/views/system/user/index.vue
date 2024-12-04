@@ -184,8 +184,8 @@
 
     <UserEditModel
       v-model:visible="modalVisible"
-      :title="modalTitle"
-      :initial-data="modalData"
+      :edit-data="modalData"
+      @refresh="search"
     />
   </div>
 </template>
@@ -367,6 +367,7 @@
   const handleChangeStatus = async (userId: string, newValue: boolean) => {
     try {
       await editUserStatus(userId, newValue ? 0 : 1);
+      Message.success('操作成功');
       return true;
     } catch (e) {
       return false;
@@ -378,14 +379,14 @@
    */
   const handleAdd = () => {
     modalVisible.value = true;
-    modalTitle.value = '新增用户';
+    modalData.value = {};
   };
+
   /**
    * 编辑用户
    */
   const handleEdit = (record: UserRecord) => {
     modalVisible.value = true;
-    modalTitle.value = '编辑用户';
     modalData.value = { ...record };
   };
 

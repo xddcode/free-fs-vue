@@ -8,7 +8,7 @@ const FILE: AppRouteRecordRaw = {
   meta: {
     title: '文件中心',
     requiresAuth: true,
-    icon: 'icon-apps',
+    icon: 'icon-cloud',
     order: 1,
   },
   children: [

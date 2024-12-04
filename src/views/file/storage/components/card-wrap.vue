@@ -117,6 +117,7 @@
 <script lang="ts" setup>
   import { Icon } from '@arco-design/web-vue';
   import { PropType, reactive, ref } from 'vue';
+  import { openOrCancelStoragePlatform } from '@/api/storage';
   import { StoragePlatformRecord } from '@/types/modules/storage';
 
   const IconFont = Icon.addFromIconFontCn({
@@ -182,6 +183,8 @@
       modalVisible.value = true;
       schemes.value = JSON.parse(configScheme);
       await resetFormData();
+    } else {
+      await openOrCancelStoragePlatform(itemData.identifier, 1);
     }
     // 如果已经配置过了，则直接修改
   };

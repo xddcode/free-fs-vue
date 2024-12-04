@@ -2,6 +2,8 @@ import axios from 'axios';
 import type { RouteRecordNormalized } from 'vue-router';
 import { UserState } from '@/store/modules/user/types';
 import qs from 'query-string';
+import { RoleParams } from '@/types/modules/role';
+import { UserParams } from '@/types/modules/user';
 
 export interface LoginData {
   username: string;
@@ -62,6 +64,14 @@ export function getUserPages(params: UserPageParams) {
 
 export function editUserStatus(userId: string, status: number) {
   return axios.put('/apis/user/status', { userId, status });
+}
+
+export function addUser(params: UserParams) {
+  return axios.post<RoleParams>('/apis/user', params);
+}
+
+export function editUser(params: UserParams) {
+  return axios.put('/apis/user', params);
 }
 
 export function deleteUser(userId: string) {
