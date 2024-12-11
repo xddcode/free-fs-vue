@@ -10,3 +10,11 @@ export interface StoragePlatformRecord {
   isDefault: number;
   isSetting: number;
 }
+
+export interface StoragePlatformSettingsRecord {
+  id: number;
+  platformIdentifier: string;
+  configData: string;
+  enabled: number;
+  userId: string;
+}

@@ -16,7 +16,7 @@
         class="list-col"
         style="min-height: 162px"
       >
-        <CardWrap :loading="loading" :item-data="item">
+        <CardWrap :loading="loading" :item-data="item" @refresh="fetchData">
           <template #skeleton>
             <a-skeleton :animation="true">
               <a-skeleton-line :widths="['100%', '40%', '100%']" :rows="3" />

@@ -37,7 +37,7 @@
                 <span>已开通</span>
               </a-tag>
               <a-tag
-                v-if="itemData.isEnabled === 1 && itemData.isSetting === 0"
+                v-if="itemData.isSetting === 0"
                 size="small"
                 color="gold"
                 style="margin-left: 10px"
@@ -67,17 +67,23 @@
           <a-button
             v-if="itemData.isEnabled === 1"
             size="small"
-            @click="toggle(false)"
+            :loading="btnLoading"
+            @click="handleCloseOpenStorage(itemData)"
             >取消开通</a-button
           >
           <a-button
             v-else
             type="primary"
             size="small"
+            :loading="btnLoading"
             @click="handleOpenStorage(itemData)"
             >开通</a-button
           >
-          <a-button v-if="itemData.isSetting === 1" type="primary" size="small">
+          <a-button
+            type="primary"
+            size="small"
+            @click="handleSettingStorage(itemData)"
+          >
             <template #icon>
               <icon-settings />
             </template>
@@ -90,7 +96,7 @@
       :visible="modalVisible"
       title="存储平台配置"
       :mask-closable="false"
-      ok-text="确认开通"
+      ok-text="提交"
       @ok="handleOk"
       @cancel="handleCancel"
     >
@@ -115,9 +121,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { Icon } from '@arco-design/web-vue';
+  import { Icon, Message } from '@arco-design/web-vue';
   import { PropType, reactive, ref } from 'vue';
-  import { openOrCancelStoragePlatform } from '@/api/storage';
+  import {
+    openOrCancelStoragePlatform,
+    getStoragePlatformsSettings,
+    saveOrUpdateStoragePlatformSettings,
+  } from '@/api/storage';
   import { StoragePlatformRecord } from '@/types/modules/storage';
 
   const IconFont = Icon.addFromIconFontCn({
@@ -160,10 +170,26 @@
   const formRef = ref();
   const rules = reactive<any>({});
   const schemes = ref<ConfigScheme[]>([]);
-  const formData = reactive<Record<string, string>>({});
+  const formData = reactive<Record<string, string>>({
+    identifier: '', // 添加 identifier 字段
+  });
+  const btnLoading = ref(false);
+
+  const emit = defineEmits(['refresh']);
 
   // 初始化表单数据
   const resetFormData = async () => {
+    // 清空表单数据
+    Object.keys(formData).forEach((key) => {
+      delete formData[key];
+    });
+
+    // 清空验证规则
+    Object.keys(rules).forEach((key) => {
+      delete rules[key];
+    });
+
+    // 重新设置表单数据和验证规则
     schemes.value.forEach((field) => {
       formData[field.identifier] = '';
       rules[field.identifier] = {
@@ -171,6 +197,11 @@
         message: `请输入${field.label}`,
       };
     });
+
+    // 如果表单实例存在,重置表单验证状态
+    if (formRef.value) {
+      formRef.value.clearValidate();
+    }
   };
 
   /**
@@ -178,22 +209,74 @@
    * @param itemData
    */
   const handleOpenStorage = async (itemData: StoragePlatformRecord) => {
-    const { isSetting, configScheme } = itemData;
-    if (isSetting === 0) {
-      modalVisible.value = true;
-      schemes.value = JSON.parse(configScheme);
-      await resetFormData();
-    } else {
-      await openOrCancelStoragePlatform(itemData.identifier, 1);
+    btnLoading.value = true;
+    try {
+      const { identifier } = itemData;
+      await openOrCancelStoragePlatform(identifier, 1);
+      Message.success(`开通：${identifier} 成功`);
+    } finally {
+      btnLoading.value = false;
+      emit('refresh');
     }
-    // 如果已经配置过了，则直接修改
+  };
+
+  const handleSettingStorage = async (itemData: StoragePlatformRecord) => {
+    const { identifier, configScheme } = itemData;
+    modalVisible.value = true;
+    schemes.value = JSON.parse(configScheme);
+
+    // 获取配置数据
+    const { data } = await getStoragePlatformsSettings(identifier);
+    const configData = JSON.parse(data.configData);
+
+    // 先重置表单
+    await resetFormData();
+
+    // 设置 identifier
+    formData.identifier = identifier;
+
+    // 遍历 schemes 将 configData 中对应的值设置到 formData
+    if (configData) {
+      schemes.value.forEach((field) => {
+        if (configData[field.identifier]) {
+          formData[field.identifier] = configData[field.identifier];
+        }
+      });
+    }
+  };
+
+  /**
+   * 取消开通存储平台
+   * @param itemData
+   */
+  const handleCloseOpenStorage = async (itemData: StoragePlatformRecord) => {
+    btnLoading.value = true;
+    try {
+      const { identifier } = itemData;
+      await openOrCancelStoragePlatform(identifier, 0);
+      Message.success(`取消开通：${identifier} 成功`);
+    } finally {
+      btnLoading.value = false;
+      emit('refresh');
+    }
   };
 
   const handleOk = () => {
     if (formRef.value) {
       formRef.value.validate().then(async (errors: any) => {
         if (!errors) {
-          alert(1);
+          // 构造提交数据
+          const submitData = {
+            identifier: formData.identifier,
+            configData: JSON.stringify(formData),
+          };
+          console.log(submitData);
+
+          // 调用 API 提交数据
+          await saveOrUpdateStoragePlatformSettings(submitData);
+          Message.success('保存成功');
+          modalVisible.value = false;
+          emit('refresh');
         }
       });
     }
