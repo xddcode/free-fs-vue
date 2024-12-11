@@ -4,25 +4,45 @@
     <a-row :gutter="20" align="stretch">
       <a-col :span="24">
         <a-card class="general-card" title="存储平台">
+          <template #extra>
+            <a-input-search allow-clear placeholder="搜索" @search="search" />
+          </template>
           <a-row justify="space-between">
             <a-col :span="24">
-              <a-tabs :default-active-tab="1" type="rounded">
-                <a-tab-pane key="1" title="全部" :keywords="keywords">
-                  <StoragePlatforms />
-                </a-tab-pane>
-                <a-tab-pane key="2" title="系统默认">
-                  <StoragePlatforms :type="1" :keywords="keywords" />
-                </a-tab-pane>
-                <a-tab-pane key="3" title="自定义"></a-tab-pane>
-                <StoragePlatforms :type="0" :keywords="keywords" />
-              </a-tabs>
+              <div v-if="renderData.length > 0" class="list-wrap">
+                <a-row class="list-row" :gutter="24">
+                  <a-col
+                    v-for="item in renderData"
+                    :key="item.id"
+                    :xs="12"
+                    :sm="12"
+                    :md="12"
+                    :lg="6"
+                    :xl="6"
+                    :xxl="6"
+                    class="list-col"
+                    style="min-height: 162px"
+                  >
+                    <CardWrap
+                      :loading="loading"
+                      :item-data="item"
+                      @refresh="fetchData"
+                    >
+                      <template #skeleton>
+                        <a-skeleton :animation="true">
+                          <a-skeleton-line
+                            :widths="['100%', '40%', '100%']"
+                            :rows="3"
+                          />
+                          <a-skeleton-line :widths="['40%']" :rows="1" />
+                        </a-skeleton>
+                      </template>
+                    </CardWrap>
+                  </a-col>
+                </a-row>
+              </div>
+              <a-empty v-else />
             </a-col>
-            <a-input-search
-              allow-clear
-              placeholder="搜索"
-              style="width: 240px; position: absolute; top: 60px; right: 20px"
-              @search="search"
-            />
           </a-row>
         </a-card>
       </a-col>
@@ -32,12 +52,28 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import StoragePlatforms from './components/storage-platforms.vue';
+  import { getStoragePlatforms } from '@/api/storage';
+  import { StoragePlatformRecord } from '@/types/modules/storage';
+  import CardWrap from './components/card-wrap.vue';
 
-  const keywords = ref('');
+  const type = ref(1);
+
+  const loading = ref(true);
+  const renderData = ref<StoragePlatformRecord[]>([]);
+
+  const fetchData = async (keywords?: string) => {
+    try {
+      const { data } = await getStoragePlatforms(type.value, keywords);
+      renderData.value = data;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  fetchData();
 
   const search = (value: string) => {
-    keywords.value = value;
+    fetchData(value);
   };
 </script>
 
