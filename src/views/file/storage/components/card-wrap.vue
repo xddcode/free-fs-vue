@@ -270,9 +270,6 @@
             identifier: formData.identifier,
             configData: JSON.stringify(formData),
           };
-          console.log(submitData);
-
-          // 调用 API 提交数据
           await saveOrUpdateStoragePlatformSettings(submitData);
           Message.success('保存成功');
           modalVisible.value = false;

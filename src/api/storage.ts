@@ -18,7 +18,7 @@ export function openOrCancelStoragePlatform(
 }
 
 export function getStoragePlatformsSettings(identifier: string) {
-  return axios.get<StoragePlatformSettingsRecord[]>(
+  return axios.get<StoragePlatformSettingsRecord>(
     `/apis/storage/settings/${identifier}`
   );
 }
