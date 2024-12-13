@@ -13,6 +13,17 @@ const FILE: AppRouteRecordRaw = {
   },
   children: [
     {
+      path: 'document',
+      name: 'document',
+      component: () => import('@/views/file/document/index.vue'),
+      meta: {
+        title: '我的文件',
+        requiresAuth: true,
+        roles: ['*'],
+        ignoreCache: true,
+      },
+    },
+    {
       path: 'storage',
       name: 'storage',
       component: () => import('@/views/file/storage/index.vue'),
