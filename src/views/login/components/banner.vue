@@ -16,22 +16,12 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue';
-  import bannerImage from '@/assets/images/1.jpg';
+  import bannerImage from '@/assets/banner/login-banner.png';
 
   const carouselItem = computed(() => [
     {
-      slogan: 'slogan1',
-      subSlogan: 'subSlogan1',
-      image: bannerImage,
-    },
-    {
-      slogan: 'slogan1',
-      subSlogan: 'subSlogan1',
-      image: bannerImage,
-    },
-    {
-      slogan: 'slogan1',
-      subSlogan: 'subSlogan1',
+      slogan: '一站式云端，尽在掌控',
+      subSlogan: '跨平台云存储集成解决方案，让文件管理更简单',
       image: bannerImage,
     },
   ]);
