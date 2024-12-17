@@ -3,46 +3,25 @@ import type { RouteRecordNormalized } from 'vue-router';
 import { UserState } from '@/store/modules/user/types';
 import qs from 'query-string';
 import { RoleParams } from '@/types/modules/role';
-import { UserParams } from '@/types/modules/user';
+import {
+  LoginParams,
+  LoginRes,
+  UserListRes,
+  UserPageParams,
+  UserParams,
+  UserRegisterParams,
+} from '@/types/modules/user';
 
-export interface LoginData {
-  username: string;
-  password: string;
-}
-
-export interface LoginRes {
-  accessToken: string;
-}
-
-export interface UserRecord {
-  id: string;
-  username: string;
-  nickname: string;
-  email: string;
-  roleCode: string;
-  avatar: string;
-  status: number;
-  lastLoginTime: string;
-  createTime: string;
-  updateTime: string;
-}
-
-export interface UserPageParams extends Partial<UserRecord> {
-  page: number;
-  pageSize: number;
-}
-
-export interface UserListRes {
-  data: UserRecord[];
-  total: number;
-}
-
-export function login(data: LoginData) {
+export function login(data: LoginParams) {
   return axios.post<LoginRes>('/apis/auth/login', data);
 }
 
+export function register(data: UserRegisterParams) {
+  return axios.post('/apis/user/register', data);
+}
+
 export function logout() {
-  return axios.post<LoginRes>('/apis/auth/logout');
+  return axios.post('/apis/auth/logout');
 }
 
 export function getUserInfo() {
@@ -67,7 +46,7 @@ export function editUserStatus(userId: string, status: number) {
 }
 
 export function addUser(params: UserParams) {
-  return axios.post<RoleParams>('/apis/user', params);
+  return axios.post('/apis/user', params);
 }
 
 export function editUser(params: UserParams) {

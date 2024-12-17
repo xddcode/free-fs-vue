@@ -203,10 +203,9 @@
     editUserStatus,
     deleteUser,
     resetUserPassword,
-    UserPageParams,
-    UserRecord,
   } from '@/api/user';
   import UserEditModel from '@/views/system/user/components/UserEditModel.vue';
+  import { UserPageParams, UserRecord } from '@/types/modules/user';
 
   type SizeProps = 'mini' | 'small' | 'medium' | 'large';
   type Column = TableColumnData & { checked?: true };
