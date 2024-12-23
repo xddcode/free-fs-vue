@@ -2,53 +2,54 @@
 <template>
   <div class="file-list-container">
     <a-dropdown trigger="contextMenu" align-point :style="{ display: 'block' }">
-      <a-empty v-if="isEmpty(files)" description="暂无文件" />
+      <a-empty v-if="!files.length" description="暂无文件" />
       <div v-else class="file-list">
-        <div v-for="(file, index) in files" :key="index" class="file-list-item">
+        <div
+          v-for="(file, index) in files"
+          :key="index"
+          class="file-list-item"
+          :class="{ 'file-list-item-selected': selectedFiles.includes(file) }"
+          @click="handleFileClick(file)"
+        >
           <div class="file-list-img">
             <img :src="getAssetsFile(file.type)" alt="file icon" />
           </div>
           <div class="file-list-name">{{ file.name }}</div>
-          <div class="file-list-ck">✓</div>
+          <div class="file-list-info">
+            <!--                      <span class="file-size">{{ file.size }}</span>-->
+            <span class="file-date">{{ file.modifiedTime }}</span>
+          </div>
+          <div class="file-list-checkbox">
+            <a-checkbox :checked="selectedFiles.includes(file)" />
+          </div>
         </div>
       </div>
       <template #content>
-        <a-doption>
-          <template #icon>
-            <icon-folder-add />
-          </template>
-          <template #default>新建文件夹</template>
-        </a-doption>
-        <a-doption>
-          <template #icon>
-            <icon-upload />
-          </template>
-          <template #default>上传文件</template>
-        </a-doption>
-        <a-doption>
-          <template #icon>
-            <icon-share-external />
-          </template>
-          <template #default>上传文件夹</template>
-        </a-doption>
-        <a-doption>
-          <template #icon>
-            <icon-refresh />
-          </template>
-          <template #default>刷新</template>
-        </a-doption>
+        <a-doption>新建文件夹</a-doption>
+        <a-doption>上传文件</a-doption>
+        <a-doption>上传文件夹</a-doption>
+        <a-divider style="margin: 4px 0" />
+        <a-doption>下载</a-doption>
+        <a-doption>分享</a-doption>
+        <a-doption>移动到</a-doption>
+        <a-doption>复制到</a-doption>
+        <a-doption>重命名</a-doption>
+        <a-divider style="margin: 4px 0" />
+        <a-doption>刷新</a-doption>
+        <a-doption status="danger">删除</a-doption>
       </template>
     </a-dropdown>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { defineProps, PropType } from 'vue';
-  import { isEmpty } from 'radash';
+  import { defineProps, PropType, ref } from 'vue';
 
   interface FileItem {
     type: string;
     name: string;
+    size?: number;
+    modifiedTime?: string;
   }
 
   const props = defineProps({
@@ -58,10 +59,32 @@
     },
   });
 
+  const selectedFiles = ref<FileItem[]>([]);
+
   const getAssetsFile = (type: string) => {
     return new URL(`../../../../assets/images/fti/${type}.png`, import.meta.url)
       .href;
   };
+
+  // const formatFileSize = (size?: number) => {
+  //   if (!size) return '-';
+  //   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  //   let index = 0;
+  //   while (size >= 1024 && index < units.length - 1) {
+  //     size /= 1024;
+  //     index++;
+  //   }
+  //   return `${size.toFixed(2)} ${units[index]}`;
+  // };
+  //
+  // const formatDate = (date?: string) => {
+  //   if (!date) return '-';
+  //   return dayjs(date).format('YYYY-MM-DD HH:mm');
+  // };
+  //
+  // const handleFileClick = (file: FileItem) => {
+  //   selectedFiles.value = [file];
+  // };
 </script>
 
 <style lang="less" scoped>
@@ -78,14 +101,35 @@
   }
 
   .file-list-item {
-    width: 100px;
+    width: 120px;
     text-align: center;
     color: var(--color-text-1);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     border-radius: 6px;
     overflow: hidden;
     position: relative;
+    padding: 8px;
+
+    &:hover {
+      background-color: var(--color-fill-2);
+
+      .file-list-checkbox {
+        opacity: 1;
+      }
+    }
+
+    &-selected {
+      background-color: var(--color-primary-light-1);
+
+      &:hover {
+        background-color: var(--color-primary-light-2);
+      }
+
+      .file-list-checkbox {
+        opacity: 1;
+      }
+    }
   }
 
   .file-list-img {
@@ -95,58 +139,36 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-  }
 
-  .file-list-img img {
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-    transition: all 0.3s ease;
+    img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
   }
 
   .file-list-name {
-    padding: 8px 5px;
-    font-size: 12px;
-    white-space: nowrap;
+    margin-top: 2px;
+    font-size: 14px;
     overflow: hidden;
     text-overflow: ellipsis;
-    background-color: var(--color-bg-2);
+    white-space: nowrap;
   }
 
-  .file-list-ck {
-    position: absolute;
-    right: 3px;
-    top: 3px;
-    width: 16px;
-    height: 16px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
+  .file-list-info {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-text-3);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    font-size: 10px;
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .file-list-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-
-    .file-list-img {
-      background-color: var(--color-fill-2);
-    }
-
-    .file-list-name {
-      color: var(--color-primary);
-    }
-
-    .file-list-ck {
-      opacity: 1;
-    }
-
-    .file-list-img img {
-      transform: scale(1.1);
-    }
+  .file-list-checkbox {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
   }
 </style>

@@ -1,10 +1,10 @@
-import axios from 'axios';
+import { request } from '@/api/interceptor';
 import { MenuRecord } from '@/types/modules/menu';
 
 export function getMenuTree() {
-  return axios.get<MenuRecord[]>('/apis/menu/tree');
+  return request.get<MenuRecord[]>('/apis/menu/tree');
 }
 
 export function getAllMenuIds() {
-  return axios.get<number[]>('/apis/menu/ids');
+  return request.get<number[]>('/apis/menu/ids');
 }

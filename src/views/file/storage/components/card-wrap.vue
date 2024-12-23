@@ -23,8 +23,8 @@
                 icon
                 target="_blank"
                 rel="noopener noreferrer"
-                >{{ itemData.identifier }}</a-link
-              >
+                >{{ itemData.identifier }}
+              </a-link>
               <a-tag
                 v-if="itemData.isEnabled === 1"
                 size="small"
@@ -69,16 +69,16 @@
             size="small"
             :loading="btnLoading"
             @click="handleCloseOpenStorage(itemData)"
-            >取消开通</a-button
-          >
+            >取消开通
+          </a-button>
           <a-button
             v-else
             type="primary"
             size="small"
             :loading="btnLoading"
             @click="handleOpenStorage(itemData)"
-            >开通</a-button
-          >
+            >开通
+          </a-button>
           <a-button
             type="primary"
             size="small"
@@ -321,6 +321,7 @@
 
               .arco-card-meta-content {
                 flex: 1;
+
                 .arco-card-meta-description {
                   .arco-typography {
                     margin-top: 8px;

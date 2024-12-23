@@ -24,6 +24,16 @@
     </div>
     <ul class="right-side">
       <li>
+        <a-dropdown trigger="hover">
+          <a-button>Local</a-button>
+          <template #content>
+            <a-doption>Local</a-doption>
+            <a-doption>OSS</a-doption>
+            <a-doption>Option 3</a-doption>
+          </template>
+        </a-dropdown>
+      </li>
+      <li>
         <a-tooltip
           :content="
             theme === 'light' ? '点击切换为暗黑模式' : '点击切换为亮色模式'

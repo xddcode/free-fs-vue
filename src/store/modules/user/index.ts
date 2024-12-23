@@ -3,10 +3,10 @@ import {
   login as userLogin,
   logout as userLogout,
   getUserInfo,
-  LoginData,
 } from '@/api/user';
 import { setToken, clearToken } from '@/utils/auth';
 import { removeRouteListener } from '@/utils/route-listener';
+import { LoginParams } from '@/types/modules/user';
 import { UserState } from './types';
 import useAppStore from '../app';
 
@@ -51,7 +51,7 @@ const useUserStore = defineStore('user', {
     },
 
     // Login
-    async login(loginForm: LoginData) {
+    async login(loginForm: LoginParams) {
       try {
         const res = await userLogin(loginForm);
         setToken(res.data.accessToken);

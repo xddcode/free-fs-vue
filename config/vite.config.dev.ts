@@ -6,6 +6,7 @@ export default mergeConfig(
   {
     mode: 'development',
     server: {
+      host: '0.0.0.0',
       open: true,
       fs: {
         strict: true,
