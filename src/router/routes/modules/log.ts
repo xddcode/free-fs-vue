@@ -8,7 +8,7 @@ const LOG: AppRouteRecordRaw = {
   meta: {
     title: '日志管理',
     requiresAuth: true,
-    icon: 'icon-cloud',
+    icon: 'icon-drive-file',
     order: 1,
   },
   children: [
