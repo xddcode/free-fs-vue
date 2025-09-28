@@ -29,7 +29,7 @@ const useUserStore = defineStore('user', {
   actions: {
     switchRoles() {
       return new Promise((resolve) => {
-        this.roleCode = this.roleCode === 'normal' ? 'admin' : 'normal';
+        this.roleCode = this.roleCode === 'user' ? 'admin' : 'user';
         resolve(this.roleCode);
       });
     },

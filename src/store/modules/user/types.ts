@@ -1,4 +1,4 @@
-export type RoleType = '' | '*' | 'admin' | 'normal';
+export type RoleType = '' | '*' | 'admin' | 'user';
 
 export interface UserState {
   id?: number;

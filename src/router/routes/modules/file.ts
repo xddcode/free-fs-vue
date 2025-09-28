@@ -9,7 +9,7 @@ const FILE: AppRouteRecordRaw = {
     title: '文件中心',
     requiresAuth: true,
     icon: 'icon-cloud',
-    order: 1,
+    order: 2,
   },
   children: [
     {

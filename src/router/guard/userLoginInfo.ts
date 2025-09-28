@@ -15,7 +15,8 @@ export default function setupUserLoginInfoGuard(router: Router) {
           await userStore.info();
           next();
         } catch (error) {
-          await userStore.logout();
+          // 在路由守卫中处理认证错误，不依赖拦截器
+          userStore.logoutCallBack(); // 直接调用logoutCallBack，不调用logout API
           next({
             name: 'login',
             query: {

@@ -14,6 +14,9 @@ export interface HttpResponse<T = unknown> {
   data: T;
 }
 
+// 添加全局标志防止重复显示Modal
+let isShowingLogoutModal = false;
+
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
@@ -43,28 +46,39 @@ service.interceptors.response.use(
       return response; // 返回完整的 response 对象
     }
 
-    Message.error({
-      content: res.msg || 'Error',
-      duration: 5 * 1000,
-    });
-
-    if (
-      [401, 403].includes(res.code) &&
-      response.config.url !== '/api/user/info'
-    ) {
-      Modal.error({
-        title: '确认注销',
-        content: '您的登录已过期，您可以停留在此页面或重新登录',
-        okText: '重新登录',
-        async onOk() {
-          window.location.reload();
-        },
+    // 对于401/403错误，不显示Message.error，只显示Modal
+    if ([401, 403].includes(res.code)) {
+      // 修正API路径匹配，排除用户信息接口避免重复处理
+      if (response.config.url !== '/apis/user/info' && !isShowingLogoutModal) {
+        isShowingLogoutModal = true;
+        Modal.error({
+          title: '确认注销',
+          content: '您的登录已过期，您可以停留在此页面或重新登录',
+          okText: '重新登录',
+          async onOk() {
+            isShowingLogoutModal = false;
+            window.location.reload();
+          },
+          onCancel() {
+            isShowingLogoutModal = false;
+          },
+          onClose() {
+            isShowingLogoutModal = false;
+          },
+        });
+      }
+    } else {
+      // 对于其他错误，显示Message.error
+      Message.error({
+        content: res.msg || 'Error',
+        duration: 5 * 1000,
       });
     }
 
     return Promise.reject(new Error(res.msg || 'Error'));
   },
   (error) => {
+    // 对于网络错误或其他异常，显示错误信息
     Message.error({
       content: error.response?.data?.msg || error.message || 'Request Error',
       duration: 5 * 1000,
