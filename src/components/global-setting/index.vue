@@ -7,13 +7,13 @@
     </a-button>
   </div>
   <a-drawer
-    :width="300"
-    unmount-on-close
     :visible="visible"
+    :width="300"
     cancel-text="关闭"
     ok-text="复制配置"
-    @ok="copySettings"
+    unmount-on-close
     @cancel="cancel"
+    @ok="copySettings"
   >
     <template #title>页面配置</template>
     <Block :options="contentOpts" title="内容区域" />
@@ -85,7 +85,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .fixed-settings {
     position: fixed;
     top: 280px;

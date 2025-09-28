@@ -1,34 +1,34 @@
 <template>
   <a-modal
-    :visible="visible"
-    :title="title"
     :mask-closable="false"
+    :title="title"
+    :visible="visible"
     ok-text="提交"
-    @ok="handleOk"
     @cancel="handleCancel"
     @close="handleClose"
+    @ok="handleOk"
   >
     <a-form ref="roleFormRef" :model="roleFormData">
       <a-form-item
+        :rules="[{ required: true, message: '请输入角色编码' }]"
         field="roleCode"
         label="角色编码"
-        :rules="[{ required: true, message: '请输入角色编码' }]"
       >
         <a-input
           v-model="roleFormData.roleCode"
-          placeholder="请输入角色编码"
           allow-clear
+          placeholder="请输入角色编码"
         />
       </a-form-item>
       <a-form-item
+        :rules="[{ required: true, message: '请输入角色名称' }]"
         field="roleName"
         label="角色名称"
-        :rules="[{ required: true, message: '请输入角色名称' }]"
       >
         <a-input
           v-model="roleFormData.roleName"
-          placeholder="请输入角色名称"
           allow-clear
+          placeholder="请输入角色名称"
         />
       </a-form-item>
     </a-form>
@@ -37,13 +37,13 @@
 
 <script lang="ts" setup>
   import {
+    computed,
+    defineEmits,
+    defineProps,
+    PropType,
+    reactive,
     ref,
     watch,
-    defineProps,
-    defineEmits,
-    PropType,
-    computed,
-    reactive,
   } from 'vue';
   import { addRole, editRole } from '@/api/role';
   import { RoleParams } from '@/types/modules/role';

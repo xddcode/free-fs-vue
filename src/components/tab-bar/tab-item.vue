@@ -1,12 +1,12 @@
 <template>
   <a-dropdown
-    trigger="contextMenu"
     :popup-max-height="false"
+    trigger="contextMenu"
     @select="actionSelect"
   >
     <span
-      class="arco-tag arco-tag-size-medium arco-tag-checked"
       :class="{ 'link-activated': itemData.fullPath === $route.fullPath }"
+      class="arco-tag arco-tag-size-medium arco-tag-checked"
       @click="goto(itemData)"
     >
       <span class="tag-link">
@@ -25,9 +25,9 @@
         <span>重新加载</span>
       </a-doption>
       <a-doption
-        class="sperate-line"
         :disabled="disabledCurrent"
         :value="Eaction.current"
+        class="sperate-line"
       >
         <icon-close />
         <span>关闭当前标签页</span>
@@ -37,9 +37,9 @@
         <span>关闭左侧标签页</span>
       </a-doption>
       <a-doption
-        class="sperate-line"
         :disabled="disabledRight"
         :value="Eaction.right"
+        class="sperate-line"
       >
         <icon-to-right />
         <span>关闭右侧标签页</span>
@@ -57,8 +57,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { PropType, computed } from 'vue';
-  import { useRouter, useRoute } from 'vue-router';
+  import { computed, PropType } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { useTabBarStore } from '@/store';
   import type { TagProps } from '@/store/modules/tab-bar/types';
   import { DEFAULT_ROUTE_NAME, REDIRECT_ROUTE_NAME } from '@/router/constants';
@@ -167,7 +167,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .tag-link {
     color: var(--color-text-2);
     text-decoration: none;

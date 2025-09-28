@@ -1,57 +1,57 @@
 <template>
   <a-modal
-    :visible="visible"
-    :title="title"
     :mask-closable="false"
+    :title="title"
+    :visible="visible"
     ok-text="提交"
-    @ok="handleOk"
     @cancel="handleCancel"
     @close="handleClose"
+    @ok="handleOk"
   >
     <a-form ref="userFormRef" :model="userFormData">
       <a-form-item
+        :rules="[{ required: true, message: '请输入账号' }]"
         field="username"
         label="账号"
-        :rules="[{ required: true, message: '请输入账号' }]"
       >
         <a-input
           v-model="userFormData.username"
-          placeholder="请输入账号"
           allow-clear
+          placeholder="请输入账号"
         />
       </a-form-item>
       <a-form-item
-        field="email"
-        label="邮箱"
         :rules="[
           { required: true, message: '请输入邮箱' },
           { type: 'email', message: '请输入有效的邮箱地址' },
         ]"
+        field="email"
+        label="邮箱"
       >
         <a-input
           v-model="userFormData.email"
-          placeholder="请输入邮箱"
           allow-clear
+          placeholder="请输入邮箱"
         />
       </a-form-item>
 
       <a-form-item
+        :rules="[{ required: true, message: '请选择一个角色' }]"
         field="roleCode"
         label="角色"
-        :rules="[{ required: true, message: '请选择一个角色' }]"
       >
         <a-select
           v-model="userFormData.roleCode"
           :options="roleOptions"
-          placeholder="请选择一个角色"
           allow-clear
+          placeholder="请选择一个角色"
         />
       </a-form-item>
       <a-form-item field="nickname" label="昵称">
         <a-input
           v-model="userFormData.nickname"
-          placeholder="昵称"
           allow-clear
+          placeholder="昵称"
         />
       </a-form-item>
     </a-form>
@@ -60,13 +60,13 @@
 
 <script lang="ts" setup>
   import {
+    computed,
+    defineEmits,
+    defineProps,
+    PropType,
+    reactive,
     ref,
     watch,
-    defineProps,
-    defineEmits,
-    PropType,
-    computed,
-    reactive,
   } from 'vue';
   import { addUser, editUser } from '@/api/user';
   import { getRoleList } from '@/api/role';

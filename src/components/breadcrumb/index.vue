@@ -22,7 +22,7 @@
   });
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .container-breadcrumb {
     margin: 16px 0;
 

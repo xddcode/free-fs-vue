@@ -1,12 +1,12 @@
 <template>
   <a-modal
-    :visible="visible"
-    title="分配权限"
     :mask-closable="false"
+    :visible="visible"
     ok-text="提交"
-    @ok="handleOk"
+    title="分配权限"
     @cancel="handleCancel"
     @close="handleClose"
+    @ok="handleOk"
   >
     <a-tree
       v-model:checked-keys="checkedKeys"
@@ -21,14 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-  import {
-    ref,
-    defineProps,
-    defineEmits,
-    PropType,
-    watch,
-    onMounted,
-  } from 'vue';
+  import { defineEmits, defineProps, onMounted, ref, watch } from 'vue';
   import { getMenuTree } from '@/api/menu';
   import { getRoleMenuIds } from '@/api/role';
 

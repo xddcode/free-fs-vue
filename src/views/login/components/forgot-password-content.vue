@@ -8,10 +8,10 @@
   >
     <!-- ... -->
     <a-space :size="16" direction="vertical">
-      <a-button type="primary" html-type="submit" long :loading="loading">
+      <a-button :loading="loading" html-type="submit" long type="primary">
         重置密码
       </a-button>
-      <a-button type="text" long @click="$emit('switchForm', 'login')">
+      <a-button long type="text" @click="$emit('switchForm', 'login')">
         返回登录
       </a-button>
     </a-space>

@@ -1,16 +1,16 @@
 <template>
   <a-form
     ref="registerForm"
+    :disabled="formDisabled"
     :model="registerInfo"
     class="login-form"
-    :disabled="formDisabled"
     layout="vertical"
     @submit="handleRegister"
   >
     <a-form-item
-      field="username"
       :rules="[{ required: true, message: `账号不能为空` }]"
       :validate-trigger="['change', 'blur']"
+      field="username"
       hide-label
     >
       <a-input v-model="registerInfo.username" placeholder="账号">
@@ -20,9 +20,9 @@
       </a-input>
     </a-form-item>
     <a-form-item
-      field="password"
       :rules="[{ required: true, message: '密码不能为空' }]"
       :validate-trigger="['change', 'blur']"
+      field="password"
       hide-label
     >
       <a-input-password v-model="registerInfo.password" placeholder="密码">
@@ -32,7 +32,6 @@
       </a-input-password>
     </a-form-item>
     <a-form-item
-      field="confirmPassword"
       :rules="[
         { required: true, message: '确认密码不能为空' },
         {
@@ -46,6 +45,7 @@
         },
       ]"
       :validate-trigger="['change', 'blur']"
+      field="confirmPassword"
       hide-label
     >
       <a-input-password
@@ -58,12 +58,12 @@
       </a-input-password>
     </a-form-item>
     <a-form-item
-      field="email"
       :rules="[
         { required: true, message: '邮箱不能为空' },
         { type: 'email', message: '请输入有效的邮箱地址' },
       ]"
       :validate-trigger="['change', 'blur']"
+      field="email"
       hide-label
     >
       <a-input v-model="registerInfo.email" placeholder="邮箱">
@@ -80,10 +80,10 @@
       </a-input>
     </a-form-item>
     <a-space :size="16" direction="vertical">
-      <a-button type="primary" html-type="submit" long :loading="loading">
+      <a-button :loading="loading" html-type="submit" long type="primary">
         注册
       </a-button>
-      <a-button type="text" long @click="$emit('switchForm', 'login')">
+      <a-button long type="text" @click="$emit('switchForm', 'login')">
         返回登录
       </a-button>
     </a-space>

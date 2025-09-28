@@ -6,9 +6,9 @@
       <div class="layout-left-side">
         <div class="menu-demo">
           <a-menu
+            :selected-keys="selectedKeys"
             mode="vertical"
             show-collapse-button
-            :selected-keys="selectedKeys"
             @select="handleMenuSelect"
           >
             <a-menu-item key="all">全部文件</a-menu-item>
@@ -142,7 +142,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .container {
     padding: 0 20px 20px 20px;
   }

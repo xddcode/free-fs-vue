@@ -1,5 +1,5 @@
 <template>
-  <a-layout class="layout" :class="{ mobile: appStore.hideMenu }">
+  <a-layout :class="{ mobile: appStore.hideMenu }" class="layout">
     <div v-if="navbar" class="layout-navbar">
       <NavBar />
     </div>
@@ -8,13 +8,13 @@
         <a-layout-sider
           v-if="renderMenu"
           v-show="!hideMenu"
-          class="layout-sider"
-          breakpoint="xl"
           :collapsed="collapsed"
           :collapsible="true"
-          :width="menuWidth"
-          :style="{ paddingTop: navbar ? '60px' : '' }"
           :hide-trigger="true"
+          :style="{ paddingTop: navbar ? '60px' : '' }"
+          :width="menuWidth"
+          breakpoint="xl"
+          class="layout-sider"
           @collapse="setCollapsed"
         >
           <div class="menu-wrapper">
@@ -23,16 +23,16 @@
         </a-layout-sider>
         <a-drawer
           v-if="hideMenu"
-          :visible="drawerVisible"
-          placement="left"
-          :footer="false"
-          mask-closable
           :closable="false"
+          :footer="false"
+          :visible="drawerVisible"
+          mask-closable
+          placement="left"
           @cancel="drawerCancel"
         >
           <Menu />
         </a-drawer>
-        <a-layout class="layout-content" :style="paddingStyle">
+        <a-layout :style="paddingStyle" class="layout-content">
           <TabBar v-if="appStore.tabBar" />
           <a-layout-content>
             <PageLayout />
@@ -45,8 +45,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, watch, provide, onMounted } from 'vue';
-  import { useRouter, useRoute } from 'vue-router';
+  import { computed, onMounted, provide, ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { useAppStore, useUserStore } from '@/store';
   import NavBar from '@/components/navbar/index.vue';
   import Menu from '@/components/menu/index.vue';
@@ -105,7 +105,7 @@
   });
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   @nav-size-height: 60px;
   @layout-max-width: 1100px;
 

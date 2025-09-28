@@ -7,9 +7,9 @@
     @submit="handleSubmit"
   >
     <a-form-item
-      field="username"
       :rules="[{ required: true, message: `账号不能为空` }]"
       :validate-trigger="['change', 'blur']"
+      field="username"
       hide-label
     >
       <a-input v-model="userInfo.username" placeholder="账号">
@@ -19,15 +19,15 @@
       </a-input>
     </a-form-item>
     <a-form-item
-      field="password"
       :rules="[{ required: true, message: `密码不能为空` }]"
       :validate-trigger="['change', 'blur']"
+      field="password"
       hide-label
     >
       <a-input-password
         v-model="userInfo.password"
-        placeholder="密码"
         allow-clear
+        placeholder="密码"
       >
         <template #prefix>
           <icon-lock />
@@ -44,13 +44,13 @@
         </a-checkbox>
         <a-link @click="$emit('switchForm', 'forgotPassword')">忘记密码</a-link>
       </div>
-      <a-button type="primary" html-type="submit" long :loading="loading">
+      <a-button :loading="loading" html-type="submit" long type="primary">
         登录
       </a-button>
       <a-button
-        type="text"
-        long
         class="login-form-register-btn"
+        long
+        type="text"
         @click="$emit('switchForm', 'register')"
       >
         注册账号
@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, reactive } from 'vue';
+  import { reactive, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import { ValidatedError } from '@arco-design/web-vue/es/form/interface';

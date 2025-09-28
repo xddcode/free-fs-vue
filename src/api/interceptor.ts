@@ -1,9 +1,9 @@
-import axios from 'axios';
 import type {
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
+import axios from 'axios';
 import { Message, Modal } from '@arco-design/web-vue';
 import { getToken } from '@/utils/auth';
 

@@ -7,8 +7,8 @@
           src="//p3-armor.byteimg.com/tos-cn-i-49unhts6dw/dfdba5317c0c20ce20e64fac803d52bc.svg~tplv-49unhts6dw-image.image"
         />
         <a-typography-title
-          :style="{ margin: 0, fontSize: '18px' }"
           :heading="5"
+          :style="{ margin: 0, fontSize: '18px' }"
         >
           Free Fs
         </a-typography-title>
@@ -40,9 +40,9 @@
           "
         >
           <a-button
+            :shape="'circle'"
             class="nav-btn"
             type="outline"
-            :shape="'circle'"
             @click="handleToggleTheme"
           >
             <template #icon>
@@ -57,9 +57,9 @@
           :content="isFullscreen ? '点击退出全屏模式' : '点击切换为全屏模式'"
         >
           <a-button
+            :shape="'circle'"
             class="nav-btn"
             type="outline"
-            :shape="'circle'"
             @click="toggleFullScreen"
           >
             <template #icon>
@@ -72,9 +72,9 @@
       <li>
         <a-tooltip content="页面配置">
           <a-button
+            :shape="'circle'"
             class="nav-btn"
             type="outline"
-            :shape="'circle'"
             @click="setVisible"
           >
             <template #icon>
@@ -89,7 +89,7 @@
             :size="32"
             :style="{ marginRight: '8px', cursor: 'pointer' }"
           >
-            <img alt="avatar" :src="avatar" />
+            <img :src="avatar" alt="avatar" />
           </a-avatar>
           <template #content>
             <a-doption>
@@ -119,7 +119,7 @@
 
 <script lang="ts" setup>
   import { computed, inject } from 'vue';
-  import { useDark, useToggle, useFullscreen } from '@vueuse/core';
+  import { useDark, useFullscreen, useToggle } from '@vueuse/core';
   import { useAppStore, useUserStore } from '@/store';
   import useUser from '@/hooks/user';
   import Menu from '@/components/menu/index.vue';
@@ -161,7 +161,7 @@
   const toggleDrawerMenu = inject('toggleDrawerMenu') as () => void;
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .navbar {
     display: flex;
     justify-content: space-between;

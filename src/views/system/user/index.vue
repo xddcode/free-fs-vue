@@ -5,8 +5,8 @@
       <a-row>
         <a-col :flex="1">
           <a-form
-            :model="formModel"
             :label-col-props="{ span: 6 }"
+            :model="formModel"
             :wrapper-col-props="{ span: 18 }"
             label-align="left"
           >
@@ -15,8 +15,8 @@
                 <a-form-item field="username" label="账号">
                   <a-input
                     v-model="formModel.username"
-                    placeholder="请输入账号"
                     allow-clear
+                    placeholder="请输入账号"
                   />
                 </a-form-item>
               </a-col>
@@ -24,8 +24,8 @@
                 <a-form-item field="nickname" label="昵称">
                   <a-input
                     v-model="formModel.nickname"
-                    placeholder="请输入昵称"
                     allow-clear
+                    placeholder="请输入昵称"
                   />
                 </a-form-item>
               </a-col>
@@ -33,8 +33,8 @@
                 <a-form-item field="email" label="邮箱">
                   <a-input
                     v-model="formModel.email"
-                    placeholder="请输入邮箱"
                     allow-clear
+                    placeholder="请输入邮箱"
                   />
                 </a-form-item>
               </a-col>
@@ -43,17 +43,17 @@
                   <a-select
                     v-model="formModel.status"
                     :options="statusOptions"
-                    placeholder="请选择状态"
                     allow-clear
+                    placeholder="请选择状态"
                   />
                 </a-form-item>
               </a-col>
             </a-row>
           </a-form>
         </a-col>
-        <a-divider style="height: 84px" direction="vertical" />
+        <a-divider direction="vertical" style="height: 84px" />
         <a-col :flex="'86px'" style="text-align: right">
-          <a-space direction="vertical" :size="18">
+          <a-space :size="18" direction="vertical">
             <a-button type="primary" @click="search">
               <template #icon>
                 <icon-search />
@@ -100,8 +100,8 @@
               <a-doption
                 v-for="item in densityList"
                 :key="item.value"
-                :value="item.value"
                 :class="{ active: item.value === size }"
+                :value="item.value"
               >
                 <span>{{ item.name }}</span>
               </a-doption>
@@ -110,13 +110,13 @@
         </a-col>
       </a-row>
       <a-table
-        row-key="id"
-        :loading="loading"
-        :pagination="pagination"
+        :bordered="false"
         :columns="(cloneColumns as TableColumnData[])"
         :data="renderData"
-        :bordered="false"
+        :loading="loading"
+        :pagination="pagination"
         :size="size"
+        row-key="id"
         @page-change="onPageChange"
       >
         <template #index="{ rowIndex }">
@@ -124,20 +124,20 @@
         </template>
         <template #status="{ record }">
           <a-switch
-            checked-text="正常"
-            unchecked-text="禁用"
-            :default-checked="record.status === 0"
-            :disabled="record.username === 'admin'"
             :before-change="
               (newValue: boolean) => handleChangeStatus(record.id, newValue)
             "
+            :default-checked="record.status === 0"
+            :disabled="record.username === 'admin'"
+            checked-text="正常"
+            unchecked-text="禁用"
           />
         </template>
         <template #operations="{ record }">
           <a-button
-            type="text"
-            size="mini"
             :disabled="record.username === 'admin'"
+            size="mini"
+            type="text"
             @click="handleEdit(record)"
           >
             <template #icon>
@@ -151,9 +151,9 @@
             @ok="handleResetPassword(record.id)"
           >
             <a-button
-              type="text"
-              size="mini"
               :disabled="record.username === 'admin'"
+              size="mini"
+              type="text"
             >
               <template #icon>
                 <IconSync />
@@ -167,10 +167,10 @@
             @ok="handleDelete(record.id)"
           >
             <a-button
-              type="text"
-              status="danger"
-              size="mini"
               :disabled="record.username === 'admin'"
+              size="mini"
+              status="danger"
+              type="text"
             >
               <template #icon>
                 <IconDelete />
@@ -191,7 +191,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, reactive, watch } from 'vue';
+  import { computed, reactive, ref, watch } from 'vue';
   import useLoading from '@/hooks/loading';
   import { Pagination } from '@/types/global';
   import type { SelectOptionData } from '@arco-design/web-vue/es/select/interface';
@@ -199,9 +199,9 @@
   import cloneDeep from 'lodash/cloneDeep';
   import { Message } from '@arco-design/web-vue';
   import {
-    getUserPages,
-    editUserStatus,
     deleteUser,
+    editUserStatus,
+    getUserPages,
     resetUserPassword,
   } from '@/api/user';
   import UserEditModel from '@/views/system/user/components/UserEditModel.vue';
@@ -432,7 +432,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .container {
     padding: 0 20px 20px 20px;
   }

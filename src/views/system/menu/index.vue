@@ -39,8 +39,8 @@
               <a-doption
                 v-for="item in densityList"
                 :key="item.value"
-                :value="item.value"
                 :class="{ active: item.value === size }"
+                :value="item.value"
               >
                 <span>{{ item.name }}</span>
               </a-doption>
@@ -50,13 +50,13 @@
       </a-row>
       <a-table
         v-model:expanded-keys="expandedKeys"
-        row-key="id"
-        :loading="loading"
+        :bordered="false"
         :columns="(cloneColumns as TableColumnData[])"
         :data="renderData"
-        :bordered="false"
-        :size="size"
         :hide-expand-button-on-empty="true"
+        :loading="loading"
+        :size="size"
+        row-key="id"
       >
         <template #icon="{ record }">
           <FunctionalIcons v-if="record.icon" :icon="record.icon" />
@@ -79,7 +79,7 @@
   import type { TableColumnData } from '@arco-design/web-vue/es/table/interface';
   import cloneDeep from 'lodash/cloneDeep';
   import FunctionalIcons from '@/components/icon/FunctionalIcons.vue';
-  import { getMenuTree, getAllMenuIds } from '@/api/menu';
+  import { getAllMenuIds, getMenuTree } from '@/api/menu';
 
   type SizeProps = 'mini' | 'small' | 'medium' | 'large';
   type Column = TableColumnData & { checked?: true };
@@ -217,7 +217,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .container {
     padding: 0 20px 20px 20px;
   }

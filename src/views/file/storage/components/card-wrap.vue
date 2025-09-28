@@ -11,7 +11,7 @@
           :size="32"
           style="margin-right: 8px; background-color: #626aea"
         >
-          <icon-font :type="itemData.icon" :size="32" />
+          <icon-font :size="32" :type="itemData.icon" />
         </a-avatar>
         <a-watermark content="系统默认" v-bind="watermarkForm">
           <a-card-meta>
@@ -21,14 +21,14 @@
                 v-if="itemData.link"
                 :href="itemData.link"
                 icon
-                target="_blank"
                 rel="noopener noreferrer"
+                target="_blank"
                 >{{ itemData.identifier }}
               </a-link>
               <a-tag
                 v-if="itemData.isEnabled === 1"
-                size="small"
                 color="green"
+                size="small"
                 style="margin-left: 10px"
               >
                 <template #icon>
@@ -38,8 +38,8 @@
               </a-tag>
               <a-tag
                 v-if="itemData.isSetting === 0"
-                size="small"
                 color="gold"
+                size="small"
                 style="margin-left: 10px"
               >
                 <template #icon>
@@ -66,22 +66,22 @@
         <a-space>
           <a-button
             v-if="itemData.isEnabled === 1"
-            size="small"
             :loading="btnLoading"
+            size="small"
             @click="handleCloseOpenStorage(itemData)"
             >取消开通
           </a-button>
           <a-button
             v-else
-            type="primary"
-            size="small"
             :loading="btnLoading"
+            size="small"
+            type="primary"
             @click="handleOpenStorage(itemData)"
             >开通
           </a-button>
           <a-button
-            type="primary"
             size="small"
+            type="primary"
             @click="handleSettingStorage(itemData)"
           >
             <template #icon>
@@ -93,18 +93,18 @@
     </a-card>
 
     <a-modal
-      :visible="modalVisible"
-      title="存储平台配置"
       :mask-closable="false"
+      :visible="modalVisible"
       ok-text="提交"
-      @ok="handleOk"
+      title="存储平台配置"
       @cancel="handleCancel"
+      @ok="handleOk"
     >
       <a-form
         ref="formRef"
+        :auto-label-width="true"
         :model="formData"
         :rules="rules"
-        :auto-label-width="true"
       >
         <div v-for="field in schemes" :key="field.identifier">
           <a-form-item :field="field.identifier" :label="field.label">
@@ -124,8 +124,8 @@
   import { Icon, Message } from '@arco-design/web-vue';
   import { PropType, reactive, ref } from 'vue';
   import {
-    openOrCancelStoragePlatform,
     getStoragePlatformsSettings,
+    openOrCancelStoragePlatform,
     saveOrUpdateStoragePlatformSettings,
   } from '@/api/storage';
   import { StoragePlatformRecord } from '@/types/modules/storage';
@@ -284,7 +284,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .card-wrap {
     height: 100%;
     transition: all 0.3s;

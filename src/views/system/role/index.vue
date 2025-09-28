@@ -5,8 +5,8 @@
       <a-row>
         <a-col :flex="1">
           <a-form
-            :model="formModel"
             :label-col-props="{ span: 6 }"
+            :model="formModel"
             :wrapper-col-props="{ span: 18 }"
             label-align="left"
           >
@@ -15,8 +15,8 @@
                 <a-form-item field="roleCode" label="角色编码">
                   <a-input
                     v-model="formModel.roleCode"
-                    placeholder="请输入角色编码"
                     allow-clear
+                    placeholder="请输入角色编码"
                   />
                 </a-form-item>
               </a-col>
@@ -24,17 +24,17 @@
                 <a-form-item field="roleName" label="角色名称">
                   <a-input
                     v-model="formModel.roleName"
-                    placeholder="请输入角色名称"
                     allow-clear
+                    placeholder="请输入角色名称"
                   />
                 </a-form-item>
               </a-col>
             </a-row>
           </a-form>
         </a-col>
-        <a-divider style="height: 84px" direction="vertical" />
+        <a-divider direction="vertical" style="height: 84px" />
         <a-col :flex="'86px'" style="text-align: right">
-          <a-space direction="vertical" :size="18">
+          <a-space :size="18" direction="vertical">
             <a-button type="primary" @click="search">
               <template #icon>
                 <icon-search />
@@ -81,8 +81,8 @@
               <a-doption
                 v-for="item in densityList"
                 :key="item.value"
-                :value="item.value"
                 :class="{ active: item.value === size }"
+                :value="item.value"
               >
                 <span>{{ item.name }}</span>
               </a-doption>
@@ -91,13 +91,13 @@
         </a-col>
       </a-row>
       <a-table
-        row-key="id"
-        :loading="loading"
-        :pagination="pagination"
+        :bordered="false"
         :columns="(cloneColumns as TableColumnData[])"
         :data="renderData"
-        :bordered="false"
+        :loading="loading"
+        :pagination="pagination"
         :size="size"
+        row-key="id"
         @page-change="onPageChange"
       >
         <template #index="{ rowIndex }">
@@ -106,9 +106,9 @@
 
         <template #operations="{ record }">
           <a-button
-            type="text"
             :disabled="record.roleCode === 'admin'"
             size="mini"
+            type="text"
             @click="handlePermissionAllocation(record.id)"
           >
             <template #icon>
@@ -117,9 +117,9 @@
             分配权限
           </a-button>
           <a-button
-            type="text"
             :disabled="record.roleCode === 'admin'"
             size="mini"
+            type="text"
             @click="handleEdit(record)"
           >
             <template #icon>
@@ -133,10 +133,10 @@
             @ok="handleDelete(record.id)"
           >
             <a-button
-              type="text"
-              status="danger"
               :disabled="record.roleCode === 'admin'"
               size="mini"
+              status="danger"
+              type="text"
             >
               <template #icon>
                 <IconDelete />
@@ -162,12 +162,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, reactive, watch } from 'vue';
+  import { computed, reactive, ref, watch } from 'vue';
   import useLoading from '@/hooks/loading';
   import { Pagination } from '@/types/global';
   import type { TableColumnData } from '@arco-design/web-vue/es/table/interface';
   import cloneDeep from 'lodash/cloneDeep';
-  import { getRolePages, deleteRole, getRoleMenuIds } from '@/api/role';
+  import { deleteRole, getRolePages } from '@/api/role';
   import RoleEditModel from '@/views/system/role/components/RoleEditModel.vue';
   import PermissionAllocationModal from '@/views/system/role/components/PermissionAllocationModal.vue';
   import { RolePageParams, RoleRecord } from '@/types/modules/role';
@@ -346,7 +346,7 @@
   };
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .container {
     padding: 0 20px 20px 20px;
   }

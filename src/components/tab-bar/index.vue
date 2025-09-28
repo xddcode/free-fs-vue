@@ -19,7 +19,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, watch, onUnmounted } from 'vue';
+  import { computed, onUnmounted, ref, watch } from 'vue';
   import type { RouteLocationNormalized } from 'vue-router';
   import {
     listenerRouteChange,
@@ -59,7 +59,7 @@
   });
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .tab-bar-container {
     position: relative;
     background-color: var(--color-bg-2);

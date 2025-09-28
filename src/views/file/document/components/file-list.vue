@@ -1,14 +1,14 @@
 <!-- FileList.vue -->
 <template>
   <div class="file-list-container">
-    <a-dropdown trigger="contextMenu" align-point :style="{ display: 'block' }">
+    <a-dropdown :style="{ display: 'block' }" align-point trigger="contextMenu">
       <a-empty v-if="!files.length" description="暂无文件" />
       <div v-else class="file-list">
         <div
           v-for="(file, index) in files"
           :key="index"
-          class="file-list-item"
           :class="{ 'file-list-item-selected': selectedFiles.includes(file) }"
+          class="file-list-item"
           @click="handleFileClick(file)"
         >
           <div class="file-list-img">
