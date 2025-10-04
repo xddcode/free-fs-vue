@@ -7,7 +7,9 @@
       />
       <div class="logo-text">Free Fs</div>
     </div>
-    <LoginBanner />
+    <div class="banner">
+      <LoginBanner />
+    </div>
     <div class="content">
       <div class="content-inner">
         <LoginForm />
@@ -32,9 +34,9 @@
 
     .banner {
       width: 550px;
+      height: 100vh;
       background: linear-gradient(163.85deg, #1d2129 0%, #00308f 100%);
     }
-
     .content {
       position: relative;
       display: flex;

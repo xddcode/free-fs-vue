@@ -13,6 +13,7 @@
         :rules="[{ required: true, message: '请输入账号' }]"
         field="username"
         label="账号"
+        :disabled="true"
       >
         <a-input
           v-model="userFormData.username"

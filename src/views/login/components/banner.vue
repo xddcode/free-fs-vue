@@ -32,6 +32,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;
 
     &-inner {
       flex: 1;
@@ -41,6 +42,7 @@
 
   .carousel {
     height: 100%;
+    width: 100%;
 
     &-item {
       display: flex;
@@ -48,6 +50,7 @@
       align-items: center;
       justify-content: center;
       height: 100%;
+      padding: 20px;
     }
 
     &-title {

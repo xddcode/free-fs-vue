@@ -105,16 +105,16 @@
           </a-tag>
         </template>
         <template #price="{ record }">
-          ¥{{ record.price.toFixed(2) }}
+          {{ record.price.toFixed(2) }}
         </template>
         <template #storageQuotaGb="{ record }">
-          {{ record.storageQuotaGb }} GB
+          {{ record.storageQuotaGb }}
         </template>
         <template #maxFileSize="{ record }">
-          {{ formatFileSize(record.maxFileSize) }}
+          {{ Math.round(record.maxFileSize / (1024 * 1024)) }}
         </template>
         <template #bandwidthQuota="{ record }">
-          {{ record.bandwidthQuota }} MB/s
+          {{ record.bandwidthQuota }}
         </template>
         <template #operations="{ record }">
           <a-button size="mini" type="text" @click="handleEdit(record)">
@@ -124,7 +124,7 @@
             编辑
           </a-button>
           <a-popconfirm
-            content="您确定要删除吗？"
+            :content="`您确定要删除套餐计划「${record.planName}」吗？`"
             type="error"
             @ok="handleDelete(record.id)"
           >
@@ -138,6 +138,13 @@
         </template>
       </a-table>
     </a-card>
+
+    <!-- 套餐计划编辑模态框 -->
+    <PlanEditModal
+      v-model:visible="modalVisible"
+      :edit-data="modalData"
+      @refresh="search"
+    />
   </div>
 </template>
 
@@ -158,6 +165,7 @@
   import getPlanPages, { deletePlan } from '@/api/plan';
   import Breadcrumb from '@/components/breadcrumb/index.vue';
   import cloneDeep from 'lodash/cloneDeep';
+  import PlanEditModal from './components/PlanEditModal.vue';
 
   type SizeProps = 'mini' | 'small' | 'medium' | 'large';
   type Column = TableColumnData & { checked?: true };
@@ -174,7 +182,7 @@
   const showColumns = ref<Column[]>([]);
 
   const modalVisible = ref(false);
-  const modalData = ref({});
+  const modalData = ref<PlanRecord | Record<string, never>>({});
 
   const size = ref<SizeProps>('medium');
 
@@ -227,7 +235,7 @@
       dataIndex: 'description',
     },
     {
-      title: '存储配额',
+      title: '存储配额(GB)',
       dataIndex: 'storageQuotaGb',
       slotName: 'storageQuotaGb',
     },
@@ -236,17 +244,17 @@
       dataIndex: 'maxFiles',
     },
     {
-      title: '最大文件大小',
+      title: '最大文件大小(MB)',
       dataIndex: 'maxFileSize',
       slotName: 'maxFileSize',
     },
     {
-      title: '带宽配额',
+      title: '带宽配额(MB/s)',
       dataIndex: 'bandwidthQuota',
       slotName: 'bandwidthQuota',
     },
     {
-      title: '价格',
+      title: '价格(元)',
       dataIndex: 'price',
       slotName: 'price',
     },

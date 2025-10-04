@@ -31,12 +31,12 @@ export interface PlanParams {
   planCode: string;
   planName: string;
   description: string;
-  storageQuotaGb: number;
-  maxFiles: number;
-  maxFileSize: number;
-  bandwidthQuota: number;
-  price: number;
+  storageQuotaGb?: number;
+  maxFiles?: number;
+  maxFileSize?: number;
+  bandwidthQuota?: number;
+  price?: number;
   isActive: number;
   isDefault: number;
-  sortOrder: number;
+  sortOrder?: number;
 }
