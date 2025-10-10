@@ -39,3 +39,7 @@ export function editRole(params: RoleParams) {
 export function deleteRole(roleId: number) {
   return request.delete(`/apis/role/${roleId}`);
 }
+
+export function assignRoleMenus(roleId: number, menuIds: number[]) {
+  return request.post(`/apis/role/${roleId}/menus`, menuIds);
+}

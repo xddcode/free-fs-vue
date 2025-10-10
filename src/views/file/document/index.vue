@@ -186,56 +186,68 @@
     background-color: #e3f4fc;
   }
 
+  .layout-left-side {
+    width: 240px;
+    min-width: 240px;
+    background-color: var(--color-bg-1);
+    border-right: 1px solid var(--color-border);
+  }
+
   .menu-demo {
     width: 100%;
-    height: 600px;
+    height: calc(100vh - 120px);
     box-sizing: border-box;
-    background-color: var(--color-neutral-2);
+    background-color: var(--color-bg-1);
   }
 
   .menu-demo .arco-menu {
-    width: 200px;
+    width: 100%;
     height: 100%;
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+    border: none;
+    background-color: transparent;
   }
 
   .menu-demo .arco-menu :deep(.arco-menu-collapse-button) {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background-color: var(--color-fill-2);
+    border: 1px solid var(--color-border);
   }
 
-  .menu-demo
-    .arco-menu:not(.arco-menu-collapsed)
-    :deep(.arco-menu-collapse-button) {
-    right: 0;
-    bottom: 8px;
-    transform: translateX(50%);
-  }
-
-  .menu-demo .arco-menu:not(.arco-menu-collapsed)::before {
-    content: '';
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 48px;
-    height: 48px;
-    background-color: inherit;
-    border-radius: 50%;
-    box-shadow: -4px 0 2px var(--color-bg-2), 0 0 1px rgba(0, 0, 0, 0.3);
-    transform: translateX(50%);
+  .menu-demo .arco-menu:not(.arco-menu-collapsed) :deep(.arco-menu-collapse-button) {
+    right: 12px;
+    bottom: 12px;
+    transform: none;
   }
 
   .menu-demo .arco-menu.arco-menu-collapsed {
-    width: 48px;
+    width: 60px;
     height: auto;
-    padding-top: 24px;
-    padding-bottom: 138px;
-    border-radius: 22px;
+    padding: 12px 0;
   }
 
   .menu-demo .arco-menu.arco-menu-collapsed :deep(.arco-menu-collapse-button) {
-    right: 8px;
-    bottom: 8px;
+    right: 16px;
+    bottom: 12px;
+  }
+
+  .menu-demo .arco-menu :deep(.arco-menu-item) {
+    margin: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .menu-demo .arco-menu :deep(.arco-menu-item-selected) {
+    background-color: var(--color-primary-light-1);
+    color: var(--color-primary-6);
+  }
+
+  .menu-demo .arco-menu :deep(.arco-menu-sub-menu) {
+    margin: 2px 8px;
+  }
+
+  .menu-demo .arco-menu :deep(.arco-menu-sub-menu .arco-menu-item) {
+    margin: 2px 0;
+    padding-left: 24px;
   }
 </style>

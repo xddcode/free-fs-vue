@@ -13,6 +13,6 @@ export interface MenuRecord {
   roles: string;
   permission: string;
   children: MenuRecord[];
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }

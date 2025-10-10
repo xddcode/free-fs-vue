@@ -109,7 +109,7 @@
             :disabled="record.roleCode === 'admin'"
             size="mini"
             type="text"
-            @click="handlePermissionAllocation(record.id)"
+            @click="handlePermissionAllocation(record)"
           >
             <template #icon>
               <IconSelectAll />
@@ -157,6 +157,8 @@
     <PermissionAllocationModal
       v-model:visible="permissionAllocationVisible"
       :role-id="permissionAllocationRoleId"
+      :role-name="permissionAllocationRoleName"
+      @refresh="search"
     />
   </div>
 </template>
@@ -192,6 +194,7 @@
 
   const permissionAllocationVisible = ref(false);
   const permissionAllocationRoleId = ref();
+  const permissionAllocationRoleName = ref('');
 
   const size = ref<SizeProps>('medium');
 
@@ -296,9 +299,10 @@
   /**
    * 分配权限
    */
-  const handlePermissionAllocation = (roleId: number) => {
+  const handlePermissionAllocation = (record: RoleRecord) => {
     permissionAllocationVisible.value = true;
-    permissionAllocationRoleId.value = roleId;
+    permissionAllocationRoleId.value = record.id;
+    permissionAllocationRoleName.value = record.roleName;
   };
 
   /**
