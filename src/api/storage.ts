@@ -28,3 +28,19 @@ export function getStoragePlatformsSettings(identifier: string) {
 export function saveOrUpdateStoragePlatformSettings(data: any) {
   return request.post('/apis/storage/settings', data);
 }
+
+export function createStoragePlatform(data: any) {
+  return request.post('/apis/storage/platform', data);
+}
+
+export function updateStoragePlatform(id: string, data: any) {
+  return request.put(`/apis/storage/platform/${id}`, data);
+}
+
+export function deleteStoragePlatform(id: string) {
+  return request.delete(`/apis/storage/platform/${id}`);
+}
+
+export function enableStoragePlatform(id: string, enabled: boolean) {
+  return request.put(`/apis/storage/platform/${id}/enable`, { enabled });
+}

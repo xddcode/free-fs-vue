@@ -7,14 +7,19 @@ export default function setupUserLoginInfoGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
     NProgress.start();
     const userStore = useUserStore();
+    
     if (isLogin()) {
+      // 已登录
       if (userStore.roleCode) {
+        // 用户信息已存在，直接通过
         next();
       } else {
+        // 有 token 但没有用户信息，尝试获取
         try {
           await userStore.info();
           next();
         } catch (error) {
+          console.error('获取用户信息失败:', error);
           // 在路由守卫中处理认证错误，不依赖拦截器
           userStore.logoutCallBack(); // 直接调用logoutCallBack，不调用logout API
           next({
@@ -27,6 +32,7 @@ export default function setupUserLoginInfoGuard(router: Router) {
         }
       }
     } else {
+      // 未登录
       if (to.name === 'login') {
         next();
         return;
@@ -39,5 +45,9 @@ export default function setupUserLoginInfoGuard(router: Router) {
         } as LocationQueryRaw,
       });
     }
+  });
+  
+  router.afterEach(() => {
+    NProgress.done();
   });
 }

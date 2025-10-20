@@ -91,7 +91,16 @@
     if (!errors) {
       setLoading(true);
       try {
+        // 1. 先登录获取 token
         await userStore.login(values as LoginParams);
+        
+        // 2. 立即获取用户信息
+        await userStore.info();
+        
+        // 3. 登录成功提示
+        Message.success('登录成功');
+        
+        // 4. 跳转到目标页面
         const { redirect, ...othersQuery } = router.currentRoute.value.query;
         router.push({
           name: (redirect as string) || 'User',
@@ -99,9 +108,9 @@
             ...othersQuery,
           },
         });
-        Message.success('登录成功');
       } catch (err) {
         errorMessage.value = (err as Error).message;
+        Message.error(errorMessage.value || '登录失败，请重试');
       } finally {
         setLoading(false);
       }
