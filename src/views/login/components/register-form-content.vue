@@ -35,7 +35,7 @@
       :rules="[
         { required: true, message: '确认密码不能为空' },
         {
-          validator: (value, cb) => {
+          validator: (value: string, cb: (error?: string) => void) => {
             if (value !== registerInfo.password) {
               cb('两次密码不一致');
             } else {
@@ -101,12 +101,17 @@
   const { loading, setLoading } = useLoading();
   const formDisabled = ref(false);
 
+  // 默认头像 - 使用占位符头像
+  const DEFAULT_AVATAR =
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+
   const registerInfo = reactive<UserRegisterParams>({
     username: '',
     password: '',
     confirmPassword: '',
     email: '',
     nickname: '',
+    avatar: DEFAULT_AVATAR,
   });
   const emit = defineEmits(['switchForm']);
 
@@ -122,7 +127,13 @@
       setLoading(true);
       formDisabled.value = true;
       try {
-        await register(values as UserRegisterParams);
+        // 使用用户名生成个性化头像
+        const registerData = {
+          ...values,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${values.username}`,
+        } as UserRegisterParams;
+
+        await register(registerData);
         Message.success('注册成功,即将前往登录');
         setTimeout(() => {
           formDisabled.value = false;
@@ -130,6 +141,7 @@
         }, 1500);
       } catch (error) {
         formDisabled.value = false;
+        Message.error((error as Error).message || '注册失败，请重试');
       } finally {
         setLoading(false);
       }

@@ -1,37 +1,39 @@
-import { DEFAULT_LAYOUT } from '../base';
 import { AppRouteRecordRaw } from '../types';
 
 const FILE: AppRouteRecordRaw = {
   path: '/',
   name: 'file',
-  component: DEFAULT_LAYOUT,
+  component: () => import('@/layout/file-layout.vue'),
   meta: {
     title: '文件中心',
     requiresAuth: true,
-    icon: 'icon-file',
-    order: 3,
   },
   children: [
     {
-      path: 'document',
-      name: 'document',
-      component: () => import('@/views/file/document/index.vue'),
+      path: '',
+      name: 'home',
+      component: () => import('@/views/home/index.vue'),
+      meta: {
+        title: '首页',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: 'files',
+      name: 'files',
+      component: () => import('@/views/files/index.vue'),
       meta: {
         title: '我的文件',
         requiresAuth: true,
-        roles: ['*'],
-        ignoreCache: true,
       },
     },
     {
       path: 'storage',
       name: 'storage',
-      component: () => import('@/views/file/storage/index.vue'),
+      component: () => import('@/views/storage/index.vue'),
       meta: {
-        title: '存储平台',
+        title: '存储配置',
         requiresAuth: true,
-        roles: ['*'],
-        ignoreCache: true,
       },
     },
   ],

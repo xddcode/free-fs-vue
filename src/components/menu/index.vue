@@ -16,15 +16,14 @@
       const { menuTree } = useMenuTree();
       const collapsed = computed({
         get() {
-          if (appStore.device === 'desktop') return appStore.menuCollapse;
           return false;
         },
-        set(value: boolean) {
-          appStore.updateSettings({ menuCollapse: value });
+        set() {
+          // 菜单不再支持折叠
         },
       });
 
-      const topMenu = computed(() => appStore.topMenu);
+      const topMenu = computed(() => false);
       const openKeys = ref<string[]>([]);
       const selectedKey = ref<string[]>([]);
 
@@ -82,9 +81,8 @@
           ];
         }
       }, true);
-      const setCollapse = (val: boolean) => {
-        if (appStore.device === 'desktop')
-          appStore.updateSettings({ menuCollapse: val });
+      const setCollapse = () => {
+        // 菜单不再支持折叠
       };
 
       const renderSubMenu = () => {

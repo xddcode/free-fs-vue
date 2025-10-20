@@ -7,10 +7,10 @@ export default function setupUserLoginInfoGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
     NProgress.start();
     const userStore = useUserStore();
-    
+
     if (isLogin()) {
       // 已登录
-      if (userStore.roleCode) {
+      if (userStore.userInfo && userStore.userInfo.id) {
         // 用户信息已存在，直接通过
         next();
       } else {
@@ -46,7 +46,7 @@ export default function setupUserLoginInfoGuard(router: Router) {
       });
     }
   });
-  
+
   router.afterEach(() => {
     NProgress.done();
   });

@@ -32,11 +32,26 @@
               </a-link>
             </div>
             <div class="card-tags">
-              <a-tag v-if="itemData.isEnabled === 1" color="green" size="small">
+              <!-- 开通状态标签 -->
+              <a-tag
+                v-if="itemData.isEnabled === 1 && itemData.isSetting === 1"
+                color="green"
+                size="small"
+              >
                 <template #icon>
                   <icon-check-circle-fill />
                 </template>
                 已开通
+              </a-tag>
+              <a-tag
+                v-else-if="itemData.isEnabled === 0 && itemData.isSetting === 1"
+                color="red"
+                size="small"
+              >
+                <template #icon>
+                  <icon-close-circle />
+                </template>
+                已禁用
               </a-tag>
               <a-tag v-else color="gray" size="small">
                 <template #icon>
@@ -44,21 +59,9 @@
                 </template>
                 未开通
               </a-tag>
-              <a-tag
-                v-if="itemData.isSetting === 0 && itemData.isEnabled === 1"
-                color="orangered"
-                size="small"
-              >
-                <template #icon>
-                  <icon-exclamation-circle-fill />
-                </template>
-                待配置
-              </a-tag>
-              <a-tag
-                v-else-if="itemData.isSetting === 1 && itemData.isEnabled === 1"
-                color="blue"
-                size="small"
-              >
+
+              <!-- 配置状态标签 -->
+              <a-tag v-if="itemData.isSetting === 1" color="blue" size="small">
                 <template #icon>
                   <icon-check />
                 </template>
@@ -83,68 +86,10 @@
       </div>
 
       <template #actions>
-        <!-- 管理员视图 -->
-        <div v-if="isAdmin" class="card-actions admin-actions">
-          <a-dropdown trigger="hover">
-            <a-button size="small" type="outline">
-              <template #icon>
-                <icon-more />
-              </template>
-              管理
-            </a-button>
-            <template #content>
-              <a-doption @click="handleEditPlatform">
-                <template #icon>
-                  <icon-edit />
-                </template>
-                编辑平台
-              </a-doption>
-              <a-doption @click="handleToggleEnable(itemData)">
-                <template #icon>
-                  <icon-poweroff />
-                </template>
-                {{ itemData.isEnabled === 1 ? '禁用' : '启用' }}
-              </a-doption>
-              <a-doption
-                class="danger-option"
-                @click="handleDeletePlatform(itemData)"
-              >
-                <template #icon>
-                  <icon-delete />
-                </template>
-                删除平台
-              </a-doption>
-            </template>
-          </a-dropdown>
+        <div class="card-actions">
+          <!-- 未开通状态：只显示"立即开通"按钮 -->
           <a-button
-            size="small"
-            type="primary"
-            @click="handleSettingStorage(itemData)"
-          >
-            <template #icon>
-              <icon-settings />
-            </template>
-            配置
-          </a-button>
-        </div>
-
-        <!-- 普通用户视图 -->
-        <div v-else class="card-actions">
-          <a-button
-            v-if="itemData.isEnabled === 1"
-            :loading="btnLoading"
-            size="small"
-            status="danger"
-            type="outline"
-            @click="handleCloseOpenStorage(itemData)"
-          >
-            <template #icon>
-              <icon-close />
-            </template>
-            取消开通
-          </a-button>
-          <a-button
-            v-else
+            v-if="itemData.isSetting === 0"
             :loading="btnLoading"
             size="small"
             type="primary"
@@ -155,20 +100,69 @@
             </template>
             立即开通
           </a-button>
-          <a-button
-            size="small"
-            type="outline"
-            @click="handleSettingStorage(itemData)"
-          >
-            <template #icon>
-              <icon-settings />
+
+          <!-- 已配置状态：显示"禁用/启用"和"修改配置"按钮 -->
+          <template v-else>
+            <!-- 本地存储（local）不显示禁用/启用按钮 -->
+            <template v-if="itemData.identifier !== 'local'">
+              <a-button
+                v-if="itemData.isEnabled === 1"
+                :loading="btnLoading"
+                size="small"
+                status="danger"
+                type="outline"
+                @click="handleDisableStorage(itemData)"
+              >
+                <template #icon>
+                  <icon-poweroff />
+                </template>
+                禁用
+              </a-button>
+              <a-button
+                v-else
+                :loading="btnLoading"
+                size="small"
+                type="primary"
+                @click="handleEnableStorage(itemData)"
+              >
+                <template #icon>
+                  <icon-check />
+                </template>
+                启用
+              </a-button>
             </template>
-            配置
-          </a-button>
+
+            <!-- 本地存储显示默认标识 -->
+            <a-tag
+              v-else
+              color="arcoblue"
+              size="medium"
+              style="height: 30px; line-height: 28px"
+            >
+              <template #icon>
+                <icon-check-circle-fill />
+              </template>
+              默认存储
+            </a-tag>
+
+            <!-- 本地存储不显示配置按钮，其他平台显示 -->
+            <a-button
+              v-if="itemData.identifier !== 'local'"
+              size="small"
+              type="outline"
+              @click="handleSettingStorage(itemData)"
+            >
+              <template #icon>
+                <icon-settings />
+              </template>
+              修改配置
+            </a-button>
+          </template>
         </div>
       </template>
     </a-card>
 
+    <!-- 配置弹窗 -->
     <a-modal
       v-model:visible="modalVisible"
       :mask-closable="false"
@@ -212,13 +206,19 @@
   import { Icon, Message, Modal } from '@arco-design/web-vue';
   import { PropType, reactive, ref } from 'vue';
   import {
-    deleteStoragePlatform,
-    enableStoragePlatform,
+    IconPoweroff,
+    IconCheck,
+    IconSettings,
+  } from '@arco-design/web-vue/es/icon';
+  import {
     getStoragePlatformsSettings,
     openOrCancelStoragePlatform,
     saveOrUpdateStoragePlatformSettings,
+    type StoragePlatformRecord,
   } from '@/api/storage';
-  import { StoragePlatformRecord } from '@/types/modules/storage';
+  import { useStorageStore } from '@/store';
+
+  const storageStore = useStorageStore();
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',
@@ -228,10 +228,6 @@
     itemData: {
       type: Object as PropType<StoragePlatformRecord>,
       default: () => ({}),
-    },
-    isAdmin: {
-      type: Boolean,
-      default: false,
     },
   });
 
@@ -284,31 +280,28 @@
   };
 
   /**
-   * 开通存储平台
+   * 立即开通（未配置状态）- 直接打开配置弹窗
    * @param itemData
    */
   const handleOpenStorage = async (itemData: StoragePlatformRecord) => {
-    Modal.confirm({
-      title: '确认开通',
-      content: `确定要开通 "${itemData.name}" 存储平台吗？`,
-      okText: '确认开通',
-      cancelText: '取消',
-      onOk: async () => {
-        btnLoading.value = true;
-        try {
-          const { identifier, name } = itemData;
-          await openOrCancelStoragePlatform(identifier, 1);
-          Message.success(`${name} 开通成功`);
-        } catch (error) {
-          // 拦截器已经显示了错误信息，这里不再重复提示
-          // eslint-disable-next-line no-console
-          console.error('开通失败:', error);
-        } finally {
-          btnLoading.value = false;
-          emit('refresh');
-        }
-      },
-    });
+    // 直接打开配置弹窗，让用户填写配置信息
+    const { identifier, configScheme } = itemData;
+
+    try {
+      schemes.value = JSON.parse(configScheme);
+
+      // 重置表单
+      await resetFormData();
+
+      // 设置 identifier
+      formData.identifier = identifier;
+
+      modalVisible.value = true;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('打开配置失败:', error);
+      Message.error('打开配置失败');
+    }
   };
 
   const handleSettingStorage = async (itemData: StoragePlatformRecord) => {
@@ -345,25 +338,79 @@
   };
 
   /**
-   * 取消开通存储平台
+   * 禁用存储平台（已配置状态）
    * @param itemData
    */
-  const handleCloseOpenStorage = async (itemData: StoragePlatformRecord) => {
+  const handleDisableStorage = async (itemData: StoragePlatformRecord) => {
+    // 检查是否是本地存储
+    if (itemData.identifier === 'Local') {
+      Modal.warning({
+        title: '无法禁用',
+        content: '本地存储是默认存储平台，无法禁用。',
+        okText: '知道了',
+        hideCancel: true,
+      });
+      return;
+    }
+
+    // 检查是否是当前正在使用的平台
+    if (storageStore.currentIdentifier === itemData.identifier) {
+      Modal.warning({
+        title: '无法禁用',
+        content: `"${itemData.name}" 是当前正在使用的存储平台，无法禁用。请先切换到其他平台后再进行禁用操作。`,
+        okText: '知道了',
+        hideCancel: true,
+      });
+      return;
+    }
+
     Modal.warning({
-      title: '确认取消开通',
-      content: `取消开通后，"${itemData.name}" 将无法使用，确定要继续吗？`,
-      okText: '确认取消',
-      cancelText: '返回',
+      title: '确认禁用',
+      content: `禁用后，"${itemData.name}" 将暂停使用，但配置信息会保留。确定要继续吗？`,
+      okText: '确认禁用',
+      cancelText: '取消',
       onOk: async () => {
         btnLoading.value = true;
         try {
           const { identifier, name } = itemData;
           await openOrCancelStoragePlatform(identifier, 0);
-          Message.success(`${name} 已取消开通`);
+          Message.success(`${name} 已禁用`);
+          // 同步更新全局存储平台列表
+          await storageStore.fetchActivePlatforms();
         } catch (error) {
           // 拦截器已经显示了错误信息，这里不再重复提示
           // eslint-disable-next-line no-console
-          console.error('操作失败:', error);
+          console.error('禁用失败:', error);
+        } finally {
+          btnLoading.value = false;
+          emit('refresh');
+        }
+      },
+    });
+  };
+
+  /**
+   * 启用存储平台（已配置但已禁用状态）
+   * @param itemData
+   */
+  const handleEnableStorage = async (itemData: StoragePlatformRecord) => {
+    Modal.confirm({
+      title: '确认启用',
+      content: `确定要启用 "${itemData.name}" 存储平台吗？`,
+      okText: '确认启用',
+      cancelText: '取消',
+      onOk: async () => {
+        btnLoading.value = true;
+        try {
+          const { identifier, name } = itemData;
+          await openOrCancelStoragePlatform(identifier, 1);
+          Message.success(`${name} 已启用`);
+          // 同步更新全局存储平台列表
+          await storageStore.fetchActivePlatforms();
+        } catch (error) {
+          // 拦截器已经显示了错误信息，这里不再重复提示
+          // eslint-disable-next-line no-console
+          console.error('启用失败:', error);
         } finally {
           btnLoading.value = false;
           emit('refresh');
@@ -384,6 +431,8 @@
           };
           await saveOrUpdateStoragePlatformSettings(submitData);
           Message.success('配置保存成功');
+          // 同步更新全局存储平台列表
+          await storageStore.fetchActivePlatforms();
           emit('refresh');
           done(true);
         } else {
@@ -400,58 +449,6 @@
 
   const handleCancel = () => {
     modalVisible.value = false;
-  };
-
-  // 管理员功能：编辑平台
-  const handleEditPlatform = () => {
-    Message.info('编辑平台功能开发中...');
-    // TODO: 实现编辑平台功能
-  };
-
-  // 管理员功能：启用/禁用平台
-  const handleToggleEnable = async (itemData: StoragePlatformRecord) => {
-    const action = itemData.isEnabled === 1 ? '禁用' : '启用';
-    Modal.confirm({
-      title: `确认${action}`,
-      content: `确定要${action} "${itemData.name}" 存储平台吗？${
-        itemData.isEnabled === 1 ? '禁用后，所有用户将无法使用该平台。' : ''
-      }`,
-      okText: `确认${action}`,
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await enableStoragePlatform(
-            String(itemData.id),
-            itemData.isEnabled !== 1
-          );
-          Message.success(`${itemData.name} 已${action}`);
-          emit('refresh');
-        } catch (error) {
-          // 拦截器已经显示了错误信息，这里不再重复提示
-          // eslint-disable-next-line no-console
-          console.error(`${action}失败:`, error);
-        }
-      },
-    });
-  };
-
-  // 管理员功能：删除平台
-  const handleDeletePlatform = (itemData: StoragePlatformRecord) => {
-    Modal.error({
-      title: '确认删除',
-      content: `删除 "${itemData.name}" 存储平台后，所有相关配置和数据将被清除，此操作不可恢复！确定要继续吗？`,
-      okText: '确认删除',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await deleteStoragePlatform(String(itemData.id));
-          Message.success(`${itemData.name} 已删除`);
-          emit('refresh');
-        } catch (error) {
-          console.error('删除失败:', error);
-        }
-      },
-    });
   };
 </script>
 
@@ -568,20 +565,6 @@
         flex: 1;
         height: 30px;
         font-size: 12px;
-      }
-
-      &.admin-actions {
-        .arco-btn {
-          flex: 1;
-        }
-      }
-    }
-
-    :deep(.danger-option) {
-      color: rgb(var(--danger-6));
-
-      &:hover {
-        background-color: rgb(var(--danger-1));
       }
     }
 

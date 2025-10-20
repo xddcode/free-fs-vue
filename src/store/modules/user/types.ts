@@ -1,11 +1,8 @@
-export type RoleType = '' | '*' | 'admin' | 'user';
-
 export interface UserState {
-  id?: number;
+  id?: string;
   username?: string;
   nickname?: string;
   avatar?: string;
   email?: string;
   status?: number;
-  roleCode?: RoleType;
 }

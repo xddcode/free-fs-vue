@@ -1,48 +1,40 @@
-export interface UserRecord {
+/**
+ * 用户信息
+ */
+export interface UserInfo {
   id: string;
   username: string;
   nickname: string;
   email: string;
-  roleCode: string;
   avatar: string;
   status: number;
-  lastLoginTime: string;
-  createTime: string;
-  updateTime: string;
 }
 
+/**
+ * 登录响应
+ */
 export interface LoginRes {
   accessToken: string;
+  userInfo: UserInfo;
 }
 
-export interface UserPageParams extends Partial<UserRecord> {
-  page: number;
-  pageSize: number;
-}
-
-export interface UserListRes {
-  data: UserRecord[];
-  total: number;
-}
-
+/**
+ * 登录参数
+ */
 export interface LoginParams {
   username: string;
   password: string;
   isRemember: boolean;
 }
 
-export interface UserParams {
-  id?: string;
-  username: string;
-  email: string;
-  nickname: string;
-  roleCode: string;
-}
-
+/**
+ * 注册参数
+ */
 export interface UserRegisterParams {
   username: string;
   password: string;
   confirmPassword: string;
   email: string;
   nickname: string;
+  avatar?: string; // 头像，可选
 }

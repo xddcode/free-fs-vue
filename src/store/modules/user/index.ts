@@ -8,16 +8,15 @@ import { clearToken, setToken } from '@/utils/auth';
 import { removeRouteListener } from '@/utils/route-listener';
 import { LoginParams } from '@/types/modules/user';
 import { UserState } from './types';
-import useAppStore from '../app';
 
 const useUserStore = defineStore('user', {
   state: (): UserState => ({
+    id: undefined,
     username: undefined,
     nickname: undefined,
     avatar: undefined,
     email: undefined,
     status: undefined,
-    roleCode: '',
   }),
 
   getters: {
@@ -27,12 +26,6 @@ const useUserStore = defineStore('user', {
   },
 
   actions: {
-    switchRoles() {
-      return new Promise((resolve) => {
-        this.roleCode = this.roleCode === 'user' ? 'admin' : 'user';
-        resolve(this.roleCode);
-      });
-    },
     // Set user's information
     setInfo(partial: Partial<UserState>) {
       this.$patch(partial);
@@ -46,7 +39,6 @@ const useUserStore = defineStore('user', {
     // Get user's information
     async info() {
       const res = await getUserInfo();
-
       this.setInfo(res.data);
     },
 
@@ -55,18 +47,20 @@ const useUserStore = defineStore('user', {
       try {
         const res = await userLogin(loginForm);
         setToken(res.data.accessToken);
+        // 登录成功后立即设置用户信息
+        this.setInfo(res.data.userInfo);
       } catch (err) {
         clearToken();
         throw err;
       }
     },
+
     logoutCallBack() {
-      const appStore = useAppStore();
       this.resetInfo();
       clearToken();
       removeRouteListener();
-      appStore.clearServerMenu();
     },
+
     // Logout
     async logout() {
       try {

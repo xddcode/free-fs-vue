@@ -1,33 +1,27 @@
 import { RouteLocationNormalized, RouteRecordRaw } from 'vue-router';
 import { useUserStore } from '@/store';
+import { isLogin } from '@/utils/auth';
 
 export default function usePermission() {
   const userStore = useUserStore();
   return {
     accessRouter(route: RouteLocationNormalized | RouteRecordRaw) {
-      return (
-        !route.meta?.requiresAuth ||
-        !route.meta?.roles ||
-        route.meta?.roles?.includes('*') ||
-        route.meta?.roles?.includes(userStore.roleCode)
-      );
+      // 简化权限逻辑：只需要检查是否已登录
+      return !route.meta?.requiresAuth || (isLogin() && !!userStore.id);
     },
-    findFirstPermissionRoute(_routers: any, role = 'admin') {
+    findFirstPermissionRoute(_routers: any) {
+      // 简化：返回第一个路由
       const cloneRouters = [..._routers];
       while (cloneRouters.length) {
         const firstElement = cloneRouters.shift();
-        if (
-          firstElement?.meta?.roles?.find((el: string[]) => {
-            return el.includes('*') || el.includes(role);
-          })
-        )
+        if (firstElement?.meta?.requiresAuth !== false) {
           return { name: firstElement.name };
+        }
         if (firstElement?.children) {
           cloneRouters.push(...firstElement.children);
         }
       }
       return null;
     },
-    // You can add any rules you want
   };
 }

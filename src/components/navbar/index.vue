@@ -13,15 +13,13 @@
           Free Fs
         </a-typography-title>
         <icon-menu-fold
-          v-if="!topMenu && appStore.device === 'mobile'"
+          v-if="appStore.device === 'mobile'"
           style="font-size: 22px; cursor: pointer"
           @click="toggleDrawerMenu"
         />
       </a-space>
     </div>
-    <div class="center-side">
-      <Menu v-if="topMenu" />
-    </div>
+    <div class="center-side"></div>
     <ul class="right-side">
       <li>
         <a-tooltip
@@ -60,18 +58,92 @@
         </a-tooltip>
       </li>
       <li>
-        <a-tooltip content="页面配置">
+        <a-tooltip :content="colorWeak ? '关闭色弱模式' : '开启色弱模式'">
           <a-button
             :shape="'circle'"
             class="nav-btn"
             type="outline"
-            @click="setVisible"
+            @click="handleToggleColorWeak"
           >
             <template #icon>
-              <icon-settings />
+              <icon-eye v-if="colorWeak" />
+              <icon-eye-invisible v-else />
             </template>
           </a-button>
         </a-tooltip>
+      </li>
+      <li>
+        <a-dropdown
+          trigger="hover"
+          position="br"
+          @select="handleSelectPlatform"
+        >
+          <div class="storage-platform-selector">
+            <a-avatar
+              v-if="storageStore.currentPlatform?.icon"
+              :size="28"
+              :style="{
+                backgroundColor: 'rgb(var(--primary-6))',
+              }"
+            >
+              <icon-font :size="16" :type="storageStore.currentPlatform.icon" />
+            </a-avatar>
+            <icon-storage v-else class="storage-icon" />
+            <div class="storage-info">
+              <div class="storage-label">当前存储</div>
+              <div class="storage-name">
+                <a-spin
+                  v-if="platformSwitching"
+                  :size="12"
+                  style="margin-right: 4px"
+                />
+                {{ storageStore.currentPlatform?.name || '未选择' }}
+              </div>
+            </div>
+            <icon-down class="dropdown-icon" />
+          </div>
+          <template #content>
+            <a-doption v-if="!storageStore.hasActivePlatform" disabled value="">
+              <div class="platform-option-empty">
+                <icon-exclamation-circle />
+                <span>暂无可用存储平台</span>
+              </div>
+            </a-doption>
+            <a-doption
+              v-for="platform in storageStore.activePlatforms"
+              :key="platform.identifier"
+              :value="platform.identifier"
+              :disabled="platform.identifier === storageStore.currentIdentifier"
+              :class="{
+                'platform-option-active':
+                  platform.identifier === storageStore.currentIdentifier,
+              }"
+            >
+              <div class="platform-option">
+                <a-avatar
+                  v-if="platform.icon"
+                  :size="32"
+                  :style="{
+                    backgroundColor:
+                      platform.identifier === storageStore.currentIdentifier
+                        ? 'rgb(var(--primary-6))'
+                        : 'var(--color-fill-3)',
+                  }"
+                >
+                  <icon-font :size="18" :type="platform.icon" />
+                </a-avatar>
+                <span
+                  class="platform-name"
+                  :class="{
+                    'platform-name-active':
+                      platform.identifier === storageStore.currentIdentifier,
+                  }"
+                  >{{ platform.name }}</span
+                >
+              </div>
+            </a-doption>
+          </template>
+        </a-dropdown>
       </li>
       <li>
         <a-dropdown trigger="click">
@@ -108,23 +180,36 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, inject } from 'vue';
+  import { computed, inject, onMounted, ref } from 'vue';
   import { useDark, useFullscreen, useToggle } from '@vueuse/core';
-  import { useAppStore, useUserStore } from '@/store';
+  import { useAppStore, useUserStore, useStorageStore } from '@/store';
+  import { Icon, Message } from '@arco-design/web-vue';
+  import {
+    IconStorage,
+    IconDown,
+    IconExclamationCircle,
+  } from '@arco-design/web-vue/es/icon';
   import useUser from '@/hooks/user';
-  import Menu from '@/components/menu/index.vue';
+
+  const IconFont = Icon.addFromIconFontCn({
+    src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',
+  });
 
   const appStore = useAppStore();
   const userStore = useUserStore();
+  const storageStore = useStorageStore();
   const { logout } = useUser();
   const { isFullscreen, toggle: toggleFullScreen } = useFullscreen();
+  const platformSwitching = ref(false);
   const avatar = computed(() => {
     return userStore.avatar;
   });
   const theme = computed(() => {
     return appStore.theme;
   });
-  const topMenu = computed(() => appStore.topMenu && appStore.menu);
+  const colorWeak = computed(() => {
+    return appStore.colorWeak;
+  });
   const isDark = useDark({
     selector: 'body',
     attribute: 'arco-theme',
@@ -140,15 +225,79 @@
   const handleToggleTheme = () => {
     toggleTheme();
   };
-  const setVisible = () => {
-    appStore.updateSettings({ globalSettings: true });
+
+  const handleToggleColorWeak = () => {
+    const newValue = !appStore.colorWeak;
+    document.body.style.filter = newValue ? 'invert(80%)' : 'none';
+    appStore.updateSettings({ colorWeak: newValue });
   };
 
   const handleLogout = () => {
     logout();
   };
 
+  const handleSelectPlatform = async (identifier: string) => {
+    const platform = storageStore.activePlatforms.find(
+      (p) => p.identifier === identifier
+    );
+    if (!platform) return;
+
+    // 立即显示 loading 状态
+    platformSwitching.value = true;
+
+    // 显示加载提示
+    const loadingMsg = Message.loading({
+      content: `正在切换到 ${platform.name}...`,
+      duration: 0, // 持续显示直到手动关闭
+    });
+
+    try {
+      // 模拟切换过程（实际项目中这里可能是调用 API）
+      await new Promise<void>((resolve, reject) => {
+        setTimeout(() => {
+          // 模拟 90% 成功率
+          if (Math.random() > 0.1) {
+            resolve();
+          } else {
+            reject(new Error('切换失败'));
+          }
+        }, 800);
+      });
+
+      // 切换成功：保存新平台
+      storageStore.setCurrentPlatform(platform);
+
+      // 关闭 loading，显示成功提示
+      loadingMsg.close();
+      Message.success({
+        content: `已切换到 ${platform.name}`,
+        duration: 1500,
+      });
+
+      // 延迟后刷新页面，让用户看到成功提示
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      // 切换失败：恢复原状态
+      platformSwitching.value = false;
+      loadingMsg.close();
+      Message.error({
+        content: `切换到 ${platform.name} 失败，请重试`,
+        duration: 3000,
+      });
+    }
+  };
+
   const toggleDrawerMenu = inject('toggleDrawerMenu') as () => void;
+
+  // 初始化加载存储平台列表
+  onMounted(async () => {
+    // 先恢复之前选择的平台
+    storageStore.restoreCurrentPlatform();
+    // 然后获取最新的平台列表
+    await storageStore.fetchActivePlatforms();
+  });
 </script>
 
 <style lang="less" scoped>
@@ -194,6 +343,138 @@
       border-color: rgb(var(--gray-2));
       color: rgb(var(--gray-8));
       font-size: 16px;
+    }
+
+    .storage-platform-selector {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      height: 100%;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-radius: 4px;
+
+      &:hover {
+        background-color: var(--color-fill-2);
+      }
+
+      .storage-icon {
+        font-size: 20px;
+        color: rgb(var(--primary-6));
+      }
+
+      .storage-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: 100px;
+
+        .storage-label {
+          font-size: 12px;
+          color: var(--color-text-3);
+          line-height: 1.2;
+        }
+
+        .storage-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--color-text-1);
+          line-height: 1.4;
+          display: flex;
+          align-items: center;
+        }
+      }
+
+      .dropdown-icon {
+        font-size: 12px;
+        color: var(--color-text-3);
+        transition: transform 0.3s;
+      }
+    }
+
+    .platform-option {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 20px;
+      min-width: 280px;
+
+      .platform-name {
+        flex: 1;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.5;
+        transition: all 0.3s;
+
+        &.platform-name-active {
+          color: rgb(var(--primary-6));
+          font-weight: 600;
+        }
+      }
+
+      :deep(.arco-avatar) {
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        transition: all 0.3s;
+      }
+    }
+
+    // 当前选中平台的样式
+    :deep(.platform-option-active) {
+      background: linear-gradient(
+        90deg,
+        rgba(var(--primary-6), 0.08) 0%,
+        rgba(var(--primary-6), 0.02) 100%
+      );
+      border-left: 4px solid rgb(var(--primary-6));
+
+      .platform-option {
+        // 补偿左边框宽度，保持对齐
+        padding-left: 16px;
+        padding-right: 20px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+    }
+
+    .platform-option-empty {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      color: var(--color-text-3);
+      min-width: 280px;
+
+      svg {
+        font-size: 20px;
+      }
+
+      span {
+        font-size: 14px;
+      }
+    }
+
+    // 优化下拉菜单样式
+    :deep(.arco-dropdown) {
+      .arco-dropdown-list {
+        padding: 8px 0;
+        min-width: 280px;
+      }
+    }
+
+    :deep(.arco-dropdown-option) {
+      transition: all 0.2s;
+      margin: 4px 0;
+
+      &:hover:not(.arco-dropdown-option-disabled) {
+        background-color: var(--color-fill-2);
+      }
+
+      &.arco-dropdown-option-disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
     }
 
     .trigger-btn,

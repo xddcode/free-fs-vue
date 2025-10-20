@@ -66,7 +66,6 @@
   import { ValidatedError } from '@arco-design/web-vue/es/form/interface';
   import { useUserStore } from '@/store';
   import useLoading from '@/hooks/loading';
-  import { LoginParams } from '@/types/modules/user';
 
   const router = useRouter();
 
@@ -82,7 +81,6 @@
 
   const handleSubmit = async ({
     errors,
-    values,
   }: {
     errors: Record<string, ValidatedError> | undefined;
     values: Record<string, any>;
@@ -91,19 +89,20 @@
     if (!errors) {
       setLoading(true);
       try {
-        // 1. 先登录获取 token
-        await userStore.login(values as LoginParams);
-        
-        // 2. 立即获取用户信息
-        await userStore.info();
-        
-        // 3. 登录成功提示
+        // 1. 登录并获取用户信息
+        await userStore.login({
+          username: userInfo.username,
+          password: userInfo.password,
+          isRemember: userInfo.isRemember,
+        });
+
+        // 2. 登录成功提示
         Message.success('登录成功');
-        
-        // 4. 跳转到目标页面
+
+        // 3. 跳转到目标页面
         const { redirect, ...othersQuery } = router.currentRoute.value.query;
         router.push({
-          name: (redirect as string) || 'User',
+          name: (redirect as string) || 'home',
           query: {
             ...othersQuery,
           },

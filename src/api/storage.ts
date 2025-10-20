@@ -1,46 +1,74 @@
 import { request } from '@/api/interceptor';
-import {
-  StoragePlatformRecord,
-  StoragePlatformSettingsRecord,
-} from '@/types/modules/storage';
 
-export function getStoragePlatforms(isDefault: number, keywords?: string) {
+// 使用原有的类型定义
+export interface StoragePlatformRecord {
+  id: number;
+  name: string;
+  identifier: string;
+  configScheme: string;
+  icon: string;
+  link: string;
+  desc: string;
+  isEnabled: number;
+  isDefault: number;
+  isSetting: number;
+}
+
+export interface StoragePlatformSettingsRecord {
+  id: number;
+  platformIdentifier: string;
+  configData: string;
+  enabled: number;
+  userId: string;
+}
+
+/**
+ * 获取存储平台列表（用户视角）
+ * @param isDefault 是否默认平台（1=是，0=否）
+ * @param keywords 搜索关键词
+ */
+export function getStoragePlatforms(keywords?: string) {
   return request.get<StoragePlatformRecord[]>('/apis/storage/platforms', {
-    params: { isDefault, keywords },
+    params: { keywords },
   });
 }
 
+/**
+ * 用户开通或取消开通存储平台
+ * @param identifier 平台标识
+ * @param action 操作类型（1=开通，0=取消开通）
+ */
 export function openOrCancelStoragePlatform(
   identifier: string,
   action: number
 ) {
-  return request.post<number[]>(
-    `/apis/storage/platform/${identifier}/${action}`
-  );
+  return request.post(`/apis/storage/platform/${identifier}/${action}`);
 }
 
+/**
+ * 获取用户的存储平台配置
+ * @param identifier 平台标识
+ */
 export function getStoragePlatformsSettings(identifier: string) {
   return request.get<StoragePlatformSettingsRecord>(
     `/apis/storage/settings/${identifier}`
   );
 }
 
-export function saveOrUpdateStoragePlatformSettings(data: any) {
+/**
+ * 保存或更新用户的存储平台配置
+ * @param data 配置数据
+ */
+export function saveOrUpdateStoragePlatformSettings(data: {
+  identifier: string;
+  configData: string;
+}) {
   return request.post('/apis/storage/settings', data);
 }
 
-export function createStoragePlatform(data: any) {
-  return request.post('/apis/storage/platform', data);
-}
-
-export function updateStoragePlatform(id: string, data: any) {
-  return request.put(`/apis/storage/platform/${id}`, data);
-}
-
-export function deleteStoragePlatform(id: string) {
-  return request.delete(`/apis/storage/platform/${id}`);
-}
-
-export function enableStoragePlatform(id: string, enabled: boolean) {
-  return request.put(`/apis/storage/platform/${id}/enable`, { enabled });
+/**
+ * 获取当前用户已开通且已配置的存储平台列表
+ */
+export function getActiveStoragePlatforms() {
+  return request.get<StoragePlatformRecord[]>('/apis/storage/active-platforms');
 }

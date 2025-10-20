@@ -19,16 +19,15 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onUnmounted, ref, watch } from 'vue';
+  import { computed, onUnmounted, ref } from 'vue';
   import type { RouteLocationNormalized } from 'vue-router';
   import {
     listenerRouteChange,
     removeRouteListener,
   } from '@/utils/route-listener';
-  import { useAppStore, useTabBarStore } from '@/store';
+  import { useTabBarStore } from '@/store';
   import tabItem from './tab-item.vue';
 
-  const appStore = useAppStore();
   const tabBarStore = useTabBarStore();
 
   const affixRef = ref();
@@ -36,15 +35,8 @@
     return tabBarStore.getTabList;
   });
   const offsetTop = computed(() => {
-    return appStore.navbar ? 60 : 0;
+    return 60;
   });
-
-  watch(
-    () => appStore.navbar,
-    () => {
-      affixRef.value.updatePosition();
-    }
-  );
   listenerRouteChange((route: RouteLocationNormalized) => {
     if (
       !route.meta.noAffix &&
