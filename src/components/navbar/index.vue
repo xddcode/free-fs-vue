@@ -289,7 +289,9 @@
     }
   };
 
-  const toggleDrawerMenu = inject('toggleDrawerMenu') as () => void;
+  const toggleDrawerMenu = inject('toggleDrawerMenu', () => {
+    // 默认实现：在没有提供 inject 时的空函数
+  }) as () => void;
 
   // 初始化加载存储平台列表
   onMounted(async () => {

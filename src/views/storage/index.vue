@@ -81,7 +81,6 @@
   const fetchData = async (keywords?: string) => {
     loading.value = true;
     try {
-      // isDefault = 1 表示获取默认的存储平台列表
       const { data } = await getStoragePlatforms(keywords);
       renderData.value = data;
     } catch (error) {

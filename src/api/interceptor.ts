@@ -30,19 +30,6 @@ service.interceptors.request.use(
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // 添加存储平台标识符
-    const storagePlatform = localStorage.getItem('current-storage-platform');
-    if (storagePlatform) {
-      try {
-        const platform = JSON.parse(storagePlatform);
-        config.headers = config.headers || {};
-        config.headers['X-Storage-Platform'] = platform.identifier;
-      } catch (error) {
-        // 忽略解析错误
-      }
-    }
-
     return config;
   },
   (error) => {
@@ -59,18 +46,18 @@ service.interceptors.response.use(
       return response; // 返回完整的 response 对象
     }
 
-    // 对于401/403错误（认证过期），显示Modal
+    // 对于401/403错误，不显示Message.error，只显示Modal
     if ([401, 403].includes(res.code)) {
       // 修正API路径匹配，排除用户信息接口避免重复处理
       if (response.config.url !== '/apis/user/info' && !isShowingLogoutModal) {
         isShowingLogoutModal = true;
         Modal.error({
-          title: '登录已过期',
-          content: '您的登录已过期，请重新登录',
+          title: '确认注销',
+          content: '您的登录已过期，您可以停留在此页面或重新登录',
           okText: '重新登录',
           async onOk() {
             isShowingLogoutModal = false;
-            window.location.href = '/login';
+            window.location.reload();
           },
           onCancel() {
             isShowingLogoutModal = false;
@@ -80,21 +67,22 @@ service.interceptors.response.use(
           },
         });
       }
-      return Promise.reject(new Error(res.msg || '登录已过期'));
-    }
-
-    // 对于其他错误，不在拦截器中显示，而是由业务代码处理
-    // 这样可以避免重复显示错误消息
-    return Promise.reject(new Error(res.msg || 'Error'));
-  },
-  (error) => {
-    // 对于网络错误，可以在拦截器中显示，因为这些错误业务代码通常不会处理
-    if (!error.response) {
+    } else {
+      // 对于其他错误，显示Message.error
       Message.error({
-        content: '网络错误，请检查网络连接',
+        content: res.msg || 'Error',
         duration: 5 * 1000,
       });
     }
+
+    return Promise.reject(new Error(res.msg || 'Error'));
+  },
+  (error) => {
+    // 对于网络错误或其他异常，显示错误信息
+    Message.error({
+      content: error.response?.data?.msg || error.message || 'Request Error',
+      duration: 5 * 1000,
+    });
     return Promise.reject(error);
   }
 );

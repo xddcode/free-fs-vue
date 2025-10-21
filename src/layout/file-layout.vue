@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed } from 'vue';
+  import { computed, markRaw } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import NavBar from '@/components/navbar/index.vue';
   import {
@@ -84,7 +84,6 @@
     IconCloud,
     IconShareAlt,
     IconSync,
-    IconSettings,
     IconFile,
     IconImage,
     IconMusic,
@@ -99,91 +98,91 @@
   const router = useRouter();
 
   // 主导航菜单
-  const mainMenuItems = ref([
+  const mainMenuItems = [
     {
       key: 'home',
       label: '首页',
-      icon: IconHome,
+      icon: markRaw(IconHome),
       path: '/',
     },
     {
       key: 'files',
       label: '我的',
-      icon: IconFile,
+      icon: markRaw(IconFile),
       path: '/files',
     },
     {
       key: 'share',
       label: '分享',
-      icon: IconShareAlt,
+      icon: markRaw(IconShareAlt),
       path: '/share',
     },
     {
       key: 'sync',
       label: '同步',
-      icon: IconSync,
+      icon: markRaw(IconSync),
       path: '/sync',
     },
     {
       key: 'storage',
       label: '云平台',
-      icon: IconCloud,
+      icon: markRaw(IconCloud),
       path: '/storage',
     },
-  ]);
+  ];
 
-  // 文件分类
-  const fileCategories = ref([
+  // 文件分类（对应后端 FileTypeEnum）
+  const fileCategories = [
     {
       key: 'all',
       label: '全部文件',
-      icon: IconFile,
+      icon: markRaw(IconFile),
       path: '/files',
       count: null,
     },
     {
-      key: 'images',
+      key: 'image',
       label: '图片',
-      icon: IconImage,
-      path: '/files?type=images',
+      icon: markRaw(IconImage),
+      path: '/files?type=image',
       count: null,
     },
     {
-      key: 'documents',
+      key: 'document',
       label: '文档',
-      icon: IconFile,
-      path: '/files?type=documents',
+      icon: markRaw(IconFile),
+      path: '/files?type=document',
       count: null,
     },
     {
-      key: 'videos',
+      key: 'video',
       label: '视频',
-      icon: IconFileVideo,
-      path: '/files?type=videos',
+      icon: markRaw(IconFileVideo),
+      path: '/files?type=video',
       count: null,
     },
     {
       key: 'audio',
       label: '音频',
-      icon: IconMusic,
+      icon: markRaw(IconMusic),
       path: '/files?type=audio',
       count: null,
     },
     {
       key: 'other',
       label: '其它',
-      icon: IconMore,
+      icon: markRaw(IconMore),
       path: '/files?type=other',
       count: null,
     },
     {
       key: 'recycle',
       label: '回收站',
-      icon: IconDelete,
-      path: '/recycle',
+      icon: markRaw(IconDelete),
+      path: '/files?view=recycle',
       count: null,
     },
-  ]);
+  ];
 
   // 当前激活的主菜单
   const activeMainMenu = computed(() => {
@@ -203,6 +202,7 @@
 
   // 当前激活的分类
   const activeCategory = computed(() => {
+    if (route.query.view === 'recycle') return 'recycle';
     if (!route.query.type) return 'all';
     return route.query.type as string;
   });
