@@ -222,10 +222,6 @@ VITE_API_BASE_URL=http://localhost:8080
 # 其他配置...
 ```
 
-### 存储平台配置
-
-支持配置多个存储平台（OSS、S3、本地存储等）：
-
 ```typescript
 // src/store/modules/storage/index.ts
 const currentPlatform = ref<StoragePlatformRecord | null>(null);
