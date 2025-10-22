@@ -69,7 +69,6 @@
 
   const router = useRouter();
 
-  const errorMessage = ref('');
   const { loading, setLoading } = useLoading();
   const userStore = useUserStore();
 
@@ -107,16 +106,13 @@
             ...othersQuery,
           },
         });
-      } catch (err) {
-        errorMessage.value = (err as Error).message;
-        Message.error(errorMessage.value || '登录失败，请重试');
       } finally {
         setLoading(false);
       }
     }
   };
-  const setRememberPassword = (value: boolean) => {
-    userInfo.isRemember = value;
+  const setRememberPassword = (value: boolean | (string | number | boolean)[]) => {
+    userInfo.isRemember = value as boolean;
   };
   defineEmits(['switchForm']);
 </script>
