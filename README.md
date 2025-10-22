@@ -20,6 +20,7 @@
 ### 🗂️ 核心功能
 
 - **文件管理**
+
   - 📤 文件上传（支持拖拽、批量上传）
   - 📥 文件下载
   - 📁 文件夹创建与管理
@@ -29,12 +30,14 @@
   - 🗑️ 文件删除
 
 - **回收站**
+
   - ♻️ 文件还原（支持批量）
   - 🗑️ 彻底删除（支持批量）
   - 🧹 一键清空回收站
-  - ⏰ 10天自动清理提醒
+  - ⏰ 10 天自动清理提醒
 
 - **多视图模式**
+
   - 📋 列表视图（支持排序）
   - 🎨 网格视图
   - 🔍 文件搜索
@@ -286,11 +289,13 @@ chore: 构建/工具链更新
 - GitHub: [@Freedom](https://github.com/xddcode)
 - Gitee: [@Freedom](https://gitee.com/xddcode)
 - Email: xddcodec@gmail.com
-- 微信：加微信请注明来意
+- 微信：
 
-![微信公众号](https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/wx.png)
+  **添加微信，请注明来意**
 
-- 微信公众号：**丁点技术**
+<img alt="wx.png" height="300" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/wx.png" width="250"/>
+
+- 微信公众号：
 
 ![微信公众号](https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/mp.png)
 
@@ -305,4 +310,3 @@ Made with ❤️ by [@Freedom](https://gitee.com/xddcode)
 如果这个项目对你有帮助，请给一个 ⭐️ 支持一下！
 
 </div>
-
