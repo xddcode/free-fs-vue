@@ -286,7 +286,13 @@ chore: 构建/工具链更新
 - GitHub: [@Freedom](https://github.com/xddcode)
 - Gitee: [@Freedom](https://gitee.com/xddcode)
 - Email: xddcodec@gmail.com
+- 微信：加微信请注明来意
+
+![微信公众号](https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/wx.png)
+
 - 微信公众号：**丁点技术**
+
+![微信公众号](https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/mp.png)
 
 ---
 
