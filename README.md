@@ -222,11 +222,6 @@ VITE_API_BASE_URL=http://localhost:8080
 # 其他配置...
 ```
 
-```typescript
-// src/store/modules/storage/index.ts
-const currentPlatform = ref<StoragePlatformRecord | null>(null);
-```
-
 ---
 
 ## 🤝 贡献指南
@@ -267,8 +262,8 @@ chore: 构建/工具链更新
 
 如果你发现了 Bug 或有功能建议，请通过以下方式反馈：
 
-- [GitHub Issues](https://github.com/your-username/free-fs-vue/issues)
-- [GitHub Discussions](https://github.com/your-username/free-fs-vue/discussions)
+- [Gitee Issues](https://gitee.com/xddcode/free-fs/issues)
+<!-- - [GitHub Discussions](https://github.com/your-username/free-fs-vue/discussions) -->
 
 ---
 
@@ -288,8 +283,10 @@ chore: 构建/工具链更新
 
 ## 📮 联系方式
 
-- GitHub: [@your-username](https://github.com/your-username)
-- Email: your-email@example.com
+- GitHub: [@Freedom](https://github.com/xddcode)
+- Gitee: [@Freedom](https://gitee.com/xddcode)
+- Email: xddcodec@gmail.com
+- 微信公众号：**丁点技术**
 
 ---
 
@@ -297,7 +294,7 @@ chore: 构建/工具链更新
 
 **[⬆ 回到顶部](#free-fs---现代化文件管理系统)**
 
-Made with ❤️ by [Your Name](https://github.com/your-username)
+Made with ❤️ by [@Freedom](https://gitee.com/xddcode)
 
 如果这个项目对你有帮助，请给一个 ⭐️ 支持一下！
 
