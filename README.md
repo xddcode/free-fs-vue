@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-3178c6.svg)](https://www.typescriptlang.org/)
 [![Arco Design](https://img.shields.io/badge/Arco%20Design-2.44+-165dff.svg)](https://arco.design/)
 
-[在线演示](https://your-demo-url.com) · [问题反馈](https://github.com/your-username/free-fs-vue/issues) · [功能请求](https://github.com/your-username/free-fs-vue/issues/new)
+[问题反馈](https://gitee.com/xddcode/free-fs/issues) · [功能请求](https://gitee.com/xddcode/free-fs/issues/new)
 
 </div>
 
@@ -76,7 +76,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/free-fs-vue.git
+git clone https://gitee.com/xddcode/free-fs-vue.git
 
 # 进入项目目录
 cd free-fs-vue
@@ -199,71 +199,6 @@ free-fs-vue/
 ├── package.json          # 项目依赖
 ├── tsconfig.json         # TypeScript 配置
 └── README.md            # 项目说明
-```
-
----
-
-## 🔧 核心功能实现
-
-### 文件管理
-
-```typescript
-// 文件列表 Hook
-const fileList = useFileList();
-
-// 文件操作 Hook
-const operations = useFileOperations(() => {
-  fileList.refresh();
-});
-
-// 进入文件夹（双击）
-const handleFileClick = (file: FileItem) => {
-  if (file.isDir) {
-    fileList.enterFolder(file.id);
-  }
-};
-```
-
-### 统一错误处理
-
-```typescript
-// 拦截器层统一处理错误
-service.interceptors.response.use(
-  (response) => {
-    if (response.data.code === 200) {
-      return response;
-    }
-    // 统一错误提示
-    Message.error(response.data.msg || '操作失败');
-    return Promise.reject(error);
-  }
-);
-
-// 组件层只需处理业务逻辑
-await deleteFile(fileId).then(() => {
-  Message.success('删除成功');
-  refresh();
-});
-```
-
-### URL 状态同步
-
-```typescript
-// 进入文件夹时更新 URL
-const enterFolder = (folderId: string) => {
-  router.push({
-    query: { ...route.query, parentId: folderId }
-  });
-};
-
-// 监听 URL 变化同步状态
-watch(
-  () => route.query.parentId,
-  () => {
-    syncParentIdFromRoute();
-    fetchFileList();
-  }
-);
 ```
 
 ---
