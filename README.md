@@ -4,16 +4,21 @@
 
 一个基于 Vue 3 的现代化文件管理系统前端，支持多存储平台、完整的文件操作和优雅的用户界面。
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Vue](https://img.shields.io/badge/Vue-3.2+-42b883.svg)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-3178c6.svg)](https://www.typescriptlang.org/)
-[![Arco Design](https://img.shields.io/badge/Arco%20Design-2.44+-165dff.svg)](https://arco.design/)
+[![GitHub stars](https://img.shields.io/github/stars/xddcode/free-fs?logo=github)](https://github.com/xddcode/free-fs/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/xddcode/free-fs?logo=github)](https://github.com/xddcode/free-fs/network)
+[![star](https://gitee.com/xddcode/free-fs/badge/star.svg?theme=dark)](https://gitee.com/xddcode/free-fs/stargazers)
+[![fork](https://gitee.com/xddcode/free-fs/badge/fork.svg?theme=dark)](https://gitee.com/xddcode/free-fs/members)
+[![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://gitee.com/xddcode/free-fs/blob/master/LICENSE)
 
 [问题反馈](https://gitee.com/xddcode/free-fs/issues) · [功能请求](https://gitee.com/xddcode/free-fs/issues/new)
 
 </div>
 
 ---
+
+## 🔗 相关项目
+
+- 🔙 [Free FS Backend](https://gitee.com/xddcode/free-fs) - 后端服务
 
 ## ✨ 特性
 
@@ -297,16 +302,22 @@ chore: 构建/工具链更新
 
 - 微信公众号：
 
-![微信公众号](https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/mp.png)
+<img alt="wp.png" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/mp.png"/>
 
 ---
+
+## ❤ 捐赠
+
+如果你认为 free-fs 项目可以为你提供帮助，或者给你带来方便和灵感，或者你认同这个项目，可以为我的付出赞助一下哦！
+
+请给一个 ⭐️ 支持一下！
+
+<img alt="pay.png" height="300" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/pay.png" width="250"/>
 
 <div align="center">
 
 **[⬆ 回到顶部](#free-fs---现代化文件管理系统)**
 
 Made with ❤️ by [@Freedom](https://gitee.com/xddcode)
-
-如果这个项目对你有帮助，请给一个 ⭐️ 支持一下！
 
 </div>
