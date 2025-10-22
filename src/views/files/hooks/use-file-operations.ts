@@ -116,17 +116,18 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 创建文件夹
    */
   const handleCreateFolder = async (folderName: string, parentId?: string) => {
-    try {
-      await createFolder({
-        folderName: folderName.trim(),
-        parentId,
+    await createFolder({
+      folderName: folderName.trim(),
+      parentId,
+    })
+      .then(() => {
+        Message.success('文件夹创建成功');
+        createFolderModalVisible.value = false;
+        refreshCallback();
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
       });
-      Message.success('文件夹创建成功');
-      createFolderModalVisible.value = false;
-      refreshCallback();
-    } catch (error) {
-      // 拦截器已处理错误提示
-    }
   };
 
   /**
@@ -141,15 +142,16 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 重命名文件
    */
   const handleRename = async (fileId: string, newName: string) => {
-    try {
-      await renameFile(fileId, newName.trim());
-      Message.success('重命名成功');
-      renameModalVisible.value = false;
-      renamingFile.value = null;
-      refreshCallback();
-    } catch (error) {
-      // 拦截器已处理错误提示
-    }
+    await renameFile(fileId, newName.trim())
+      .then(() => {
+        Message.success('重命名成功');
+        renameModalVisible.value = false;
+        renamingFile.value = null;
+        refreshCallback();
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
+      });
   };
 
   /**
@@ -164,15 +166,16 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 移动文件
    */
   const handleMove = async (fileId: string, targetParentId: string) => {
-    try {
-      await moveFile(fileId, targetParentId);
-      Message.success('移动成功');
-      moveModalVisible.value = false;
-      movingFile.value = null;
-      refreshCallback();
-    } catch (error) {
-      // 拦截器已处理错误提示
-    }
+    await moveFile(fileId, targetParentId)
+      .then(() => {
+        Message.success('移动成功');
+        moveModalVisible.value = false;
+        movingFile.value = null;
+        refreshCallback();
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
+      });
   };
 
   /**
@@ -187,14 +190,15 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 分享文件
    */
   const handleShare = async (fileId: string, expireDays?: number) => {
-    try {
-      const response = await shareFile(fileId, expireDays);
-      Message.success('分享链接已生成');
-      return response.data;
-    } catch (error) {
-      // 拦截器已处理错误提示
-      return null;
-    }
+    return shareFile(fileId, expireDays)
+      .then((response) => {
+        Message.success('分享链接已生成');
+        return response.data;
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
+        return null;
+      });
   };
 
   /**
@@ -209,39 +213,40 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 删除文件
    */
   const handleDelete = async (fileId: string) => {
-    try {
-      await deleteFile(fileId);
-      Message.success('删除成功');
-      deleteConfirmVisible.value = false;
-      deletingFile.value = null;
-      refreshCallback();
-    } catch (error) {
-      // 拦截器已处理错误提示
-    }
+    await deleteFile(fileId)
+      .then(() => {
+        Message.success('删除成功');
+        deleteConfirmVisible.value = false;
+        deletingFile.value = null;
+        refreshCallback();
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
+      });
   };
 
   /**
    * 下载文件
    */
   const handleDownload = async (file: FileItem) => {
-    try {
-      const response = await downloadFile(file.id);
+    await downloadFile(file.id)
+      .then((response) => {
+        // 创建下载链接
+        const blob = new Blob([response.data]);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.displayName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
 
-      // 创建下载链接
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.displayName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      Message.success('下载成功');
-    } catch (error) {
-      Message.error('下载失败');
-    }
+        Message.success('下载成功');
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
+      });
   };
 
   return {

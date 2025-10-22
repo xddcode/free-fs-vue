@@ -14,6 +14,14 @@ export interface HttpResponse<T = unknown> {
   data: T;
 }
 
+// 扩展请求配置，支持控制错误提示
+export interface CustomRequestConfig extends AxiosRequestConfig {
+  // 是否显示错误提示（默认 true）
+  showErrorMessage?: boolean;
+  // 是否显示成功提示
+  showSuccessMessage?: boolean;
+}
+
 // 添加全局标志防止重复显示Modal
 let isShowingLogoutModal = false;
 
@@ -30,6 +38,21 @@ service.interceptors.request.use(
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // 添加存储平台标识
+    const storageInfo = localStorage.getItem('current-storage-platform');
+    if (storageInfo) {
+      try {
+        const platform = JSON.parse(storageInfo);
+        if (platform?.identifier) {
+          config.headers = config.headers || {};
+          config.headers['X-Storage-Platform'] = platform.identifier;
+        }
+      } catch (error) {
+        // 忽略解析错误
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -37,23 +60,26 @@ service.interceptors.request.use(
   }
 );
 
-// 响应拦截器 - 修复类型定义
+// 响应拦截器 - 统一错误处理
 service.interceptors.response.use(
   (response: AxiosResponse<HttpResponse>) => {
-    const res = response.data;
+    const { data: res, config } = response;
 
+    // 成功响应
     if (res.code === 200) {
-      return response; // 返回完整的 response 对象
+      return response;
     }
 
-    // 对于401/403错误，不显示Message.error，只显示Modal
+    // 业务错误处理
+    const showError = (config as any).showErrorMessage !== false; // 默认显示错误
+
+    // 401/403 认证错误 - 特殊处理，显示模态框
     if ([401, 403].includes(res.code)) {
-      // 修正API路径匹配，排除用户信息接口避免重复处理
       if (response.config.url !== '/apis/user/info' && !isShowingLogoutModal) {
         isShowingLogoutModal = true;
         Modal.error({
-          title: '确认注销',
-          content: '您的登录已过期，您可以停留在此页面或重新登录',
+          title: '登录已过期',
+          content: '您的登录已过期，请重新登录',
           okText: '重新登录',
           async onOk() {
             isShowingLogoutModal = false;
@@ -67,22 +93,72 @@ service.interceptors.response.use(
           },
         });
       }
-    } else {
-      // 对于其他错误，显示Message.error
+    } else if (showError) {
+      // 其他业务错误 - 显示错误提示（可通过配置禁用）
       Message.error({
-        content: res.msg || 'Error',
-        duration: 5 * 1000,
+        content: res.msg || '操作失败',
+        duration: 3000,
       });
     }
 
-    return Promise.reject(new Error(res.msg || 'Error'));
+    // reject 错误，但不再在错误拦截器中重复提示
+    const error: any = new Error(res.msg || 'Error');
+    error.code = res.code;
+    error.response = response;
+    error.isErrorShown = showError; // 标记已显示错误
+    return Promise.reject(error);
   },
   (error) => {
-    // 对于网络错误或其他异常，显示错误信息
-    Message.error({
-      content: error.response?.data?.msg || error.message || 'Request Error',
-      duration: 5 * 1000,
-    });
+    // 网络错误或服务器错误（非业务错误）
+    const config = error.config || {};
+    const showError = (config as any).showErrorMessage !== false;
+
+    // 只有未标记已显示的错误才显示（避免重复）
+    if (showError && !error.isErrorShown) {
+      let errorMessage = '网络请求失败';
+
+      if (error.response) {
+        // 服务器响应了错误状态码
+        const { status } = error.response;
+        switch (status) {
+          case 400:
+            errorMessage = error.response.data?.msg || '请求参数错误';
+            break;
+          case 404:
+            errorMessage = '请求的资源不存在';
+            break;
+          case 500:
+            errorMessage = error.response.data?.msg || '服务器内部错误';
+            break;
+          case 502:
+            errorMessage = '网关错误';
+            break;
+          case 503:
+            errorMessage = '服务不可用';
+            break;
+          case 504:
+            errorMessage = '网关超时';
+            break;
+          default:
+            errorMessage = error.response.data?.msg || `请求失败(${status})`;
+        }
+      } else if (error.request) {
+        // 请求已发出但没有收到响应
+        if (error.message.includes('timeout')) {
+          errorMessage = '请求超时，请检查网络连接';
+        } else if (error.message.includes('Network Error')) {
+          errorMessage = '网络连接失败，请检查网络';
+        }
+      }
+
+      Message.error({
+        content: errorMessage,
+        duration: 3000,
+      });
+
+      error.isErrorShown = true;
+    }
+
     return Promise.reject(error);
   }
 );

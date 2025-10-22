@@ -1,5 +1,9 @@
 import { request } from '@/api/interceptor';
-import type { FileListParams, FileItem } from '@/types/modules/file';
+import type {
+  FileListParams,
+  FileItem,
+  FileRecycleItem,
+} from '@/types/modules/file';
 
 /**
  * 查询文件列表
@@ -105,28 +109,30 @@ export function unshareFile(fileId: string) {
  * 获取回收站文件列表
  */
 export function getRecycleList() {
-  return request.get<FileItem[]>('/apis/file/recycle/list');
+  return request.get<FileRecycleItem[]>('/apis/file/recycles');
 }
 
 /**
- * 还原文件
+ * 还原文件（支持批量）
  */
-export function restoreFile(fileId: string) {
-  return request.put(`/apis/file/recycle/${fileId}/restore`);
+export function restoreFiles(fileIds: string[]) {
+  return request.put('/apis/file/recycles', fileIds);
 }
 
 /**
- * 彻底删除文件
+ * 彻底删除文件（支持批量）
  */
-export function permanentDeleteFile(fileId: string) {
-  return request.delete(`/apis/file/recycle/${fileId}`);
+export function permanentDeleteFiles(fileIds: string[]) {
+  return request.delete('/apis/file/recycles', {
+    data: fileIds,
+  });
 }
 
 /**
  * 清空回收站
  */
 export function clearRecycle() {
-  return request.delete('/apis/file/recycle/clear');
+  return request.delete('/apis/file/recycles/clear');
 }
 
 // 导出类型以便在组件中使用

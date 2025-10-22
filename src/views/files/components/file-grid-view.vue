@@ -4,7 +4,8 @@
       v-for="file in fileList"
       :key="file.id"
       class="grid-item"
-      @click="handleFileClick(file)"
+      :class="{ 'is-folder': file.isDir }"
+      @dblclick="handleFileDoubleClick(file)"
     >
       <div class="grid-item-icon">
         <img
@@ -128,7 +129,7 @@
     (e: 'move', file: FileItem): void;
   }>();
 
-  const handleFileClick = (file: FileItem) => {
+  const handleFileDoubleClick = (file: FileItem) => {
     if (file.isDir) {
       emit('fileClick', file);
     }
@@ -147,10 +148,13 @@
       border-radius: 8px;
       padding: 16px 12px;
       text-align: center;
-      cursor: pointer;
       transition: all 0.2s;
       position: relative;
       min-height: 160px;
+
+      &.is-folder {
+        cursor: pointer;
+      }
 
       &:hover {
         background-color: var(--color-fill-2);

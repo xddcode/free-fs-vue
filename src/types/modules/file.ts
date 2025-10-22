@@ -29,6 +29,24 @@ export interface FileItem {
 }
 
 /**
+ * 回收站文件信息
+ */
+export interface FileRecycleItem {
+  /** 文件ID */
+  id: string;
+  /** 资源别名（显示名称） */
+  displayName: string;
+  /** 后缀名 */
+  suffix: string;
+  /** 文件大小（字节） */
+  size: number;
+  /** 是否目录 */
+  isDir: boolean;
+  /** 删除时间 */
+  deletedTime: string;
+}
+
+/**
  * 文件类型枚举
  */
 export type FileType =

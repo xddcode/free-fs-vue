@@ -1,6 +1,5 @@
-import { ref, watch } from 'vue';
-import { Message } from '@arco-design/web-vue';
-import { useRoute } from 'vue-router';
+import { ref, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { getFileList } from '@/api/file';
 import type { FileItem, FileType, SortOrder } from '@/types/modules/file';
 
@@ -10,6 +9,7 @@ import type { FileItem, FileType, SortOrder } from '@/types/modules/file';
  */
 export default function useFileList() {
   const route = useRoute();
+  const router = useRouter();
 
   // 状态管理
   const loading = ref(false);
@@ -42,10 +42,8 @@ export default function useFileList() {
         fileList.value = result || [];
         total.value = result.length || 0;
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取文件列表失败:', error);
-      Message.error('获取文件列表失败');
+    } catch {
+      // 拦截器已统一处理错误提示
       fileList.value = [];
       total.value = 0;
     } finally {
@@ -58,17 +56,23 @@ export default function useFileList() {
    * @param folderId 文件夹ID
    */
   const enterFolder = (folderId: string) => {
-    currentParentId.value = folderId;
-    fetchFileList();
+    // 更新 URL query 参数
+    router.push({
+      query: {
+        ...route.query,
+        parentId: folderId,
+      },
+    });
   };
 
   /**
    * 返回上级目录
    */
   const goBack = () => {
-    // TODO: 实现面包屑导航后，这里需要根据路径栈来返回
-    currentParentId.value = undefined;
-    fetchFileList();
+    // 移除 parentId 参数
+    const query = { ...route.query };
+    delete query.parentId;
+    router.push({ query });
   };
 
   /**
@@ -104,14 +108,30 @@ export default function useFileList() {
   };
 
   /**
-   * 监听路由变化，重新加载数据
+   * 从 URL 同步 parentId 到状态
+   */
+  const syncParentIdFromRoute = () => {
+    const parentIdFromRoute = route.query.parentId as string | undefined;
+    currentParentId.value = parentIdFromRoute;
+  };
+
+  /**
+   * 监听路由变化，同步状态并重新加载数据
    */
   watch(
-    () => route.query.type,
+    () => [route.query.type, route.query.parentId],
     () => {
+      syncParentIdFromRoute();
       fetchFileList();
     }
   );
+
+  /**
+   * 初始化时从 URL 同步状态
+   */
+  onMounted(() => {
+    syncParentIdFromRoute();
+  });
 
   return {
     // 状态

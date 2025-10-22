@@ -52,7 +52,6 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
-  import { Message } from '@arco-design/web-vue';
   import { IconFolder, IconArrowDown } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileList } from '@/api/file';
@@ -119,10 +118,8 @@
           })),
         },
       ];
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('加载文件夹失败:', error);
-      Message.error('加载文件夹失败');
+    } catch {
+      // 拦截器已统一处理错误提示，这里捕获避免未处理的 rejection
     }
   };
 

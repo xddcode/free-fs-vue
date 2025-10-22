@@ -6,13 +6,16 @@
       :bordered="false"
       row-key="id"
       :row-class="() => 'file-row'"
-      @row-click="handleRowClick"
       @change="handleTableChange"
     >
       <template #columns>
         <a-table-column title="文件名" data-index="displayName" :width="400">
           <template #cell="{ record }">
-            <div class="file-name-cell">
+            <div
+              class="file-name-cell"
+              :class="{ 'is-folder': record.isDir }"
+              @dblclick="handleDoubleClick(record)"
+            >
               <div class="file-icon-wrapper">
                 <img
                   :src="
@@ -130,7 +133,7 @@
     (e: 'move', record: FileItem): void;
   }>();
 
-  const handleRowClick = (record: FileItem) => {
+  const handleDoubleClick = (record: FileItem) => {
     if (record.isDir) {
       emit('rowClick', record);
     }
@@ -154,7 +157,6 @@
       }
 
       .file-row {
-        cursor: pointer;
         transition: all 0.2s;
 
         &:hover {
@@ -167,6 +169,10 @@
       display: flex;
       align-items: center;
       gap: 12px;
+
+      &.is-folder {
+        cursor: pointer;
+      }
 
       .file-icon-wrapper {
         width: 32px;
