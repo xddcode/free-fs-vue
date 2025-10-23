@@ -1,17 +1,13 @@
 <template>
   <div class="navbar">
     <div class="left-side">
-      <a-space>
+      <a-space :size="16">
         <img
           alt="logo"
-          src="//p3-armor.byteimg.com/tos-cn-i-49unhts6dw/dfdba5317c0c20ce20e64fac803d52bc.svg~tplv-49unhts6dw-image.image"
+          :src="logoSvg"
+          style="width: 48px; height: 48px; cursor: pointer"
+          @click="$router.push({ name: 'files' })"
         />
-        <a-typography-title
-          :heading="5"
-          :style="{ margin: 0, fontSize: '18px' }"
-        >
-          Free Fs
-        </a-typography-title>
         <icon-menu-fold
           v-if="appStore.device === 'mobile'"
           style="font-size: 22px; cursor: pointer"
@@ -190,6 +186,7 @@
     IconExclamationCircle,
   } from '@arco-design/web-vue/es/icon';
   import useUser from '@/hooks/user';
+  import logoSvg from '@/assets/logo.svg?url';
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',

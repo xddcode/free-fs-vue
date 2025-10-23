@@ -1,28 +1,240 @@
-<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1"/>
-            <stop offset="100%" style="stop-color:#5CA0F2;stop-opacity:1"/>
-        </linearGradient>
-    </defs>
-
-    <!-- 云 -->
-    <path d="M50 80
-           A30 30 0 0 1 80 50
-           A40 40 0 0 1 150 70
-           A30 30 0 0 1 180 100
-           A30 30 0 0 1 150 130
-           L50 130
-           A30 30 0 0 1 50 80"
-          fill="url(#cloudGrad)"/>
-
-    <!-- 存储图标 -->
-    <rect x="70" y="90" width="60" height="30" rx="5" ry="5" fill="white"/>
-    <rect x="75" y="100" width="50" height="5" fill="#4A90E2"/>
-    <rect x="75" y="110" width="40" height="5" fill="#4A90E2"/>
-
-    <!-- 上传箭头 -->
-    <path d="M95 85 L105 85 L105 70 L115 70 L100 55 L85 70 L95 70 Z" fill="white"/>
-
-
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 背景渐变 - 蓝紫色 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#764BA2;stop-opacity:1"/>
+    </linearGradient>
+    
+    <!-- 云朵渐变 - 白色到浅蓝 -->
+    <linearGradient id="cloudGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#E8F4FD;stop-opacity:0.98"/>
+    </linearGradient>
+    
+    <!-- 云朵阴影 -->
+    <filter id="cloudShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 文字渐变 -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5B7FED;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#6B5DE8;stop-opacity:1"/>
+    </linearGradient>
+    
+    <!-- 文字阴影 -->
+    <filter id="textShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.4"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 高光效果 -->
+    <radialGradient id="highlight" cx="30%" cy="30%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.4"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 圆角方形背景 -->
+  <rect x="20" y="20" width="160" height="160" rx="35" ry="35"
+        fill="url(#bgGradient)"/>
+  
+  <!-- 背景高光 -->
+  <rect x="20" y="20" width="160" height="160" rx="35" ry="35"
+        fill="url(#highlight)"/>
+  
+  <!-- 自由线条 - 向外扩散，象征开放和自由 -->
+  <g opacity="0.25" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none">
+    <!-- 左上方射线 -->
+    <path d="M 55 65 L 45 50">
+      <animate attributeName="opacity" values="0.2;0.5;0.2" dur="3s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 65 55 L 58 40">
+      <animate attributeName="opacity" values="0.15;0.45;0.15" dur="3.5s" repeatCount="indefinite"/>
+    </path>
+    
+    <!-- 右上方射线 -->
+    <path d="M 145 65 L 155 50">
+      <animate attributeName="opacity" values="0.2;0.5;0.2" dur="3.2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 135 55 L 142 40">
+      <animate attributeName="opacity" values="0.15;0.45;0.15" dur="3.7s" repeatCount="indefinite"/>
+    </path>
+    
+    <!-- 顶部射线 -->
+    <path d="M 100 50 L 100 35">
+      <animate attributeName="opacity" values="0.25;0.55;0.25" dur="3.3s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  
+  <!-- 云朵形状 - 更大且左右对称 -->
+  <g filter="url(#cloudShadow)">
+    <!-- 云朵主体 - 完全对称设计 -->
+    <path d="M 100 55
+             C 85 55, 75 62, 70 72
+             C 60 72, 50 82, 50 95
+             C 50 105, 55 113, 62 118
+             L 70 125
+             L 130 125
+             L 138 118
+             C 145 113, 150 105, 150 95
+             C 150 82, 140 72, 130 72
+             C 125 62, 115 55, 100 55 Z"
+          fill="url(#cloudGradient)"/>
+    
+    <!-- 云朵左侧凸起 -->
+    <circle cx="65" cy="90" r="18" fill="url(#cloudGradient)"/>
+    
+    <!-- 云朵右侧凸起 -->
+    <circle cx="135" cy="90" r="18" fill="url(#cloudGradient)"/>
+    
+    <!-- 云朵顶部凸起 -->
+    <circle cx="100" cy="65" r="20" fill="url(#cloudGradient)"/>
+    
+    <!-- 云朵底部平滑 -->
+    <ellipse cx="100" cy="120" rx="45" ry="12" 
+             fill="url(#cloudGradient)"/>
+    
+    <!-- 云朵底部高光 -->
+    <ellipse cx="100" cy="118" rx="50" ry="10" 
+             fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  
+  <!-- 飞翔的小鸟 - 象征自由 -->
+  <g fill="#FFFFFF" opacity="0.8">
+    <!-- 左上小鸟 -->
+    <g transform="translate(60, 50)">
+      <path d="M -5 0 Q -2 -2, 0 0 Q 2 -2, 5 0" 
+            stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="translate" 
+                          values="0,0; -2,-3; 0,0" dur="2s" repeatCount="indefinite"/>
+      </path>
+    </g>
+    
+    <!-- 右上小鸟 -->
+    <g transform="translate(140, 52)">
+      <path d="M -5 0 Q -2 -2, 0 0 Q 2 -2, 5 0" 
+            stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="translate" 
+                          values="0,0; 2,-3; 0,0" dur="2.3s" repeatCount="indefinite"/>
+      </path>
+    </g>
+    
+    <!-- 中间小鸟 -->
+    <g transform="translate(100, 45)">
+      <path d="M -6 0 Q -2 -2.5, 0 0 Q 2 -2.5, 6 0" 
+            stroke="#FFFFFF" stroke-width="1.8" fill="none" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="translate" 
+                          values="0,0; 0,-4; 0,0" dur="2.5s" repeatCount="indefinite"/>
+      </path>
+    </g>
+  </g>
+  
+  <!-- FS 文字 - 在云朵内部 -->
+  <g transform="translate(100, 98)" filter="url(#textShadow)">
+    <!-- F 字母 -->
+    <g transform="translate(-24, 0)">
+      <!-- F 竖线 -->
+      <rect x="0" y="-20" width="8" height="40" rx="3"
+            fill="url(#textGradient)"/>
+      
+      <!-- F 上横线 -->
+      <rect x="0" y="-20" width="22" height="7" rx="3"
+            fill="url(#textGradient)"/>
+      
+      <!-- F 中横线 -->
+      <rect x="0" y="-3" width="18" height="6" rx="2.5"
+            fill="url(#textGradient)"/>
+      
+      <!-- F 高光 -->
+      <rect x="1" y="-19" width="2.5" height="38" rx="1.2"
+            fill="#FFFFFF" opacity="0.35"/>
+    </g>
+    
+    <!-- S 字母 -->
+    <g transform="translate(12, 0)">
+      <!-- S 上部分 -->
+      <path d="M 8 -20
+               Q 0 -20, 0 -14
+               Q 0 -10, 4 -8
+               L 12 -4
+               Q 18 -1, 18 4
+               Q 18 10, 12 13
+               Q 8 15, 2 14"
+            fill="none" 
+            stroke="url(#textGradient)" 
+            stroke-width="7.5" 
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+      
+      <!-- S 底部端点 -->
+      <circle cx="2" cy="14" r="4" fill="url(#textGradient)"/>
+      
+      <!-- S 顶部端点 -->
+      <circle cx="8" cy="-20" r="4" fill="url(#textGradient)"/>
+      
+      <!-- S 高光 -->
+      <path d="M 10 -18
+               Q 3 -18, 3 -13
+               L 15 -5
+               Q 20 -2, 20 5
+               Q 20 11, 14 14"
+            fill="none" 
+            stroke="#FFFFFF" 
+            stroke-width="2" 
+            stroke-linecap="round"
+            opacity="0.4"/>
+    </g>
+  </g>
+  
+  <!-- 装饰性光点 - 象征自由漂浮 -->
+  <g opacity="0.7">
+    <circle cx="50" cy="60" r="2.5" fill="#FFFFFF">
+      <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="60;55;60" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="155" cy="70" r="2" fill="#FFFFFF">
+      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="cy" values="70;65;70" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="145" cy="145" r="2" fill="#FFFFFF">
+      <animate attributeName="opacity" values="0.35;0.75;0.35" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="60" cy="150" r="2" fill="#FFFFFF">
+      <animate attributeName="opacity" values="0.4;0.85;0.4" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 云朵边缘高光 - 对称设计 -->
+  <path d="M 70 75
+           C 75 65, 85 58, 100 58"
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="2" 
+        stroke-linecap="round"
+        opacity="0.5"/>
+  
+  <path d="M 130 75
+           C 125 65, 115 58, 100 58"
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="2" 
+        stroke-linecap="round"
+        opacity="0.5"/>
 </svg>

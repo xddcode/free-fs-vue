@@ -47,6 +47,40 @@
       <a-button :loading="loading" html-type="submit" long type="primary">
         登录
       </a-button>
+
+      <!-- 第三方登录分隔线 -->
+      <a-divider class="social-login-divider">
+        <span class="divider-text">或使用第三方登录</span>
+      </a-divider>
+
+      <!-- 第三方登录按钮组 -->
+      <div class="social-login-buttons">
+        <a-tooltip content="微信登录">
+          <div
+            class="social-btn social-btn-wechat"
+            @click="handleSocialLogin('wechat')"
+          >
+            <icon-wechat />
+          </div>
+        </a-tooltip>
+        <a-tooltip content="GitHub 登录">
+          <div
+            class="social-btn social-btn-github"
+            @click="handleSocialLogin('github')"
+          >
+            <icon-github />
+          </div>
+        </a-tooltip>
+        <a-tooltip content="QQ 登录">
+          <div
+            class="social-btn social-btn-qq"
+            @click="handleSocialLogin('qq')"
+          >
+            <icon-qq />
+          </div>
+        </a-tooltip>
+      </div>
+
       <a-button
         class="login-form-register-btn"
         long
@@ -63,6 +97,11 @@
   import { reactive, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
+  import {
+    IconWechat,
+    IconGithub,
+    IconQqZone as IconQq,
+  } from '@arco-design/web-vue/es/icon';
   import { ValidatedError } from '@arco-design/web-vue/es/form/interface';
   import { useUserStore } from '@/store';
   import useLoading from '@/hooks/loading';
@@ -118,6 +157,14 @@
   const setRememberPassword = (value: boolean) => {
     userInfo.isRemember = value;
   };
+
+  // 第三方登录处理（预留）
+  const handleSocialLogin = (platform: 'wechat' | 'github' | 'qq') => {
+    Message.info(`${platform} 登录功能开发中...`);
+    // TODO: 实现第三方登录逻辑
+    // console.log(`Attempting ${platform} login...`);
+  };
+
   defineEmits(['switchForm']);
 </script>
 
@@ -132,6 +179,83 @@
 
     &-register-btn {
       color: var(--color-text-3) !important;
+    }
+  }
+
+  // 第三方登录分隔线
+  .social-login-divider {
+    margin: 24px 0 20px 0;
+    color: var(--color-text-3);
+    font-size: 13px;
+
+    .divider-text {
+      padding: 0 12px;
+      color: var(--color-text-3);
+    }
+
+    :deep(.arco-divider-text) {
+      padding: 0;
+    }
+  }
+
+  // 第三方登录按钮组
+  .social-login-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 16px;
+
+    .social-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 22px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      // 微信
+      &-wechat {
+        background: linear-gradient(135deg, #09bb07 0%, #02c05a 100%);
+        color: #ffffff;
+
+        &:hover {
+          background: linear-gradient(135deg, #0acd08 0%, #03d864 100%);
+        }
+      }
+
+      // GitHub
+      &-github {
+        background: linear-gradient(135deg, #24292e 0%, #1a1e22 100%);
+        color: #ffffff;
+
+        &:hover {
+          background: linear-gradient(135deg, #2f363d 0%, #24292e 100%);
+        }
+      }
+
+      // QQ
+      &-qq {
+        background: linear-gradient(135deg, #12b7f5 0%, #0e9fe0 100%);
+        color: #ffffff;
+
+        &:hover {
+          background: linear-gradient(135deg, #1fc2ff 0%, #12b7f5 100%);
+        }
+      }
     }
   }
 </style>
