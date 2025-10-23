@@ -8,6 +8,9 @@ export interface UserInfo {
   email: string;
   avatar: string;
   status: number;
+  createdAt?: string; // 注册时间
+  updatedAt?: string; // 更新时间
+  lastLoginAt?: string; // 最后登录时间
 }
 
 /**
@@ -47,4 +50,35 @@ export interface ForgotPasswordParams {
   code: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+/**
+ * 更新用户信息参数
+ */
+export interface UpdateUserInfoParams {
+  nickname?: string;
+  email?: string;
+  avatar?: string;
+}
+
+/**
+ * 修改邮箱参数
+ */
+export interface ChangeEmailParams {
+  newEmail: string;
+  code: string; // 验证码
+}
+
+/**
+ * 安全日志
+ */
+export interface SecurityLog {
+  id: string;
+  userId: string;
+  action: string; // 操作类型
+  ip: string; // IP地址
+  location: string; // 地理位置
+  os: string; // 操作系统
+  browser: string; // 浏览器
+  createdAt: string; // 操作时间
 }

@@ -17,6 +17,9 @@ const useUserStore = defineStore('user', {
     avatar: undefined,
     email: undefined,
     status: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+    lastLoginAt: undefined,
   }),
 
   getters: {
@@ -40,6 +43,11 @@ const useUserStore = defineStore('user', {
     async info() {
       const res = await getUserInfo();
       this.setInfo(res.data);
+    },
+    
+    // 保持兼容性，添加 getUserInfo 别名
+    async getUserInfo() {
+      return this.info();
     },
 
     // Login

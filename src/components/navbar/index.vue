@@ -151,15 +151,27 @@
           </a-avatar>
           <template #content>
             <a-doption>
-              <a-space @click="$router.push({ name: 'Info' })">
+              <a-space @click="$router.push({ name: 'profile' })">
                 <icon-user />
                 <span> 用户中心 </span>
               </a-space>
             </a-doption>
             <a-doption>
-              <a-space @click="$router.push({ name: 'Setting' })">
-                <icon-settings />
-                <span> 用户设置 </span>
+              <a-space @click="openGitee">
+                <icon-gitlab />
+                <span> Gitee </span>
+              </a-space>
+            </a-doption>
+            <a-doption>
+              <a-space @click="openGithub">
+                <icon-github />
+                <span> Github </span>
+              </a-space>
+            </a-doption>
+            <a-doption>
+              <a-space @click="openIss">
+                <icon-bulb />
+                <span> 问题 & 帮助 </span>
               </a-space>
             </a-doption>
             <a-doption>
@@ -231,6 +243,18 @@
 
   const handleLogout = () => {
     logout();
+  };
+
+  const openGithub = () => {
+    window.open('https://github.com/xddcode/free-fs', '_blank');
+  };
+
+  const openGitee = () => {
+    window.open('https://gitee.com/xddcode/free-fs', '_blank');
+  };
+
+  const openIss = () => {
+    window.open('https://gitee.com/xddcode/free-fs/issues', '_blank');
   };
 
   const handleSelectPlatform = async (identifier: string) => {

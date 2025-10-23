@@ -4,7 +4,9 @@ import {
   LoginRes,
   UserInfo,
   UserRegisterParams,
-  ForgotPasswordParams,
+  UpdateUserInfoParams,
+  ChangeEmailParams,
+  SecurityLog,
 } from '@/types/modules/user';
 
 /**
@@ -45,6 +47,52 @@ export function sendForgetPasswordCode(mail: string) {
 /**
  * 忘记密码-修改密码
  */
-export function updateForgetPassword(data: { mail: string; code: string; newPassword: string; confirmPassword: string }) {
+export function updateForgetPassword(data: {
+  mail: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
   return request.put('/apis/user/forget-password', data);
+}
+
+/**
+ * 修改密码
+ */
+export function changePassword(data: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  return request.put('/apis/user/change-password', data);
+}
+
+/**
+ * 更新用户信息
+ */
+export function updateUserInfo(data: UpdateUserInfoParams) {
+  return request.put<UserInfo>('/apis/user/info', data);
+}
+
+/**
+ * 发送修改邮箱验证码
+ */
+export function sendChangeEmailCode(email: string) {
+  return request.get(`/apis/user/change-email/code/${email}`);
+}
+
+/**
+ * 修改邮箱
+ */
+export function changeEmail(data: ChangeEmailParams) {
+  return request.put('/apis/user/change-email', data);
+}
+
+/**
+ * 获取安全日志
+ */
+export function getSecurityLogs(params?: { page?: number; pageSize?: number }) {
+  return request.get<{
+    list: SecurityLog[];
+    total: number;
+  }>('/apis/user/security-logs', { params });
 }
