@@ -38,3 +38,13 @@ export interface UserRegisterParams {
   nickname: string;
   avatar?: string; // 头像，可选
 }
+
+/**
+ * 忘记密码参数
+ */
+export interface ForgotPasswordParams {
+  mail: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+}
