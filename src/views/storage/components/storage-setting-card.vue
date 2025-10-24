@@ -30,21 +30,23 @@
               >
                 <icon-link style="font-size: 12px" />
               </a-link>
-            </div>
-            <div class="card-tags">
               <!-- 启用状态标签 -->
-              <a-tag v-if="setting.enabled === 1" color="green" size="small">
+              <a-tag v-if="setting.enabled === 1" color="green" size="small" class="status-tag">
                 <template #icon>
                   <icon-check-circle-fill />
                 </template>
                 已启用
               </a-tag>
-              <a-tag v-else color="red" size="small">
+              <a-tag v-else color="red" size="small" class="status-tag">
                 <template #icon>
                   <icon-close-circle />
                 </template>
                 已禁用
               </a-tag>
+            </div>
+            <div class="card-subtitle">
+              <span class="config-id">配置ID: {{ setting.id }}</span>
+              <span v-if="setting.remark && setting.remark.trim()" class="config-remark">{{ setting.remark }}</span>
             </div>
           </div>
         </div>
@@ -151,6 +153,18 @@
             allow-clear
           />
         </a-form-item>
+
+        <!-- 备注字段 -->
+        <a-form-item
+          field="remark"
+          label="配置备注"
+        >
+          <a-input
+            v-model="formData.remark"
+            placeholder="请输入配置备注，用于区分同一平台下的不同配置（可选）"
+            allow-clear
+          />
+        </a-form-item>
       </a-form>
     </a-modal>
   </div>
@@ -169,7 +183,7 @@
     updateStorageSetting,
     deleteStorageSetting,
     toggleStorageSetting,
-    type StorageSettingUserVO,
+    type StorageSetting,
   } from '@/api/storage';
 
   const IconFont = Icon.addFromIconFontCn({
@@ -207,6 +221,9 @@
       delete rules[key];
     });
 
+    // 初始化备注字段
+    formData.remark = '';
+
     // 重新设置表单数据和验证规则
     schemes.value.forEach((field) => {
       formData[field.identifier] = '';
@@ -224,19 +241,24 @@
 
   const props = defineProps({
     setting: {
-      type: Object as PropType<StorageSettingUserVO>,
+      type: Object as PropType<StorageSetting>,
       required: true,
     },
   });
 
   const handleEditConfig = async () => {
-    const { storagePlatform, configData } = props.setting;
+    const { storagePlatform, configData, remark } = props.setting;
 
     try {
       schemes.value = JSON.parse(storagePlatform.configScheme);
 
       // 先重置表单
       await resetFormData();
+
+      // 设置备注字段
+      if (remark) {
+        formData.remark = remark;
+      }
 
       // 遍历 schemes 将 configData 中对应的值设置到 formData
       if (configData) {
@@ -258,21 +280,21 @@
 
   const handleToggleEnabled = async () => {
     const { id, enabled, storagePlatform } = props.setting;
-    const newEnabled = enabled === 1 ? 0 : 1;
+    const action = enabled === 1 ? 0 : 1; // 0禁用，1启用
 
     Modal.confirm({
-      title: newEnabled === 1 ? '确认启用' : '确认禁用',
-      content: `确定要${newEnabled === 1 ? '启用' : '禁用'} "${
+      title: action === 1 ? '确认启用' : '确认禁用',
+      content: `确定要${action === 1 ? '启用' : '禁用'} "${
         storagePlatform.name
       }" 存储平台配置吗？`,
-      okText: `确认${newEnabled === 1 ? '启用' : '禁用'}`,
+      okText: `确认${action === 1 ? '启用' : '禁用'}`,
       cancelText: '取消',
       onOk: async () => {
         btnLoading.value = true;
         try {
-          await toggleStorageSetting(id, newEnabled);
+          await toggleStorageSetting(id.toString(), action);
           Message.success(
-            `${storagePlatform.name} 已${newEnabled === 1 ? '启用' : '禁用'}`
+            `${storagePlatform.name} 已${action === 1 ? '启用' : '禁用'}`
           );
           emit('refresh');
         } catch (error) {
@@ -288,7 +310,7 @@
   const handleDelete = () => {
     const { id, storagePlatform } = props.setting;
 
-    Modal.warning({
+    Modal.confirm({
       title: '确认删除',
       content: `删除后，"${storagePlatform.name}" 的配置信息将无法恢复。确定要继续吗？`,
       okText: '确认删除',
@@ -306,6 +328,9 @@
           btnLoading.value = false;
         }
       },
+      onCancel: () => {
+        // 取消删除操作，不需要额外处理
+      },
     });
   };
 
@@ -314,11 +339,18 @@
       try {
         const errors = await formRef.value.validate();
         if (!errors) {
-          const { id } = props.setting;
+          const { id, storagePlatform } = props.setting;
           const submitData = {
-            configData: JSON.stringify(formData),
+            settingId: id.toString(),
+            platformIdentifier: storagePlatform.identifier,
+            configData: JSON.stringify(
+              Object.fromEntries(
+                Object.entries(formData).filter(([key]) => key !== 'remark')
+              )
+            ),
+            remark: formData.remark,
           };
-          await updateStorageSetting(id, submitData);
+          await updateStorageSetting(submitData);
           Message.success('配置保存成功');
           emit('refresh');
           done(true);
@@ -405,9 +437,35 @@
           font-size: 14px;
           font-weight: 600;
           color: var(--color-text-1);
-          margin-bottom: 6px;
+          margin-bottom: 4px;
           line-height: 1.4;
           height: 20px;
+
+          .status-tag {
+            margin-left: auto;
+          }
+        }
+
+        .card-subtitle {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          margin-bottom: 4px;
+          font-size: 11px;
+          color: var(--color-text-3);
+          line-height: 1.3;
+
+          .config-id {
+            font-weight: 500;
+          }
+
+          .config-remark {
+            font-style: italic;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
         }
 
         .card-tags {

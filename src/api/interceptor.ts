@@ -39,14 +39,14 @@ service.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 添加存储平台标识
+    // 添加存储平台配置ID
     const storageInfo = localStorage.getItem('current-storage-platform');
     if (storageInfo) {
       try {
         const platform = JSON.parse(storageInfo);
-        if (platform?.platformIdentifier) {
+        if (platform?.settingId) {
           config.headers = config.headers || {};
-          config.headers['X-Storage-Platform'] = platform.platformIdentifier;
+          config.headers['X-Storage-Platform-Config-Id'] = platform.settingId;
         }
       } catch (error) {
         // 忽略解析错误

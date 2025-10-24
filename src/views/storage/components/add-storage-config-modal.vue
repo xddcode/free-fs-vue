@@ -16,13 +16,13 @@
     </template>
 
     <a-form
+      :key="formKey"
       ref="formRef"
       :auto-label-width="true"
       :model="formData"
       :rules="rules"
       layout="vertical"
     >
-      <!-- 选择存储平台 -->
       <a-form-item
         field="platformId"
         label="选择存储平台"
@@ -54,7 +54,6 @@
         </a-select>
       </a-form-item>
 
-      <!-- 动态配置表单 -->
       <template v-if="selectedPlatform && schemes.length > 0">
         <a-form-item
           v-for="field in schemes"
@@ -76,8 +75,15 @@
         </a-form-item>
       </template>
 
-      <!-- 未选择平台时的提示 -->
-      <div v-else-if="!selectedPlatform" class="empty-tip">
+      <a-form-item field="remark" label="配置备注">
+        <a-input
+          v-model="formData.remark"
+          placeholder="请输入配置备注，用于区分同一平台下的不同配置（可选）"
+          allow-clear
+        />
+      </a-form-item>
+
+      <div v-if="!selectedPlatform" class="empty-tip">
         <a-empty description="请先选择存储平台" :image="false" />
       </div>
     </a-form>
@@ -86,12 +92,12 @@
 
 <script lang="ts" setup>
   import { Icon, Message } from '@arco-design/web-vue';
-  import { reactive, ref, watch } from 'vue';
+  import { reactive, ref, watch, nextTick } from 'vue';
   import { IconPlus } from '@arco-design/web-vue/es/icon';
   import {
     getStoragePlatforms,
     addStorageSetting,
-    type StoragePlatformVO,
+    type StoragePlatform,
   } from '@/api/storage';
 
   const IconFont = Icon.addFromIconFontCn({
@@ -112,8 +118,9 @@
 
   const modalVisible = ref(false);
   const platformsLoading = ref(false);
-  const platforms = ref<StoragePlatformVO[]>([]);
-  const selectedPlatform = ref<StoragePlatformVO | null>(null);
+  const platforms = ref<StoragePlatform[]>([]);
+  const selectedPlatform = ref<StoragePlatform | null>(null);
+  const formKey = ref(0);
 
   interface ConfigScheme {
     identifier: string;
@@ -129,6 +136,7 @@
   const schemes = ref<ConfigScheme[]>([]);
   const formData = reactive<Record<string, any>>({
     platformId: undefined,
+    remark: '',
   });
 
   const fetchPlatforms = async () => {
@@ -145,22 +153,46 @@
     }
   };
 
-  const resetForm = () => {
-    // 清空表单数据
-    Object.keys(formData).forEach((key) => {
-      if (key !== 'platformId') {
-        delete formData[key];
-      }
+  const resetAllState = () => {
+    selectedPlatform.value = null;
+    schemes.value = [];
+
+    const keysToDelete = Object.keys(formData).filter(
+      (key) => key !== 'platformId' && key !== 'remark'
+    );
+    keysToDelete.forEach((key) => {
+      delete formData[key];
     });
 
-    // 清空验证规则
+    formData.platformId = undefined;
+    formData.remark = '';
+
     Object.keys(rules).forEach((key) => {
-      if (key !== 'platformId') {
-        delete rules[key];
-      }
+      delete rules[key];
     });
 
-    // 重新设置表单数据和验证规则
+    formKey.value += 1;
+
+    nextTick(() => {
+      if (formRef.value) {
+        formRef.value.clearValidate();
+        formRef.value.resetFields();
+      }
+    });
+  };
+
+  const resetForm = () => {
+    const keysToDelete = Object.keys(formData).filter(
+      (key) => key !== 'platformId' && key !== 'remark'
+    );
+    keysToDelete.forEach((key) => {
+      delete formData[key];
+    });
+
+    Object.keys(rules).forEach((key) => {
+      delete rules[key];
+    });
+
     schemes.value.forEach((field) => {
       formData[field.identifier] = '';
       rules[field.identifier] = {
@@ -169,13 +201,14 @@
       };
     });
 
-    // 如果表单实例存在,重置表单验证状态
-    if (formRef.value) {
-      formRef.value.clearValidate();
-    }
+    nextTick(() => {
+      if (formRef.value) {
+        formRef.value.clearValidate();
+      }
+    });
   };
 
-  const handlePlatformChange = (platformId: number) => {
+  const handlePlatformChange = (platformId: any) => {
     const platform = platforms.value.find((p) => p.id === platformId);
     if (platform) {
       selectedPlatform.value = platform;
@@ -195,21 +228,25 @@
     }
   };
 
-  // 监听 visible 变化
   watch(
     () => props.visible,
-    (newVal) => {
+    async (newVal) => {
       modalVisible.value = newVal;
       if (newVal) {
+        resetAllState();
+        await nextTick();
         fetchPlatforms();
-        resetForm();
       }
     }
   );
 
-  // 监听 modalVisible 变化
   watch(modalVisible, (newVal) => {
     emit('update:visible', newVal);
+    if (!newVal) {
+      setTimeout(() => {
+        resetAllState();
+      }, 300);
+    }
   });
 
   const handleBeforeOk = async (done: (closed: boolean) => void) => {
@@ -217,13 +254,25 @@
       try {
         const errors = await formRef.value.validate();
         if (!errors) {
+          const selectedPlatformData = platforms.value.find(
+            (p) => p.id === formData.platformId
+          );
+          if (!selectedPlatformData) {
+            Message.error('请选择存储平台');
+            done(false);
+            return;
+          }
+
           const submitData = {
-            platformId: formData.platformId,
+            platformIdentifier: selectedPlatformData.identifier,
             configData: JSON.stringify(
               Object.fromEntries(
-                Object.entries(formData).filter(([key]) => key !== 'platformId')
+                Object.entries(formData).filter(
+                  ([key]) => key !== 'platformId' && key !== 'remark'
+                )
               )
             ),
+            remark: formData.remark,
           };
           await addStorageSetting(submitData);
           Message.success('配置添加成功');

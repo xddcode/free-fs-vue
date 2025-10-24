@@ -22,6 +22,11 @@ const useStorageStore = defineStore('storage', {
       return state.currentPlatform?.platformIdentifier || null;
     },
 
+    // 当前配置ID
+    currentSettingId(state): string | null {
+      return state.currentPlatform?.settingId || null;
+    },
+
     // 是否有可用的存储平台
     hasActivePlatform(state): boolean {
       return state.activePlatforms.length > 0;
@@ -46,7 +51,7 @@ const useStorageStore = defineStore('storage', {
           this.currentPlatform &&
           !data.find(
             (p) =>
-              p.platformIdentifier === this.currentPlatform?.platformIdentifier
+              p.settingId === this.currentPlatform?.settingId
           )
         ) {
           const newPlatform = data[0] || null;
@@ -98,9 +103,9 @@ const useStorageStore = defineStore('storage', {
       });
 
       try {
-        // 模拟切换延迟
+        // 前端切换延迟，提供更好的用户体验
         await new Promise<void>((resolve) => {
-          setTimeout(() => resolve(), 800);
+          setTimeout(() => resolve(), 300);
         });
 
         // 切换成功：保存新平台

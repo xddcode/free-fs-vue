@@ -110,15 +110,15 @@
             </a-doption>
             <a-doption
               v-for="platform in storageStore.activePlatforms"
-              :key="platform.platformIdentifier"
-              :value="platform.platformIdentifier"
+              :key="platform.settingId"
+              :value="platform.settingId"
               :disabled="
-                platform.platformIdentifier === storageStore.currentIdentifier
+                platform.settingId === storageStore.currentSettingId
               "
               :class="{
                 'platform-option-active':
-                  platform.platformIdentifier ===
-                  storageStore.currentIdentifier,
+                  platform.settingId ===
+                  storageStore.currentSettingId,
               }"
             >
               <div class="platform-option">
@@ -127,8 +127,8 @@
                   :size="32"
                   :style="{
                     backgroundColor:
-                      platform.platformIdentifier ===
-                      storageStore.currentIdentifier
+                      platform.settingId ===
+                      storageStore.currentSettingId
                         ? 'rgb(var(--primary-6))'
                         : 'var(--color-fill-3)',
                   }"
@@ -139,8 +139,8 @@
                   class="platform-name"
                   :class="{
                     'platform-name-active':
-                      platform.platformIdentifier ===
-                      storageStore.currentIdentifier,
+                      platform.settingId ===
+                      storageStore.currentSettingId,
                   }"
                   >{{ platform.platformName }}</span
                 >
@@ -265,11 +265,21 @@
     window.open('https://gitee.com/xddcode/free-fs/issues', '_blank');
   };
 
-  const handleSelectPlatform = async (identifier: string) => {
+  const handleSelectPlatform = async (settingId: string | number | Record<string, any> | undefined) => {
+    // 确保settingId是字符串类型
+    if (typeof settingId !== 'string') return;
     const platform = storageStore.activePlatforms.find(
-      (p) => p.platformIdentifier === identifier
+      (p) => p.settingId === settingId
     );
     if (!platform) return;
+
+    // 防止重复点击
+    if (platformSwitching.value) return;
+
+    // 如果已经是当前平台，直接返回
+    if (storageStore.currentPlatform?.settingId === settingId) {
+      return;
+    }
 
     // 立即显示 loading 状态
     platformSwitching.value = true;
@@ -281,16 +291,11 @@
     });
 
     try {
-      // 模拟切换过程（实际项目中这里可能是调用 API）
-      await new Promise<void>((resolve, reject) => {
+      // 前端切换存储平台，添加短暂延迟以提供更好的用户体验
+      await new Promise<void>((resolve) => {
         setTimeout(() => {
-          // 模拟 90% 成功率
-          if (Math.random() > 0.1) {
-            resolve();
-          } else {
-            reject(new Error('切换失败'));
-          }
-        }, 800);
+          resolve();
+        }, 300);
       });
 
       // 切换成功：保存新平台
