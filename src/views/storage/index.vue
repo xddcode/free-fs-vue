@@ -10,54 +10,57 @@
             </div>
           </template>
           <template #extra>
-            <a-space>
-              <a-input-search
-                v-model="searchKeyword"
-                allow-clear
-                placeholder="搜索存储平台..."
-                style="width: 260px"
-                @search="handleSearch"
-                @clear="handleClear"
-              />
-              <a-button type="outline" @click="handleRefresh">
-                <template #icon>
-                  <icon-refresh />
-                </template>
-                刷新
-              </a-button>
-            </a-space>
+            <a-button type="outline" @click="handleRefresh">
+              <template #icon>
+                <icon-refresh />
+              </template>
+              刷新
+            </a-button>
           </template>
 
-          <div v-if="loading && renderData.length === 0" class="loading-wrap">
+          <div v-if="loading && userSettings.length === 0" class="loading-wrap">
             <a-spin :size="40" tip="加载中..." />
           </div>
 
-          <div v-else-if="renderData.length > 0" class="list-wrap">
+          <div v-else-if="userSettings.length > 0" class="list-wrap">
             <a-row :gutter="[16, 16]" class="list-row">
-              <!-- 存储平台卡片 -->
+              <!-- 添加配置卡片 -->
+              <a-col :span="4" class="list-col">
+                <AddConfigCard @click="handleAddConfig" />
+              </a-col>
+              <!-- 用户已配置的存储平台卡片 -->
               <a-col
-                v-for="item in renderData"
-                :key="item.id"
+                v-for="setting in userSettings"
+                :key="setting.id"
                 :span="4"
                 class="list-col"
               >
-                <CardWrap :item-data="item" @refresh="fetchData" />
+                <StorageSettingCard :setting="setting" @refresh="fetchData" />
               </a-col>
             </a-row>
           </div>
 
           <div v-else class="empty-wrap">
-            <a-empty description="暂无存储平台数据">
+            <a-empty description="暂无存储平台配置">
               <template #image>
                 <icon-cloud-download
                   :style="{ fontSize: '64px', color: 'var(--color-text-4)' }"
                 />
+              </template>
+              <template #extra>
+                <AddConfigCard @click="handleAddConfig" />
               </template>
             </a-empty>
           </div>
         </a-card>
       </a-col>
     </a-row>
+
+    <!-- 添加配置弹窗 -->
+    <AddStorageConfigModal
+      v-model:visible="addModalVisible"
+      @success="handleAddSuccess"
+    />
   </div>
 </template>
 
@@ -69,23 +72,25 @@
     IconCloudDownload,
   } from '@arco-design/web-vue/es/icon';
   import {
-    getStoragePlatforms,
-    type StoragePlatformRecord,
+    getUserStorageSettings,
+    type StorageSettingUserVO,
   } from '@/api/storage';
-  import CardWrap from './components/card-wrap.vue';
+  import StorageSettingCard from './components/storage-setting-card.vue';
+  import AddStorageConfigModal from './components/add-storage-config-modal.vue';
+  import AddConfigCard from './components/add-config-card.vue';
 
-  const searchKeyword = ref('');
   const loading = ref(false);
-  const renderData = ref<StoragePlatformRecord[]>([]);
+  const userSettings = ref<StorageSettingUserVO[]>([]);
+  const addModalVisible = ref(false);
 
-  const fetchData = async (keywords?: string) => {
+  const fetchData = async () => {
     loading.value = true;
     try {
-      const { data } = await getStoragePlatforms(keywords);
-      renderData.value = data;
+      const { data } = await getUserStorageSettings();
+      userSettings.value = data;
     } catch (error) {
       // 拦截器已处理错误提示
-      renderData.value = [];
+      userSettings.value = [];
     } finally {
       loading.value = false;
     }
@@ -93,17 +98,15 @@
 
   fetchData();
 
-  const handleSearch = (value: string) => {
-    fetchData(value);
+  const handleAddConfig = () => {
+    addModalVisible.value = true;
   };
 
-  const handleClear = () => {
-    searchKeyword.value = '';
+  const handleAddSuccess = () => {
     fetchData();
   };
 
   const handleRefresh = () => {
-    searchKeyword.value = '';
     fetchData();
   };
 </script>

@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
 import { Message } from '@arco-design/web-vue';
 import { getActiveStoragePlatforms } from '@/api/storage';
-import type { StoragePlatformRecord } from '@/api/storage';
+import type { ActiveStoragePlatform } from '@/api/storage';
 
 interface StorageState {
-  currentPlatform: StoragePlatformRecord | null;
-  activePlatforms: StoragePlatformRecord[];
+  currentPlatform: ActiveStoragePlatform | null;
+  activePlatforms: ActiveStoragePlatform[];
   switching: boolean; // 是否正在切换中
 }
 
@@ -19,7 +19,7 @@ const useStorageStore = defineStore('storage', {
   getters: {
     // 当前平台标识符
     currentIdentifier(state): string | null {
-      return state.currentPlatform?.identifier || null;
+      return state.currentPlatform?.platformIdentifier || null;
     },
 
     // 是否有可用的存储平台
@@ -44,13 +44,16 @@ const useStorageStore = defineStore('storage', {
         // 如果当前平台不在列表中（被禁用了），需要带过渡效果地切换
         if (
           this.currentPlatform &&
-          !data.find((p) => p.identifier === this.currentPlatform?.identifier)
+          !data.find(
+            (p) =>
+              p.platformIdentifier === this.currentPlatform?.platformIdentifier
+          )
         ) {
           const newPlatform = data[0] || null;
           // 使用带过渡效果的切换
           await this.switchPlatformWithTransition(
             newPlatform,
-            `${oldPlatform?.name} 已禁用`
+            `${oldPlatform?.platformName} 已禁用`
           );
         }
       } catch (error) {
@@ -60,7 +63,7 @@ const useStorageStore = defineStore('storage', {
     },
 
     // 设置当前使用的存储平台（无过渡效果）
-    setCurrentPlatform(platform: StoragePlatformRecord | null) {
+    setCurrentPlatform(platform: ActiveStoragePlatform | null) {
       this.currentPlatform = platform;
       // 保存到 localStorage
       if (platform) {
@@ -75,7 +78,7 @@ const useStorageStore = defineStore('storage', {
 
     // 带过渡效果的切换平台
     async switchPlatformWithTransition(
-      platform: StoragePlatformRecord | null,
+      platform: ActiveStoragePlatform | null,
       reason?: string
     ) {
       if (!platform) {
@@ -89,8 +92,8 @@ const useStorageStore = defineStore('storage', {
       // 显示加载提示
       const loadingMsg = Message.loading({
         content: reason
-          ? `${reason}，正在切换到 ${platform.name}...`
-          : `正在切换到 ${platform.name}...`,
+          ? `${reason}，正在切换到 ${platform.platformName}...`
+          : `正在切换到 ${platform.platformName}...`,
         duration: 0,
       });
 
@@ -106,7 +109,7 @@ const useStorageStore = defineStore('storage', {
         // 关闭 loading，显示成功提示
         loadingMsg.close();
         Message.success({
-          content: `已切换到 ${platform.name}`,
+          content: `已切换到 ${platform.platformName}`,
           duration: 1500,
         });
 
@@ -119,7 +122,7 @@ const useStorageStore = defineStore('storage', {
         this.switching = false;
         loadingMsg.close();
         Message.error({
-          content: `切换到 ${platform.name} 失败`,
+          content: `切换到 ${platform.platformName} 失败`,
           duration: 3000,
         });
       }

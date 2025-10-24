@@ -44,9 +44,9 @@ service.interceptors.request.use(
     if (storageInfo) {
       try {
         const platform = JSON.parse(storageInfo);
-        if (platform?.identifier) {
+        if (platform?.platformIdentifier) {
           config.headers = config.headers || {};
-          config.headers['X-Storage-Platform'] = platform.identifier;
+          config.headers['X-Storage-Platform'] = platform.platformIdentifier;
         }
       } catch (error) {
         // 忽略解析错误

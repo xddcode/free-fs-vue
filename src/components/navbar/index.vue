@@ -76,13 +76,16 @@
         >
           <div class="storage-platform-selector">
             <a-avatar
-              v-if="storageStore.currentPlatform?.icon"
+              v-if="storageStore.currentPlatform?.platformIcon"
               :size="28"
               :style="{
                 backgroundColor: 'rgb(var(--primary-6))',
               }"
             >
-              <icon-font :size="16" :type="storageStore.currentPlatform.icon" />
+              <icon-font
+                :size="16"
+                :type="storageStore.currentPlatform.platformIcon"
+              />
             </a-avatar>
             <icon-storage v-else class="storage-icon" />
             <div class="storage-info">
@@ -93,7 +96,7 @@
                   :size="12"
                   style="margin-right: 4px"
                 />
-                {{ storageStore.currentPlatform?.name || '未选择' }}
+                {{ storageStore.currentPlatform?.platformName || '未选择' }}
               </div>
             </div>
             <icon-down class="dropdown-icon" />
@@ -107,34 +110,39 @@
             </a-doption>
             <a-doption
               v-for="platform in storageStore.activePlatforms"
-              :key="platform.identifier"
-              :value="platform.identifier"
-              :disabled="platform.identifier === storageStore.currentIdentifier"
+              :key="platform.platformIdentifier"
+              :value="platform.platformIdentifier"
+              :disabled="
+                platform.platformIdentifier === storageStore.currentIdentifier
+              "
               :class="{
                 'platform-option-active':
-                  platform.identifier === storageStore.currentIdentifier,
+                  platform.platformIdentifier ===
+                  storageStore.currentIdentifier,
               }"
             >
               <div class="platform-option">
                 <a-avatar
-                  v-if="platform.icon"
+                  v-if="platform.platformIcon"
                   :size="32"
                   :style="{
                     backgroundColor:
-                      platform.identifier === storageStore.currentIdentifier
+                      platform.platformIdentifier ===
+                      storageStore.currentIdentifier
                         ? 'rgb(var(--primary-6))'
                         : 'var(--color-fill-3)',
                   }"
                 >
-                  <icon-font :size="18" :type="platform.icon" />
+                  <icon-font :size="18" :type="platform.platformIcon" />
                 </a-avatar>
                 <span
                   class="platform-name"
                   :class="{
                     'platform-name-active':
-                      platform.identifier === storageStore.currentIdentifier,
+                      platform.platformIdentifier ===
+                      storageStore.currentIdentifier,
                   }"
-                  >{{ platform.name }}</span
+                  >{{ platform.platformName }}</span
                 >
               </div>
             </a-doption>
@@ -259,7 +267,7 @@
 
   const handleSelectPlatform = async (identifier: string) => {
     const platform = storageStore.activePlatforms.find(
-      (p) => p.identifier === identifier
+      (p) => p.platformIdentifier === identifier
     );
     if (!platform) return;
 
@@ -268,7 +276,7 @@
 
     // 显示加载提示
     const loadingMsg = Message.loading({
-      content: `正在切换到 ${platform.name}...`,
+      content: `正在切换到 ${platform.platformName}...`,
       duration: 0, // 持续显示直到手动关闭
     });
 
@@ -291,7 +299,7 @@
       // 关闭 loading，显示成功提示
       loadingMsg.close();
       Message.success({
-        content: `已切换到 ${platform.name}`,
+        content: `已切换到 ${platform.platformName}`,
         duration: 1500,
       });
 
@@ -304,7 +312,7 @@
       platformSwitching.value = false;
       loadingMsg.close();
       Message.error({
-        content: `切换到 ${platform.name} 失败，请重试`,
+        content: `切换到 ${platform.platformName} 失败，请重试`,
         duration: 3000,
       });
     }
