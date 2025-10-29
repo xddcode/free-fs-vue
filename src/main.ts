@@ -4,7 +4,6 @@ import ArcoVueIcon from '@arco-design/web-vue/es/icon';
 import globalComponents from '@/components';
 import router from './router';
 import store from './store';
-import directive from './directive';
 import App from './App.vue';
 import '@icon-park/vue-next/styles/index.css';
 // Styles are imported via arco-plugin. See config/plugin/arcoStyleImport.ts in the directory for details
@@ -21,6 +20,5 @@ app.use(ArcoVueIcon);
 app.use(router);
 app.use(store);
 app.use(globalComponents);
-app.use(directive);
 
 app.mount('#app');

@@ -8,6 +8,8 @@ import {
   moveFile,
   shareFile,
   createFolder,
+  favoriteFile,
+  unfavoriteFile,
 } from '@/api/file';
 import type { FileItem } from '@/types/modules/file';
 
@@ -249,6 +251,24 @@ export default function useFileOperations(refreshCallback: () => void) {
       });
   };
 
+  /**
+   * 收藏/取消收藏文件
+   */
+  const handleFavorite = async (file: FileItem) => {
+    const { isFavorite, id } = file;
+    const action = isFavorite ? unfavoriteFile : favoriteFile;
+    const successMsg = isFavorite ? '已取消收藏' : '已添加到收藏';
+
+    await action([id])
+      .then(() => {
+        Message.success(successMsg);
+        refreshCallback();
+      })
+      .catch(() => {
+        // 拦截器已统一处理错误提示
+      });
+  };
+
   return {
     // 上传相关
     uploadModalVisible,
@@ -288,5 +308,8 @@ export default function useFileOperations(refreshCallback: () => void) {
 
     // 下载
     handleDownload,
+
+    // 收藏
+    handleFavorite,
   };
 }

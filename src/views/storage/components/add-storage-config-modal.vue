@@ -75,13 +75,40 @@
         </a-form-item>
       </template>
 
+      <!-- 备注输入框 -->
       <a-form-item field="remark" label="配置备注">
+        <template #extra>
+          <div class="form-item-tip">
+            <icon-info-circle style="font-size: 14px; margin-right: 4px" />
+            <span
+              >强烈建议添加备注（如"生产环境"、"测试环境"），便于在切换时快速识别</span
+            >
+          </div>
+        </template>
         <a-input
           v-model="formData.remark"
-          placeholder="请输入配置备注，用于区分同一平台下的不同配置（可选）"
+          placeholder="例如：生产环境、测试环境、备份存储等"
           allow-clear
-        />
+        >
+          <template #prefix>
+            <icon-tags />
+          </template>
+        </a-input>
       </a-form-item>
+
+      <!-- 提示信息 -->
+      <a-alert
+        v-if="selectedPlatform && hasSamePlatform"
+        type="warning"
+        closable
+        style="margin-bottom: 20px"
+      >
+        <template #icon>
+          <icon-exclamation-circle />
+        </template>
+        您已配置过 <strong>{{ selectedPlatform.name }}</strong
+        >，强烈建议填写备注以便区分！
+      </a-alert>
 
       <div v-if="!selectedPlatform" class="empty-tip">
         <a-empty description="请先选择存储平台" :image="false" />
@@ -92,11 +119,17 @@
 
 <script lang="ts" setup>
   import { Icon, Message } from '@arco-design/web-vue';
-  import { reactive, ref, watch, nextTick } from 'vue';
-  import { IconPlus } from '@arco-design/web-vue/es/icon';
+  import { reactive, ref, watch, nextTick, computed } from 'vue';
+  import {
+    IconPlus,
+    IconInfoCircle,
+    IconExclamationCircle,
+    IconTags,
+  } from '@arco-design/web-vue/es/icon';
   import {
     getStoragePlatforms,
     addStorageSetting,
+    getUserStorageSettings,
     type StoragePlatform,
   } from '@/api/storage';
 
@@ -121,6 +154,15 @@
   const platforms = ref<StoragePlatform[]>([]);
   const selectedPlatform = ref<StoragePlatform | null>(null);
   const formKey = ref(0);
+  const userPlatformIdentifiers = ref<string[]>([]); // 用户已配置的平台标识符列表
+
+  // 检查是否已经配置过相同的平台
+  const hasSamePlatform = computed(() => {
+    if (!selectedPlatform.value) return false;
+    return userPlatformIdentifiers.value.includes(
+      selectedPlatform.value.identifier
+    );
+  });
 
   interface ConfigScheme {
     identifier: string;
@@ -150,6 +192,19 @@
       Message.error('获取存储平台列表失败');
     } finally {
       platformsLoading.value = false;
+    }
+  };
+
+  // 获取用户已配置的平台列表
+  const fetchUserPlatforms = async () => {
+    try {
+      const { data } = await getUserStorageSettings();
+      userPlatformIdentifiers.value = data.map(
+        (setting) => setting.storagePlatform.identifier
+      );
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('获取用户配置列表失败:', error);
     }
   };
 
@@ -236,6 +291,7 @@
         resetAllState();
         await nextTick();
         fetchPlatforms();
+        fetchUserPlatforms();
       }
     }
   );
@@ -322,6 +378,15 @@
 
     .arco-form-item-label-col {
       font-weight: 500;
+    }
+
+    .form-item-tip {
+      display: flex;
+      align-items: center;
+      color: rgb(var(--primary-6));
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 4px;
     }
   }
 </style>

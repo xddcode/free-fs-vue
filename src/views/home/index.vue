@@ -126,13 +126,13 @@
             @click="handleFileClick(file)"
           >
             <div class="file-icon">
-              <component :is="getFileIcon(file.type)" :size="32" />
+              <component :is="getFileIcon(file)" :size="32" />
             </div>
             <div class="file-info">
-              <div class="file-name">{{ file.name }}</div>
+              <div class="file-name">{{ file.displayName }}</div>
               <div class="file-meta">
                 {{ formatSize(file.size) }} ·
-                {{ formatTime(file.modifiedTime) }}
+                {{ formatTime(file.updateTime) }}
               </div>
             </div>
           </div>
@@ -182,7 +182,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, computed } from 'vue';
+  import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import {
@@ -198,14 +198,53 @@
     IconImage,
     IconMusic,
   } from '@arco-design/web-vue/es/icon';
-  import { userApi, type UserInfo } from '@/mock/user';
-  import { fileApi, type FileItem } from '@/mock/file';
 
   const router = useRouter();
   const loading = ref(false);
-  const userInfo = ref<UserInfo | null>(null);
-  const userStats = ref<any>(null);
-  const recentFiles = ref<FileItem[]>([]);
+  
+  // 静态数据
+  const userStats = ref({
+    storageUsed: 5368709120, // 5GB
+    storageTotal: 107374182400, // 100GB
+    totalFiles: 128,
+    totalFolders: 24,
+    sharedFiles: 12,
+  });
+
+  const recentFiles = ref([
+    {
+      id: '1',
+      displayName: '项目文档.docx',
+      isDir: false,
+      mimeType: 'application/msword',
+      size: 2048576,
+      updateTime: new Date().toISOString(),
+    },
+    {
+      id: '2',
+      displayName: '设计稿.png',
+      isDir: false,
+      mimeType: 'image/png',
+      size: 5242880,
+      updateTime: new Date(Date.now() - 86400000).toISOString(),
+    },
+    {
+      id: '3',
+      displayName: '会议录音.mp3',
+      isDir: false,
+      mimeType: 'audio/mpeg',
+      size: 10485760,
+      updateTime: new Date(Date.now() - 172800000).toISOString(),
+    },
+    {
+      id: '4',
+      displayName: '工作资料',
+      isDir: true,
+      mimeType: '',
+      size: 0,
+      updateTime: new Date(Date.now() - 259200000).toISOString(),
+    },
+  ]);
 
   // 存储使用百分比
   const storagePercent = computed(() => {
@@ -215,58 +254,11 @@
     return Math.round((used / total) * 100);
   });
 
-  // 获取用户信息
-  const fetchUserInfo = async () => {
-    try {
-      const response = await userApi.getUserInfo();
-      if (response.code === 200) {
-        userInfo.value = response.data;
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取用户信息失败:', error);
-    }
-  };
-
-  // 获取用户统计
-  const fetchUserStats = async () => {
-    try {
-      const response = await userApi.getUserStats();
-      if (response.code === 200) {
-        userStats.value = response.data;
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取用户统计失败:', error);
-    }
-  };
-
-  // 获取最近文件
-  const fetchRecentFiles = async () => {
-    loading.value = true;
-    try {
-      const response = await fileApi.getFileList({
-        page: 1,
-        pageSize: 8,
-      });
-      if (response.code === 200) {
-        recentFiles.value = response.data.list.slice(0, 8);
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取最近文件失败:', error);
-    } finally {
-      loading.value = false;
-    }
-  };
-
   // 获取文件图标
-  const getFileIcon = (type: string) => {
-    if (type === 'folder') return IconFolder;
-    if (type === 'image') return IconImage;
-    if (type === 'video') return IconFile;
-    if (type === 'audio') return IconMusic;
-    if (type === 'document') return IconFile;
+  const getFileIcon = (file: any) => {
+    if (file.isDir) return IconFolder;
+    if (file.mimeType?.startsWith('image/')) return IconImage;
+    if (file.mimeType?.startsWith('audio/')) return IconMusic;
     return IconFile;
   };
 
@@ -305,19 +297,14 @@
     Message.info('上传功能开发中...');
   };
 
-  const handleFileClick = (file: FileItem) => {
-    if (file.type === 'folder') {
+  const handleFileClick = (file: any) => {
+    if (file.isDir) {
       goToFiles();
     } else {
-      Message.info(`打开文件: ${file.name}`);
+      Message.info(`打开文件: ${file.displayName}`);
     }
   };
 
-  onMounted(() => {
-    fetchUserInfo();
-    fetchUserStats();
-    fetchRecentFiles();
-  });
 </script>
 
 <style lang="less" scoped>

@@ -1,11 +1,11 @@
 import { AppRouteRecordRaw } from '../types';
 
-const FILE: AppRouteRecordRaw = {
+const ROOT: AppRouteRecordRaw = {
   path: '/',
-  name: 'file',
-  component: () => import('@/layout/file-layout.vue'),
+  name: 'root',
+  component: () => import('@/layout/default-layout.vue'),
   meta: {
-    title: '文件中心',
+    title: '主应用',
     requiresAuth: true,
   },
   children: [
@@ -16,6 +16,9 @@ const FILE: AppRouteRecordRaw = {
       meta: {
         title: '首页',
         requiresAuth: true,
+        icon: 'IconHome',
+        hideInMenu: false,
+        order: 1,
       },
     },
     {
@@ -25,6 +28,9 @@ const FILE: AppRouteRecordRaw = {
       meta: {
         title: '我的文件',
         requiresAuth: true,
+        icon: 'IconFile',
+        hideInMenu: false,
+        order: 2,
       },
     },
     {
@@ -34,6 +40,9 @@ const FILE: AppRouteRecordRaw = {
       meta: {
         title: '存储配置',
         requiresAuth: true,
+        icon: 'IconCloud',
+        hideInMenu: false,
+        order: 3,
       },
     },
     {
@@ -43,9 +52,12 @@ const FILE: AppRouteRecordRaw = {
       meta: {
         title: '个人中心',
         requiresAuth: true,
+        icon: 'IconUser',
+        hideInMenu: true, // 不在主菜单显示，只在用户下拉菜单中显示
+        order: 4,
       },
     },
   ],
 };
 
-export default FILE;
+export default ROOT;

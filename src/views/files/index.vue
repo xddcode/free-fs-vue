@@ -1,64 +1,126 @@
 <template>
   <div class="file-manager">
-    <!-- 回收站视图 -->
-    <recycle-bin-view v-if="isRecycleBin" />
+    <a-layout class="file-layout">
+      <!-- 左侧：文件分类（始终显示） -->
+      <a-layout-sider class="category-sider" :width="240">
+        <div class="category-header">
+          <div class="category-title">
+            <icon-cloud :size="20" />
+            <span>我的文件</span>
+          </div>
+        </div>
 
-    <!-- 普通文件视图 -->
-    <template v-else>
-      <!-- 工具栏 -->
-      <toolbar
-        v-model:search-keyword="searchKeyword"
-        v-model:view-mode="viewMode"
-        @upload="operations.openUploadModal"
-        @create-folder="operations.openCreateFolderModal"
-        @search="fileList.search"
-        @refresh="fileList.refresh"
-      />
+        <div class="category-menu">
+          <div
+            v-for="category in fileCategories"
+            :key="category.key"
+            :class="[
+              'category-item',
+              { active: activeCategory === category.key },
+            ]"
+            @click="handleCategoryClick(category)"
+          >
+            <component :is="category.icon" :size="18" />
+            <span>{{ category.label }}</span>
+            <span v-if="category.count" class="count">{{
+              category.count
+            }}</span>
+          </div>
 
-      <!-- 面包屑导航 -->
-      <file-breadcrumb :total="fileList.total.value" />
+          <a-divider style="margin: 16px 0" />
 
-      <!-- 文件内容区域 -->
-      <div class="file-content">
-        <a-spin
-          :loading="fileList.loading.value"
-          style="width: 100%; min-height: 400px"
-        >
-          <!-- 空状态 -->
-          <a-empty
-            v-if="
-              !fileList.loading.value && fileList.fileList.value.length === 0
-            "
-            description="暂无文件"
+          <div class="quick-access">
+            <div class="quick-title">快捷访问</div>
+            <div
+              :class="[
+                'category-item',
+                { active: activeCategory === 'favorites' },
+              ]"
+              @click="handleFavoritesClick"
+            >
+              <icon-star :size="18" />
+              <span>我的收藏</span>
+            </div>
+            <div class="category-item">
+              <icon-history :size="18" />
+              <span>最近使用</span>
+            </div>
+          </div>
+        </div>
+      </a-layout-sider>
+
+      <!-- 右侧：主内容区 -->
+      <a-layout-content class="file-main-content">
+        <!-- 回收站视图 -->
+        <recycle-bin-view v-if="isRecycleBin" />
+
+        <!-- 普通文件视图和收藏视图 -->
+        <template v-else>
+          <!-- 工具栏 -->
+          <toolbar
+            v-model:search-keyword="searchKeyword"
+            v-model:view-mode="viewMode"
+            :hide-actions="isFavoritesView"
+            @upload="operations.openUploadModal"
+            @create-folder="operations.openCreateFolderModal"
+            @search="fileList.search"
+            @refresh="fileList.refresh"
           />
 
-          <!-- 列表视图 -->
-          <file-list-view
-            v-else-if="viewMode === 'list'"
-            :file-list="fileList.fileList.value"
-            @row-click="handleFileClick"
-            @sort-change="fileList.handleSortChange"
-            @download="operations.handleDownload"
-            @share="operations.openShareModal"
-            @delete="operations.openDeleteConfirm"
-            @rename="operations.openRenameModal"
-            @move="operations.openMoveModal"
+          <!-- 面包屑导航 -->
+          <file-breadcrumb
+            :total="fileList.total.value"
+            :breadcrumb-path="fileList.breadcrumbPath.value"
+            :custom-title="isFavoritesView ? '我的收藏' : undefined"
+            @navigate="fileList.navigateToFolder"
           />
 
-          <!-- 网格视图 -->
-          <file-grid-view
-            v-else
-            :file-list="fileList.fileList.value"
-            @file-click="handleFileClick"
-            @download="operations.handleDownload"
-            @share="operations.openShareModal"
-            @delete="operations.openDeleteConfirm"
-            @rename="operations.openRenameModal"
-            @move="operations.openMoveModal"
-          />
-        </a-spin>
-      </div>
-    </template>
+          <!-- 文件内容区域 -->
+          <div class="file-content">
+            <a-spin
+              :loading="fileList.loading.value"
+              style="width: 100%; min-height: 400px"
+            >
+              <!-- 空状态 -->
+              <a-empty
+                v-if="
+                  !fileList.loading.value &&
+                  fileList.fileList.value.length === 0
+                "
+                description="暂无文件"
+              />
+
+              <!-- 列表视图 -->
+              <file-list-view
+                v-else-if="viewMode === 'list'"
+                :file-list="fileList.fileList.value"
+                @row-click="handleFileClick"
+                @sort-change="fileList.handleSortChange"
+                @download="operations.handleDownload"
+                @share="operations.openShareModal"
+                @delete="operations.openDeleteConfirm"
+                @rename="operations.openRenameModal"
+                @move="operations.openMoveModal"
+                @favorite="handleFavorite"
+              />
+
+              <!-- 网格视图 -->
+              <file-grid-view
+                v-else
+                :file-list="fileList.fileList.value"
+                @file-click="handleFileClick"
+                @download="operations.handleDownload"
+                @share="operations.openShareModal"
+                @delete="operations.openDeleteConfirm"
+                @rename="operations.openRenameModal"
+                @move="operations.openMoveModal"
+                @favorite="handleFavorite"
+              />
+            </a-spin>
+          </div>
+        </template>
+      </a-layout-content>
+    </a-layout>
 
     <!-- 上传文件弹窗 -->
     <upload-modal
@@ -105,8 +167,19 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { ref, computed, onMounted, markRaw } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import {
+    IconCloud,
+    IconFile,
+    IconImage,
+    IconMusic,
+    IconDelete,
+    IconStar,
+    IconHistory,
+    IconFileVideo,
+    IconMore,
+  } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { useFileList, useFileOperations } from './hooks';
   import {
@@ -124,9 +197,74 @@
   } from './components';
 
   const route = useRoute();
+  const router = useRouter();
+
+  // 文件分类（对应后端 FileTypeEnum）
+  const fileCategories = [
+    {
+      key: 'all',
+      label: '全部文件',
+      icon: markRaw(IconFile),
+      path: '/files',
+      count: null,
+    },
+    {
+      key: 'image',
+      label: '图片',
+      icon: markRaw(IconImage),
+      path: '/files?type=image',
+      count: null,
+    },
+    {
+      key: 'document',
+      label: '文档',
+      icon: markRaw(IconFile),
+      path: '/files?type=document',
+      count: null,
+    },
+    {
+      key: 'video',
+      label: '视频',
+      icon: markRaw(IconFileVideo),
+      path: '/files?type=video',
+      count: null,
+    },
+    {
+      key: 'audio',
+      label: '音频',
+      icon: markRaw(IconMusic),
+      path: '/files?type=audio',
+      count: null,
+    },
+    {
+      key: 'other',
+      label: '其它',
+      icon: markRaw(IconMore),
+      path: '/files?type=other',
+      count: null,
+    },
+    {
+      key: 'recycle',
+      label: '回收站',
+      icon: markRaw(IconDelete),
+      path: '/files?view=recycle',
+      count: null,
+    },
+  ];
+
+  // 当前激活的分类
+  const activeCategory = computed(() => {
+    if (route.query.view === 'recycle') return 'recycle';
+    if (route.query.view === 'favorites') return 'favorites';
+    if (!route.query.type) return 'all';
+    return route.query.type as string;
+  });
 
   // 是否是回收站视图
   const isRecycleBin = computed(() => route.query.view === 'recycle');
+
+  // 是否是收藏视图
+  const isFavoritesView = computed(() => route.query.view === 'favorites');
 
   // 视图模式
   const viewMode = ref<'list' | 'grid'>('grid');
@@ -145,7 +283,18 @@
    */
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      fileList.enterFolder(file.id);
+      // 如果在收藏视图下，跳转到全部文件页面并进入该文件夹
+      if (isFavoritesView.value) {
+        router.push({
+          path: '/files',
+          query: {
+            parentId: file.id,
+          },
+        });
+      } else {
+        // 正常进入文件夹
+        fileList.enterFolder(file.id);
+      }
     }
   };
 
@@ -184,6 +333,27 @@
     await operations.handleDelete(fileId);
   };
 
+  /**
+   * 处理收藏
+   */
+  const handleFavorite = async (file: FileItem) => {
+    await operations.handleFavorite(file);
+  };
+
+  /**
+   * 处理分类点击
+   */
+  const handleCategoryClick = (category: any) => {
+    router.push(category.path);
+  };
+
+  /**
+   * 处理收藏点击
+   */
+  const handleFavoritesClick = () => {
+    router.push('/files?view=favorites');
+  };
+
   // 初始化加载数据
   onMounted(() => {
     fileList.fetchFileList();
@@ -196,6 +366,95 @@
     display: flex;
     flex-direction: column;
     background-color: var(--color-bg-2);
+
+    .file-layout {
+      height: 100%;
+      background-color: var(--color-bg-2);
+    }
+
+    // 分类侧边栏
+    .category-sider {
+      background-color: var(--color-bg-2);
+      border-right: 1px solid var(--color-border-2);
+
+      :deep(.arco-layout-sider-children) {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid var(--color-border-2);
+
+      .category-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-text-1);
+      }
+    }
+
+    .category-menu {
+      flex: 1;
+      padding: 8px;
+      overflow-y: auto;
+    }
+
+    .category-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--color-text-2);
+      font-size: 14px;
+      margin-bottom: 2px;
+
+      span:first-of-type {
+        flex: 1;
+      }
+
+      .count {
+        font-size: 12px;
+        color: var(--color-text-3);
+        flex: none;
+      }
+
+      &:hover {
+        background-color: var(--color-fill-2);
+        color: rgb(var(--primary-6));
+      }
+
+      &.active {
+        background-color: var(--color-primary-light-1);
+        color: rgb(var(--primary-6));
+        font-weight: 500;
+      }
+    }
+
+    .quick-access {
+      .quick-title {
+        font-size: 12px;
+        color: var(--color-text-3);
+        padding: 8px 12px 4px;
+      }
+    }
+
+    // 右侧主内容区
+    .file-main-content {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--color-bg-2);
+    }
 
     // 文件内容区域
     .file-content {

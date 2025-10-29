@@ -1,13 +1,18 @@
 <template>
   <div class="file-toolbar">
     <div class="toolbar-left">
-      <a-button type="primary" size="large" @click="$emit('upload')">
+      <a-button
+        v-if="!hideActions"
+        type="primary"
+        size="large"
+        @click="$emit('upload')"
+      >
         <template #icon>
           <icon-upload />
         </template>
         上传
       </a-button>
-      <a-button size="large" @click="$emit('createFolder')">
+      <a-button v-if="!hideActions" size="large" @click="$emit('createFolder')">
         <template #icon>
           <icon-folder-add />
         </template>
@@ -52,6 +57,7 @@
   interface Props {
     searchKeyword: string;
     viewMode: 'list' | 'grid';
+    hideActions?: boolean;
   }
 
   defineProps<Props>();

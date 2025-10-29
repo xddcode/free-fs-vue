@@ -76,6 +76,15 @@
         <a-button size="mini" type="text" @click.stop="$emit('share', file)">
           <icon-share-alt />
         </a-button>
+        <a-button
+          size="mini"
+          type="text"
+          :class="{ 'is-favorite': file.isFavorite }"
+          @click.stop="$emit('favorite', file)"
+        >
+          <icon-star-fill v-if="file.isFavorite" />
+          <icon-star v-else />
+        </a-button>
         <a-dropdown trigger="hover">
           <a-button size="mini" type="text" @click.stop>
             <icon-more />
@@ -108,6 +117,8 @@
     IconShareAlt,
     IconEdit,
     IconDragArrow,
+    IconStar,
+    IconStarFill,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -127,6 +138,7 @@
     (e: 'delete', file: FileItem): void;
     (e: 'rename', file: FileItem): void;
     (e: 'move', file: FileItem): void;
+    (e: 'favorite', file: FileItem): void;
   }>();
 
   const handleFileDoubleClick = (file: FileItem) => {
@@ -211,6 +223,10 @@
       padding: 4px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
       border: 1px solid rgba(0, 0, 0, 0.06);
+
+      .is-favorite {
+        color: rgb(var(--warning-6));
+      }
     }
   }
 

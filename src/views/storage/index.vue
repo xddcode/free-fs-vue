@@ -127,11 +127,15 @@
           <a-space direction="vertical" :size="12" fill>
             <div class="help-item">
               <icon-check-circle class="help-icon" />
-              <span>配置存储平台后，可在右上角切换存储平台</span>
+              <span>支持配置多个存储平台，如 MinIO、阿里云 OSS、腾讯云 COS 等</span>
             </div>
             <div class="help-item">
               <icon-check-circle class="help-icon" />
-              <span>支持配置多个存储平台，灵活切换使用</span>
+              <span>在此页面启用某个配置即可切换到该存储平台（同时只能有一个配置启用）</span>
+            </div>
+            <div class="help-item">
+              <icon-check-circle class="help-icon" />
+              <span>右上角显示当前启用的存储平台，点击切换按钮可快速返回本页面</span>
             </div>
           </a-space>
         </a-card>

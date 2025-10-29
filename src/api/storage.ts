@@ -22,7 +22,6 @@ export interface StorageSetting {
   remark?: string;
 }
 
-
 /**
  * 获取存储平台列表（用于下拉选择）
  */
@@ -84,9 +83,7 @@ export function toggleStorageSetting(id: string, action: number) {
  * @param identifier 平台标识
  */
 export function getStoragePlatformsSettings(identifier: string) {
-  return request.get<StorageSetting>(
-    `/apis/storage/settings/${identifier}`
-  );
+  return request.get<StorageSetting>(`/apis/storage/settings/${identifier}`);
 }
 
 // 活跃存储平台类型定义
@@ -95,6 +92,10 @@ export interface ActiveStoragePlatform {
   platformIdentifier: string;
   platformName: string;
   platformIcon: string;
+  isEnabled: boolean;
+  remark?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

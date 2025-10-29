@@ -72,6 +72,15 @@
               <a-button
                 size="small"
                 type="text"
+                :class="{ 'is-favorite': record.isFavorite }"
+                @click.stop="$emit('favorite', record)"
+              >
+                <icon-star-fill v-if="record.isFavorite" />
+                <icon-star v-else />
+              </a-button>
+              <a-button
+                size="small"
+                type="text"
                 status="danger"
                 @click.stop="$emit('delete', record)"
               >
@@ -108,6 +117,8 @@
     IconShareAlt,
     IconEdit,
     IconDragArrow,
+    IconStar,
+    IconStarFill,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -131,6 +142,7 @@
     (e: 'delete', record: FileItem): void;
     (e: 'rename', record: FileItem): void;
     (e: 'move', record: FileItem): void;
+    (e: 'favorite', record: FileItem): void;
   }>();
 
   const handleDoubleClick = (record: FileItem) => {
@@ -213,6 +225,10 @@
       gap: 4px;
       opacity: 0;
       transition: opacity 0.2s;
+
+      .is-favorite {
+        color: rgb(var(--warning-6));
+      }
     }
 
     :deep(.arco-table-tr:hover .file-actions) {

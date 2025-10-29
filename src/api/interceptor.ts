@@ -14,21 +14,31 @@ export interface HttpResponse<T = unknown> {
   data: T;
 }
 
-// 扩展请求配置，支持控制错误提示
 export interface CustomRequestConfig extends AxiosRequestConfig {
-  // 是否显示错误提示（默认 true）
   showErrorMessage?: boolean;
-  // 是否显示成功提示
   showSuccessMessage?: boolean;
 }
 
-// 添加全局标志防止重复显示Modal
 let isShowingLogoutModal = false;
 
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
 });
+
+// 获取当前存储平台配置ID的函数
+const getCurrentStoragePlatformId = (): string | null => {
+  const storageInfo = localStorage.getItem('current-storage-platform');
+  if (storageInfo) {
+    try {
+      const platform = JSON.parse(storageInfo);
+      return platform?.settingId || null;
+    } catch (error) {
+      return null;
+    }
+  }
+  return null;
+};
 
 // 请求拦截器
 service.interceptors.request.use(
@@ -39,18 +49,11 @@ service.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 添加存储平台配置ID
-    const storageInfo = localStorage.getItem('current-storage-platform');
-    if (storageInfo) {
-      try {
-        const platform = JSON.parse(storageInfo);
-        if (platform?.settingId) {
-          config.headers = config.headers || {};
-          config.headers['X-Storage-Platform-Config-Id'] = platform.settingId;
-        }
-      } catch (error) {
-        // 忽略解析错误
-      }
+    // 每次请求时动态获取最新的存储平台配置ID
+    const platformId = getCurrentStoragePlatformId();
+    if (platformId) {
+      config.headers = config.headers || {};
+      config.headers['X-Storage-Platform-Config-Id'] = platformId;
     }
 
     return config;
@@ -65,15 +68,12 @@ service.interceptors.response.use(
   (response: AxiosResponse<HttpResponse>) => {
     const { data: res, config } = response;
 
-    // 成功响应
     if (res.code === 200) {
       return response;
     }
 
-    // 业务错误处理
-    const showError = (config as any).showErrorMessage !== false; // 默认显示错误
+    const showError = (config as any).showErrorMessage !== false;
 
-    // 401/403 认证错误 - 特殊处理，显示模态框
     if ([401, 403].includes(res.code)) {
       if (response.config.url !== '/apis/user/info' && !isShowingLogoutModal) {
         isShowingLogoutModal = true;
@@ -94,31 +94,26 @@ service.interceptors.response.use(
         });
       }
     } else if (showError) {
-      // 其他业务错误 - 显示错误提示（可通过配置禁用）
       Message.error({
         content: res.msg || '操作失败',
         duration: 3000,
       });
     }
 
-    // reject 错误，但不再在错误拦截器中重复提示
     const error: any = new Error(res.msg || 'Error');
     error.code = res.code;
     error.response = response;
-    error.isErrorShown = showError; // 标记已显示错误
+    error.isErrorShown = showError;
     return Promise.reject(error);
   },
   (error) => {
-    // 网络错误或服务器错误（非业务错误）
     const config = error.config || {};
     const showError = (config as any).showErrorMessage !== false;
 
-    // 只有未标记已显示的错误才显示（避免重复）
     if (showError && !error.isErrorShown) {
       let errorMessage = '网络请求失败';
 
       if (error.response) {
-        // 服务器响应了错误状态码
         const { status } = error.response;
         switch (status) {
           case 400:
@@ -143,7 +138,6 @@ service.interceptors.response.use(
             errorMessage = error.response.data?.msg || `请求失败(${status})`;
         }
       } else if (error.request) {
-        // 请求已发出但没有收到响应
         if (error.message.includes('timeout')) {
           errorMessage = '请求超时，请检查网络连接';
         } else if (error.message.includes('Network Error')) {
@@ -163,7 +157,6 @@ service.interceptors.response.use(
   }
 );
 
-// 请求方法封装
 export const request = {
   get<T = any>(url: string, config?: AxiosRequestConfig) {
     return service

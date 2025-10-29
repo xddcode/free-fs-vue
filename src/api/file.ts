@@ -16,6 +16,21 @@ export function getFileList(params: FileListParams) {
 }
 
 /**
+ * 获取文件详情
+ */
+export function getFileDetail(fileId: string) {
+  return request.get<FileItem>(`/apis/file/${fileId}`);
+}
+
+/**
+ * 获取文件夹路径（面包屑导航）
+ * 返回从根目录到当前目录的所有父级文件夹
+ */
+export function getFolderPath(folderId: string) {
+  return request.get<FileItem[]>(`/apis/file/directory/${folderId}/path`);
+}
+
+/**
  * 上传文件
  */
 export function uploadFile(file: File, parentId?: string) {
@@ -133,6 +148,22 @@ export function permanentDeleteFiles(fileIds: string[]) {
  */
 export function clearRecycle() {
   return request.delete('/apis/file/recycles/clear');
+}
+
+/**
+ * 收藏文件（支持批量）
+ */
+export function favoriteFile(fileIds: string[]) {
+  return request.post('/apis/file/favorites', fileIds);
+}
+
+/**
+ * 取消收藏文件（支持批量）
+ */
+export function unfavoriteFile(fileIds: string[]) {
+  return request.delete('/apis/file/favorites', {
+    data: fileIds,
+  });
 }
 
 // 导出类型以便在组件中使用

@@ -26,6 +26,8 @@ export interface FileItem {
   uploadTime: string;
   /** 修改时间 */
   updateTime: string;
+  /** 是否已收藏 */
+  isFavorite?: boolean;
 }
 
 /**
@@ -75,4 +77,6 @@ export interface FileListParams {
   keyword?: string;
   /** 文件类型过滤 */
   fileType?: FileType;
+  /** 是否收藏 */
+  isFavorite?: boolean;
 }

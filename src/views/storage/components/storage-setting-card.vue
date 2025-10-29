@@ -31,7 +31,12 @@
                 <icon-link style="font-size: 12px" />
               </a-link>
               <!-- 启用状态标签 -->
-              <a-tag v-if="setting.enabled === 1" color="green" size="small" class="status-tag">
+              <a-tag
+                v-if="setting.enabled === 1"
+                color="green"
+                size="small"
+                class="status-tag"
+              >
                 <template #icon>
                   <icon-check-circle-fill />
                 </template>
@@ -46,7 +51,19 @@
             </div>
             <div class="card-subtitle">
               <span class="config-id">配置ID: {{ setting.id }}</span>
-              <span v-if="setting.remark && setting.remark.trim()" class="config-remark">{{ setting.remark }}</span>
+              <div
+                v-if="setting.remark && setting.remark.trim()"
+                class="config-remark"
+              >
+                <icon-tags style="font-size: 12px; margin-right: 2px" />
+                <span>{{ setting.remark }}</span>
+              </div>
+              <div v-else class="config-remark-empty">
+                <icon-exclamation-circle
+                  style="font-size: 12px; margin-right: 2px"
+                />
+                <span>未设置备注（建议添加）</span>
+              </div>
             </div>
           </div>
         </div>
@@ -155,13 +172,18 @@
         </a-form-item>
 
         <!-- 备注字段 -->
-        <a-form-item
-          field="remark"
-          label="配置备注"
-        >
+        <a-form-item field="remark" label="配置备注">
+          <template #extra>
+            <div class="form-item-tip">
+              <icon-info-circle style="font-size: 14px; margin-right: 4px" />
+              <span
+                >强烈建议添加备注（如"生产环境"、"测试环境"），便于在切换时快速识别</span
+              >
+            </div>
+          </template>
           <a-input
             v-model="formData.remark"
-            placeholder="请输入配置备注，用于区分同一平台下的不同配置（可选）"
+            placeholder="例如：生产环境、测试环境、备份存储等"
             allow-clear
           />
         </a-form-item>
@@ -178,6 +200,9 @@
     IconCheck,
     IconSettings,
     IconDelete,
+    IconTags,
+    IconExclamationCircle,
+    IconInfoCircle,
   } from '@arco-design/web-vue/es/icon';
   import {
     updateStorageSetting,
@@ -185,6 +210,7 @@
     toggleStorageSetting,
     type StorageSetting,
   } from '@/api/storage';
+  import { useStorageStore } from '@/store';
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',
@@ -284,19 +310,34 @@
 
     Modal.confirm({
       title: action === 1 ? '确认启用' : '确认禁用',
-      content: `确定要${action === 1 ? '启用' : '禁用'} "${
-        storagePlatform.name
-      }" 存储平台配置吗？`,
+      content:
+        action === 1
+          ? `启用后将自动切换到 "${storagePlatform.name}" 存储平台，其他已启用的配置将被禁用。确定要继续吗？`
+          : `禁用后将自动切换到默认存储平台。确定要继续吗？`,
       okText: `确认${action === 1 ? '启用' : '禁用'}`,
       cancelText: '取消',
       onOk: async () => {
         btnLoading.value = true;
         try {
+          // 调用启用/禁用接口
           await toggleStorageSetting(id.toString(), action);
-          Message.success(
-            `${storagePlatform.name} 已${action === 1 ? '启用' : '禁用'}`
-          );
-          emit('refresh');
+
+          // 无论启用还是禁用，都需要更新 store 和刷新页面
+          const storageStore = useStorageStore();
+          await storageStore.fetchActivePlatforms();
+
+          if (action === 1) {
+            Message.success(`${storagePlatform.name} 已启用，页面即将刷新...`);
+          } else {
+            Message.success(
+              `${storagePlatform.name} 已禁用，正在切换到默认平台...`
+            );
+          }
+
+          // 延迟刷新页面
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('操作失败:', error);
@@ -327,9 +368,6 @@
         } finally {
           btnLoading.value = false;
         }
-      },
-      onCancel: () => {
-        // 取消删除操作，不需要额外处理
       },
     });
   };
@@ -449,7 +487,7 @@
         .card-subtitle {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 4px;
           margin-bottom: 4px;
           font-size: 11px;
           color: var(--color-text-3);
@@ -460,19 +498,36 @@
           }
 
           .config-remark {
-            font-style: italic;
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            background: linear-gradient(
+              135deg,
+              rgba(var(--primary-6), 0.08) 0%,
+              rgba(var(--primary-6), 0.03) 100%
+            );
+            border-radius: 4px;
+            color: rgb(var(--primary-6));
+            font-weight: 500;
+            font-size: 12px;
             max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-        }
 
-        .card-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-          height: 22px;
+            span {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+          }
+
+          .config-remark-empty {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            background: rgba(var(--warning-6), 0.08);
+            border-radius: 4px;
+            color: rgb(var(--warning-6));
+            font-size: 11px;
+          }
         }
       }
     }
@@ -529,6 +584,15 @@
 
       .arco-form-item-label-col {
         font-weight: 500;
+      }
+
+      .form-item-tip {
+        display: flex;
+        align-items: center;
+        color: rgb(var(--primary-6));
+        font-size: 12px;
+        line-height: 1.5;
+        margin-top: 4px;
       }
     }
   }
