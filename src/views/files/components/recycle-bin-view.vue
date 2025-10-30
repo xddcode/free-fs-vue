@@ -2,73 +2,57 @@
   <div class="recycle-bin-view">
     <!-- 工具栏 -->
     <div class="recycle-toolbar">
-      <div class="toolbar-left">
-        <!-- 批量还原 -->
-        <a-button
-          type="outline"
-          size="large"
-          :disabled="selectedIds.length === 0"
-          @click="handleBatchRestore"
-        >
-          <template #icon>
-            <icon-undo />
-          </template>
-          批量还原
-        </a-button>
-        <!-- 批量删除 -->
-        <a-button
-          type="outline"
-          status="danger"
-          size="large"
-          :disabled="selectedIds.length === 0"
-          @click="handleBatchDelete"
-        >
-          <template #icon>
-            <icon-delete />
-          </template>
-          批量删除
-        </a-button>
-        <!-- 清空回收站 -->
-        <a-button
-          type="outline"
-          status="danger"
-          size="large"
-          :disabled="fileList.length === 0"
-          @click="handleClearRecycle"
-        >
-          <template #icon>
-            <icon-delete />
-          </template>
-          清空回收站
-        </a-button>
-        <!-- 提示文字 -->
-        <span class="recycle-tip">
-          <icon-info-circle />
-          回收站文件保存10天，到期后自动清理
-        </span>
+      <!-- 批量操作工具栏 -->
+      <div v-if="selectedIds.length > 0" class="batch-toolbar">
+        <div class="toolbar-left">
+          <!-- 批量还原 -->
+          <a-button type="outline" size="large" @click="handleBatchRestore">
+            <template #icon>
+              <icon-undo />
+            </template>
+            还原
+          </a-button>
+          <!-- 批量删除 -->
+          <a-button
+            type="outline"
+            status="danger"
+            size="large"
+            @click="handleBatchDelete"
+          >
+            <template #icon>
+              <icon-delete />
+            </template>
+            删除
+          </a-button>
+        </div>
       </div>
-      <div class="toolbar-right">
-        <!-- 刷新按钮 -->
-        <a-button size="large" @click="fetchRecycleList">
-          <template #icon>
-            <icon-refresh />
-          </template>
-        </a-button>
-      </div>
+
+      <!-- 普通工具栏 -->
+      <template v-else>
+        <div class="toolbar-left">
+          <a-input-search
+            v-model="searchKeyword"
+            placeholder="搜索回收站文件"
+            size="large"
+            style="width: 320px"
+            allow-clear
+            @search="handleSearch"
+            @clear="handleSearch"
+          />
+        </div>
+      </template>
     </div>
 
     <!-- 面包屑导航 -->
     <div class="recycle-breadcrumb">
-      <div class="breadcrumb-left">
-        <icon-delete />
-        <span class="breadcrumb-title">回收站</span>
-      </div>
-      <div class="breadcrumb-info">
-        共 {{ fileList.length }} 个文件
-        <template v-if="selectedIds.length > 0">
-          ，已选 {{ selectedIds.length }} 个
-        </template>
-      </div>
+      <a-breadcrumb>
+        <a-breadcrumb-item>
+          <span class="breadcrumb-link is-current">
+            <icon-delete />
+            回收站
+          </span>
+        </a-breadcrumb-item>
+      </a-breadcrumb>
     </div>
 
     <!-- 文件列表 -->
@@ -85,91 +69,133 @@
         </a-empty>
 
         <!-- 列表视图 -->
-        <div v-else class="file-list">
-          <a-table
-            v-model:selected-keys="selectedIds"
-            :data="fileList"
-            :pagination="false"
-            :bordered="false"
-            :row-selection="{
-              type: 'checkbox',
-              showCheckedAll: true,
-            }"
-            row-key="id"
-          >
-            <template #columns>
-              <a-table-column
-                title="文件名"
-                data-index="displayName"
-                :width="400"
+        <div v-else class="file-list-container">
+          <!-- 列表头部 -->
+          <div class="file-list-header">
+            <div class="header-left">
+              <span class="file-count-text">
+                {{
+                  selectedIds.length > 0
+                    ? `已选 ${selectedIds.length} 个文件`
+                    : `共 ${fileList.length} 个文件`
+                }}
+              </span>
+              <span class="recycle-tip">
+                <icon-info-circle />
+                回收站文件保存10天，到期后自动清理
+              </span>
+            </div>
+            <div class="header-right">
+              <!-- 清空回收站 -->
+              <a-button
+                size="large"
+                status="danger"
+                :disabled="fileList.length === 0"
+                @click="handleClearRecycle"
               >
-                <template #cell="{ record }">
-                  <div class="file-name-cell">
-                    <div class="file-icon-wrapper">
-                      <img
-                        :src="
-                          getFileIconPath(
-                            record.isDir ? 'dir' : record.suffix || ''
-                          )
-                        "
-                        :alt="record.displayName"
-                        class="file-icon-img"
-                      />
+                <template #icon>
+                  <icon-delete />
+                </template>
+                清空
+              </a-button>
+              <!-- 刷新按钮 -->
+              <a-button size="large" @click="handleRefresh">
+                <template #icon>
+                  <icon-refresh />
+                </template>
+              </a-button>
+            </div>
+          </div>
+
+          <!-- 文件表格 -->
+          <div class="file-list">
+            <a-table
+              v-model:selected-keys="selectedIds"
+              :data="fileList"
+              :pagination="false"
+              :bordered="false"
+              :row-selection="{
+                type: 'checkbox',
+                showCheckedAll: true,
+              }"
+              row-key="id"
+            >
+              <template #columns>
+                <a-table-column
+                  title="文件名"
+                  data-index="displayName"
+                  :width="400"
+                >
+                  <template #cell="{ record }">
+                    <div class="file-name-cell">
+                      <div class="file-icon-wrapper">
+                        <img
+                          :src="
+                            getFileIconPath(
+                              record.isDir ? 'dir' : record.suffix || ''
+                            )
+                          "
+                          :alt="record.displayName"
+                          class="file-icon-img"
+                        />
+                      </div>
+                      <span class="file-name">{{ record.displayName }}</span>
                     </div>
-                    <span class="file-name">{{ record.displayName }}</span>
-                  </div>
-                </template>
-              </a-table-column>
+                  </template>
+                </a-table-column>
 
-              <a-table-column title="大小" data-index="size" :width="120">
-                <template #cell="{ record }">
-                  <span class="file-size">{{
-                    formatFileSize(record.size)
-                  }}</span>
-                </template>
-              </a-table-column>
+                <a-table-column title="大小" data-index="size" :width="120">
+                  <template #cell="{ record }">
+                    <span class="file-size">{{
+                      formatFileSize(record.size)
+                    }}</span>
+                  </template>
+                </a-table-column>
 
-              <a-table-column
-                title="删除时间"
-                data-index="deletedTime"
-                :width="180"
-              >
-                <template #cell="{ record }">
-                  <span class="file-time">{{
-                    formatFileTime(record.deletedTime)
-                  }}</span>
-                </template>
-              </a-table-column>
+                <a-table-column
+                  title="删除时间"
+                  data-index="deletedTime"
+                  :width="180"
+                >
+                  <template #cell="{ record }">
+                    <span class="file-time">{{
+                      formatFileTime(record.deletedTime)
+                    }}</span>
+                  </template>
+                </a-table-column>
 
-              <a-table-column title="操作" :width="200" align="center">
-                <template #cell="{ record }">
-                  <div class="file-actions">
-                    <a-button
-                      size="small"
-                      type="text"
-                      @click="handleRestoreSingle(record.id)"
-                    >
-                      <template #icon>
-                        <icon-undo />
-                      </template>
-                      还原
-                    </a-button>
-                    <a-button
-                      size="small"
-                      type="text"
-                      status="danger"
-                      @click="handleDeleteSingle(record.id, record.displayName)"
-                    >
-                      <template #icon>
-                        <icon-delete />
-                      </template>
-                      删除
-                    </a-button>
-                  </div>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+                <a-table-column title="操作" :width="200" align="center">
+                  <template #cell="{ record }">
+                    <div class="file-actions">
+                      <a-button
+                        size="small"
+                        type="text"
+                        @click="handleRestoreSingle(record.id)"
+                      >
+                        <template #icon>
+                          <icon-undo />
+                        </template>
+                        还原
+                      </a-button>
+                      <a-button
+                        size="small"
+                        type="text"
+                        status="danger"
+                        @click="
+                          handleDeleteSingle(record.id, record.displayName)
+                        "
+                      >
+                        <template #icon>
+                          <icon-delete />
+                        </template>
+                        删除
+                      </a-button>
+                    </div>
+                  </template>
+                </a-table-column>
+              </template>
+            </a-table>
+          </div>
         </div>
       </a-spin>
     </div>
@@ -198,14 +224,15 @@
   const loading = ref(false);
   const fileList = ref<FileRecycleItem[]>([]);
   const selectedIds = ref<string[]>([]);
+  const searchKeyword = ref('');
 
   /**
    * 获取回收站文件列表
    */
-  const fetchRecycleList = async () => {
+  const fetchRecycleList = async (keyword?: string) => {
     loading.value = true;
     try {
-      const response = await getRecycleList();
+      const response = await getRecycleList(keyword);
       fileList.value = response.data || [];
     } catch {
       // 拦截器已统一处理错误提示
@@ -213,6 +240,20 @@
     } finally {
       loading.value = false;
     }
+  };
+
+  /**
+   * 处理搜索
+   */
+  const handleSearch = () => {
+    fetchRecycleList(searchKeyword.value);
+  };
+
+  /**
+   * 处理刷新
+   */
+  const handleRefresh = () => {
+    fetchRecycleList(searchKeyword.value);
   };
 
   /**
@@ -229,7 +270,7 @@
         await restoreFiles([fileId]).then(() => {
           Message.success('还原成功');
           selectedIds.value = [];
-          fetchRecycleList();
+          fetchRecycleList(searchKeyword.value);
         });
       },
     });
@@ -250,7 +291,7 @@
         await restoreFiles(selectedIds.value).then(() => {
           Message.success(`成功还原 ${selectedIds.value.length} 个文件`);
           selectedIds.value = [];
-          fetchRecycleList();
+          fetchRecycleList(searchKeyword.value);
         });
       },
     });
@@ -272,7 +313,7 @@
         await permanentDeleteFiles([fileId]).then(() => {
           Message.success('删除成功');
           selectedIds.value = [];
-          fetchRecycleList();
+          fetchRecycleList(searchKeyword.value);
         });
       },
     });
@@ -296,7 +337,7 @@
         await permanentDeleteFiles(selectedIds.value).then(() => {
           Message.success(`成功删除 ${selectedIds.value.length} 个文件`);
           selectedIds.value = [];
-          fetchRecycleList();
+          fetchRecycleList(searchKeyword.value);
         });
       },
     });
@@ -318,6 +359,7 @@
         await clearRecycle().then(() => {
           Message.success('回收站已清空');
           selectedIds.value = [];
+          searchKeyword.value = '';
           fetchRecycleList();
         });
       },
@@ -349,65 +391,95 @@
       display: flex;
       align-items: center;
       gap: 12px;
-
-      .recycle-tip {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-left: 12px;
-        font-size: 14px;
-        color: var(--color-text-3);
-
-        .arco-icon {
-          font-size: 16px;
-        }
-      }
     }
 
-    .toolbar-right {
+    .batch-toolbar {
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      width: 100%;
+
+      .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
     }
   }
 
   .recycle-breadcrumb {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 12px 24px;
     border-bottom: 1px solid var(--color-border-2);
     background-color: var(--color-bg-2);
 
-    .breadcrumb-left {
-      display: flex;
+    .breadcrumb-link {
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: var(--color-text-2);
+      gap: 4px;
+      transition: color 0.2s;
 
-      .arco-icon {
-        font-size: 16px;
-      }
-
-      .breadcrumb-title {
+      &.is-current {
+        color: var(--color-text-1);
         font-weight: 500;
+        cursor: default;
       }
-    }
-
-    .breadcrumb-info {
-      font-size: 14px;
-      color: var(--color-text-3);
     }
   }
 
   .recycle-content {
     flex: 1;
-    padding: 16px 24px;
     overflow-y: auto;
   }
 
+  .file-list-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .file-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border-2);
+    background-color: var(--color-bg-1);
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .file-count-text {
+        font-size: 14px;
+        color: var(--color-text-2);
+      }
+
+      .recycle-tip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--color-text-3);
+
+        .arco-icon {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+  }
+
   .file-list {
+    flex: 1;
+    overflow: auto;
     :deep(.arco-table) {
       .arco-table-th {
         background-color: var(--color-fill-2);

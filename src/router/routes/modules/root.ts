@@ -26,7 +26,7 @@ const ROOT: AppRouteRecordRaw = {
       name: 'files',
       component: () => import('@/views/files/index.vue'),
       meta: {
-        title: '我的文件',
+        title: '文件',
         requiresAuth: true,
         icon: 'IconFile',
         hideInMenu: false,
@@ -54,7 +54,7 @@ const ROOT: AppRouteRecordRaw = {
         requiresAuth: true,
         icon: 'IconUser',
         hideInMenu: true, // 不在主菜单显示，只在用户下拉菜单中显示
-        order: 4,
+        order: 5,
       },
     },
   ],

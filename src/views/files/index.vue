@@ -41,6 +41,16 @@
               <icon-star :size="18" />
               <span>我的收藏</span>
             </div>
+            <div
+              :class="[
+                'category-item',
+                { active: activeCategory === 'shares' },
+              ]"
+              @click="handleSharesClick"
+            >
+              <icon-share-alt :size="18" />
+              <span>我的分享</span>
+            </div>
             <div class="category-item">
               <icon-history :size="18" />
               <span>最近使用</span>
@@ -54,22 +64,29 @@
         <!-- 回收站视图 -->
         <recycle-bin-view v-if="isRecycleBin" />
 
+        <!-- 我的分享视图 -->
+        <my-shares-view v-else-if="isSharesView" />
+
         <!-- 普通文件视图和收藏视图 -->
         <template v-else>
           <!-- 工具栏 -->
           <toolbar
             v-model:search-keyword="searchKeyword"
-            v-model:view-mode="viewMode"
             :hide-actions="isFavoritesView"
+            :selected-count="selectedKeys.length"
+            :selected-files="selectedFiles"
             @upload="operations.openUploadModal"
             @create-folder="operations.openCreateFolderModal"
             @search="fileList.search"
-            @refresh="fileList.refresh"
+            @batch-delete="handleBatchDelete"
+            @batch-download="handleBatchDownload"
+            @batch-share="handleBatchShare"
+            @batch-favorite="handleBatchFavorite"
+            @batch-move="handleBatchMove"
           />
 
           <!-- 面包屑导航 -->
           <file-breadcrumb
-            :total="fileList.total.value"
             :breadcrumb-path="fileList.breadcrumbPath.value"
             :custom-title="isFavoritesView ? '我的收藏' : undefined"
             @navigate="fileList.navigateToFolder"
@@ -87,12 +104,14 @@
                   !fileList.loading.value &&
                   fileList.fileList.value.length === 0
                 "
-                description="暂无文件"
+                :description="isFavoritesView ? '暂无收藏文件' : '暂无文件'"
               />
 
               <!-- 列表视图 -->
               <file-list-view
                 v-else-if="viewMode === 'list'"
+                v-model:selected-keys="selectedKeys"
+                v-model:view-mode="viewMode"
                 :file-list="fileList.fileList.value"
                 @row-click="handleFileClick"
                 @sort-change="fileList.handleSortChange"
@@ -102,11 +121,14 @@
                 @rename="operations.openRenameModal"
                 @move="operations.openMoveModal"
                 @favorite="handleFavorite"
+                @refresh="fileList.refresh"
               />
 
               <!-- 网格视图 -->
               <file-grid-view
                 v-else
+                v-model:selected-keys="selectedKeys"
+                v-model:view-mode="viewMode"
                 :file-list="fileList.fileList.value"
                 @file-click="handleFileClick"
                 @download="operations.handleDownload"
@@ -115,6 +137,7 @@
                 @rename="operations.openRenameModal"
                 @move="operations.openMoveModal"
                 @favorite="handleFavorite"
+                @refresh="fileList.refresh"
               />
             </a-spin>
           </div>
@@ -161,14 +184,16 @@
     <delete-confirm-modal
       v-model:visible="operations.deleteConfirmVisible.value"
       :file="operations.deletingFile.value"
+      :files="operations.deletingFiles.value"
       @confirm="handleDelete"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted, markRaw } from 'vue';
+  import { ref, computed, onMounted, markRaw, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import { Message } from '@arco-design/web-vue';
   import {
     IconCloud,
     IconFile,
@@ -179,6 +204,7 @@
     IconHistory,
     IconFileVideo,
     IconMore,
+    IconShareAlt,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { useFileList, useFileOperations } from './hooks';
@@ -194,6 +220,7 @@
     ShareModal,
     DeleteConfirmModal,
     RecycleBinView,
+    MySharesView,
   } from './components';
 
   const route = useRoute();
@@ -256,6 +283,7 @@
   const activeCategory = computed(() => {
     if (route.query.view === 'recycle') return 'recycle';
     if (route.query.view === 'favorites') return 'favorites';
+    if (route.query.view === 'shares') return 'shares';
     if (!route.query.type) return 'all';
     return route.query.type as string;
   });
@@ -266,12 +294,32 @@
   // 是否是收藏视图
   const isFavoritesView = computed(() => route.query.view === 'favorites');
 
+  // 是否是分享视图
+  const isSharesView = computed(() => route.query.view === 'shares');
+
   // 视图模式
   const viewMode = ref<'list' | 'grid'>('grid');
+
+  // 选中的文件
+  const selectedKeys = ref<string[]>([]);
+
+  /**
+   * 清空选中
+   */
+  const clearSelection = () => {
+    selectedKeys.value = [];
+  };
 
   // 使用文件列表 Hook
   const fileList = useFileList();
   const { searchKeyword } = fileList;
+
+  // 选中的文件对象列表
+  const selectedFiles = computed(() => {
+    return fileList.fileList.value.filter((file) =>
+      selectedKeys.value.includes(file.id)
+    );
+  });
 
   // 使用文件操作 Hook
   const operations = useFileOperations(() => {
@@ -316,21 +364,100 @@
    * 处理移动
    */
   const handleMove = async (fileId: string, targetParentId: string) => {
-    await operations.handleMove(fileId, targetParentId);
+    // 如果有选中的文件，移动所有选中的文件
+    if (selectedKeys.value.length > 0) {
+      await operations.handleMove(selectedKeys.value, targetParentId);
+      clearSelection();
+    } else {
+      // 否则只移动单个文件
+      await operations.handleMove(fileId, targetParentId);
+    }
   };
 
   /**
    * 处理分享
    */
   const handleShare = async (fileId: string, expireDays?: number) => {
-    await operations.handleShare(fileId, expireDays);
+    // 如果有选中的文件，分享所有选中的文件
+    if (selectedKeys.value.length > 0) {
+      await operations.handleShare(selectedKeys.value, expireDays);
+      clearSelection();
+    } else {
+      // 否则只分享单个文件
+      await operations.handleShare(fileId, expireDays);
+    }
   };
 
   /**
    * 处理删除
    */
-  const handleDelete = async (fileId: string) => {
-    await operations.handleDelete(fileId);
+  const handleDelete = async (fileIds: string | string[]) => {
+    await operations.handleDelete(fileIds);
+    // 删除成功后清空选中
+    clearSelection();
+  };
+
+  /**
+   * 处理批量删除
+   */
+  const handleBatchDelete = () => {
+    if (selectedKeys.value.length === 0) return;
+    operations.openBatchDeleteConfirm(selectedFiles.value);
+  };
+
+  /**
+   * 处理批量下载
+   */
+  const handleBatchDownload = async () => {
+    if (selectedKeys.value.length === 0) return;
+
+    // 过滤出非文件夹的文件
+    const downloadableFiles = selectedFiles.value.filter((f) => !f.isDir);
+
+    if (downloadableFiles.length === 0) {
+      Message.warning('没有可下载的文件');
+      return;
+    }
+
+    // 使用批量下载
+    await operations.handleDownload(downloadableFiles);
+    clearSelection();
+  };
+
+  /**
+   * 处理批量分享
+   */
+  const handleBatchShare = async () => {
+    if (selectedKeys.value.length === 0) return;
+
+    // 调用批量分享
+    await operations.handleShare(selectedKeys.value);
+    clearSelection();
+  };
+
+  /**
+   * 处理批量收藏
+   */
+  const handleBatchFavorite = async () => {
+    if (selectedKeys.value.length === 0) return;
+
+    // 使用统一的收藏方法
+    await operations.handleFavorite(selectedFiles.value);
+    clearSelection();
+  };
+
+  /**
+   * 处理批量移动
+   */
+  const handleBatchMove = () => {
+    if (selectedKeys.value.length === 0) return;
+
+    // 打开移动弹窗 - 使用第一个文件作为代表
+    const [firstFile] = selectedFiles.value;
+    if (firstFile) {
+      operations.movingFile.value = firstFile;
+      operations.moveModalVisible.value = true;
+    }
   };
 
   /**
@@ -353,6 +480,21 @@
   const handleFavoritesClick = () => {
     router.push('/files?view=favorites');
   };
+
+  /**
+   * 处理分享点击
+   */
+  const handleSharesClick = () => {
+    router.push('/files?view=shares');
+  };
+
+  // 监听文件列表变化，清空选中状态
+  watch(
+    () => fileList.fileList.value,
+    () => {
+      clearSelection();
+    }
+  );
 
   // 初始化加载数据
   onMounted(() => {

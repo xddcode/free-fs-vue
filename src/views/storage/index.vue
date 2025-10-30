@@ -8,7 +8,10 @@
             <icon-storage class="page-icon" />
             <div class="page-info">
               <h2 class="page-title">存储平台管理</h2>
-              <p class="page-desc">配置和管理您的对象存储平台，支持 MinIO、阿里云 OSS、腾讯云 COS 等</p>
+              <p class="page-desc"
+                >配置和管理您的对象存储平台，支持 MinIO、阿里云 OSS、腾讯云 COS
+                等</p
+              >
             </div>
           </div>
           <a-button type="outline" @click="handleRefresh">
@@ -67,7 +70,11 @@
           <template #title>
             <div class="card-header">
               <span>我的存储配置</span>
-              <a-tag v-if="userSettings.length === 0" color="orangered" size="small">
+              <a-tag
+                v-if="userSettings.length === 0"
+                color="orangered"
+                size="small"
+              >
                 <template #icon>
                   <icon-exclamation-circle />
                 </template>
@@ -127,15 +134,21 @@
           <a-space direction="vertical" :size="12" fill>
             <div class="help-item">
               <icon-check-circle class="help-icon" />
-              <span>支持配置多个存储平台，如 MinIO、阿里云 OSS、腾讯云 COS 等</span>
+              <span
+                >支持配置多个存储平台，如 MinIO、阿里云 OSS、腾讯云 COS 等</span
+              >
             </div>
             <div class="help-item">
               <icon-check-circle class="help-icon" />
-              <span>在此页面启用某个配置即可切换到该存储平台（同时只能有一个配置启用）</span>
+              <span
+                >在此页面启用某个配置即可切换到该存储平台（同时只能有一个配置启用）</span
+              >
             </div>
             <div class="help-item">
               <icon-check-circle class="help-icon" />
-              <span>右上角显示当前启用的存储平台，点击切换按钮可快速返回本页面</span>
+              <span
+                >右上角显示当前启用的存储平台，点击切换按钮可快速返回本页面</span
+              >
             </div>
           </a-space>
         </a-card>
@@ -160,7 +173,11 @@
     IconQuestionCircle,
     IconCheckCircle,
   } from '@arco-design/web-vue/es/icon';
-  import { getUserStorageSettings, getStoragePlatforms, type StorageSetting } from '@/api/storage';
+  import {
+    getUserStorageSettings,
+    getStoragePlatforms,
+    type StorageSetting,
+  } from '@/api/storage';
   import StorageSettingCard from './components/storage-setting-card.vue';
   import AddStorageConfigModal from './components/add-storage-config-modal.vue';
   import AddConfigCard from './components/add-config-card.vue';
@@ -265,7 +282,11 @@
       margin-bottom: 20px;
 
       .stat-card {
-        background: linear-gradient(135deg, rgb(var(--primary-1)) 0%, rgb(var(--primary-2)) 100%);
+        background: linear-gradient(
+          135deg,
+          rgb(var(--primary-1)) 0%,
+          rgb(var(--primary-2)) 100%
+        );
         border-radius: 8px;
 
         :deep(.arco-statistic-title) {
@@ -322,7 +343,11 @@
     // 帮助卡片
     .help-card {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      background: linear-gradient(135deg, rgba(var(--primary-1), 0.3) 0%, rgba(var(--primary-2), 0.3) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(var(--primary-1), 0.3) 0%,
+        rgba(var(--primary-2), 0.3) 100%
+      );
 
       .help-item {
         display: flex;

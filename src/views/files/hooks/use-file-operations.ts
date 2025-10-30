@@ -2,11 +2,11 @@ import { ref } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import {
   uploadFile,
-  downloadFile,
-  deleteFile,
+  downloadFiles,
+  deleteFiles,
   renameFile,
-  moveFile,
-  shareFile,
+  moveFiles,
+  shareFiles,
   createFolder,
   favoriteFile,
   unfavoriteFile,
@@ -40,6 +40,7 @@ export default function useFileOperations(refreshCallback: () => void) {
   // 删除确认相关
   const deleteConfirmVisible = ref(false);
   const deletingFile = ref<FileItem | null>(null);
+  const deletingFiles = ref<FileItem[]>([]);
 
   /**
    * 打开上传弹窗
@@ -165,12 +166,19 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 移动文件
+   * 移动文件（支持单个和批量）
    */
-  const handleMove = async (fileId: string, targetParentId: string) => {
-    await moveFile(fileId, targetParentId)
+  const handleMove = async (
+    fileIds: string | string[],
+    targetParentId: string
+  ) => {
+    const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
+
+    await moveFiles(ids, targetParentId)
       .then(() => {
-        Message.success('移动成功');
+        const successMsg =
+          ids.length === 1 ? '移动成功' : `成功移动 ${ids.length} 个文件`;
+        Message.success(successMsg);
         moveModalVisible.value = false;
         movingFile.value = null;
         refreshCallback();
@@ -189,12 +197,21 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 分享文件
+   * 分享文件（支持单个和批量）
    */
-  const handleShare = async (fileId: string, expireDays?: number) => {
-    return shareFile(fileId, expireDays)
+  const handleShare = async (
+    fileIds: string | string[],
+    expireDays?: number
+  ) => {
+    const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
+
+    return shareFiles(ids, expireDays)
       .then((response) => {
-        Message.success('分享链接已生成');
+        const successMsg =
+          ids.length === 1
+            ? '分享链接已生成'
+            : `成功生成 ${ids.length} 个分享链接`;
+        Message.success(successMsg);
         return response.data;
       })
       .catch(() => {
@@ -204,22 +221,39 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 打开删除确认弹窗
+   * 打开删除确认弹窗（单个文件）
    */
   const openDeleteConfirm = (file: FileItem) => {
     deletingFile.value = file;
+    deletingFiles.value = [file];
     deleteConfirmVisible.value = true;
   };
 
   /**
-   * 删除文件
+   * 打开批量删除确认弹窗
    */
-  const handleDelete = async (fileId: string) => {
-    await deleteFile(fileId)
+  const openBatchDeleteConfirm = (files: FileItem[]) => {
+    deletingFile.value = null;
+    deletingFiles.value = files;
+    deleteConfirmVisible.value = true;
+  };
+
+  /**
+   * 删除文件（支持单个和批量）
+   */
+  const handleDelete = async (fileIds: string | string[]) => {
+    const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
+
+    await deleteFiles(ids)
       .then(() => {
-        Message.success('删除成功');
+        const successMsg =
+          ids.length === 1
+            ? '已移到回收站'
+            : `已将 ${ids.length} 个文件移到回收站`;
+        Message.success(successMsg);
         deleteConfirmVisible.value = false;
         deletingFile.value = null;
+        deletingFiles.value = [];
         refreshCallback();
       })
       .catch(() => {
@@ -228,23 +262,84 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 下载文件
+   * 传统下载方式（回退方案）
    */
-  const handleDownload = async (file: FileItem) => {
-    await downloadFile(file.id)
-      .then((response) => {
-        // 创建下载链接
-        const blob = new Blob([response.data]);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.displayName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+  const fallbackDownload = (blob: Blob, fileName: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    Message.success('下载成功（使用默认下载文件夹）');
+  };
 
-        Message.success('下载成功');
+  /**
+   * 下载文件（支持单个和批量）
+   */
+  const handleDownload = async (files: FileItem | FileItem[]) => {
+    const fileArray = Array.isArray(files) ? files : [files];
+    const fileIds = fileArray.map((f) => f.id);
+
+    await downloadFiles(fileIds)
+      .then(async (response) => {
+        const blob = new Blob([response.data]);
+
+        // 单个文件使用原文件名，多个文件打包为zip
+        const fileName =
+          fileIds.length === 1
+            ? fileArray[0].displayName
+            : `批量下载_${Date.now()}.zip`;
+
+        // 检查浏览器是否支持 File System Access API
+        if ('showSaveFilePicker' in window) {
+          try {
+            const fileTypes =
+              fileIds.length === 1 && fileArray[0].suffix
+                ? [
+                    {
+                      description: '文件',
+                      accept: {
+                        '*/*': [`.${fileArray[0].suffix}`],
+                      },
+                    },
+                  ]
+                : [
+                    {
+                      description: 'ZIP 文件',
+                      accept: {
+                        'application/zip': ['.zip'],
+                      },
+                    },
+                  ];
+
+            const handle = await (window as any).showSaveFilePicker({
+              suggestedName: fileName,
+              types: fileTypes,
+            });
+
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+
+            const successMsg =
+              fileIds.length === 1
+                ? '下载成功'
+                : `成功下载 ${fileIds.length} 个文件`;
+            Message.success(successMsg);
+          } catch (error: any) {
+            if (error.name === 'AbortError') {
+              Message.info('已取消下载');
+              return;
+            }
+            Message.warning('保存失败，使用默认下载方式');
+            fallbackDownload(blob, fileName);
+          }
+        } else {
+          fallbackDownload(blob, fileName);
+        }
       })
       .catch(() => {
         // 拦截器已统一处理错误提示
@@ -252,14 +347,27 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 收藏/取消收藏文件
+   * 收藏/取消收藏文件（支持单个和批量）
    */
-  const handleFavorite = async (file: FileItem) => {
-    const { isFavorite, id } = file;
-    const action = isFavorite ? unfavoriteFile : favoriteFile;
-    const successMsg = isFavorite ? '已取消收藏' : '已添加到收藏';
+  const handleFavorite = async (files: FileItem | FileItem[]) => {
+    const fileArray = Array.isArray(files) ? files : [files];
+    const fileIds = fileArray.map((f) => f.id);
 
-    await action([id])
+    // 判断是收藏还是取消收藏
+    // 批量时：如果有任何一个文件未被收藏，则执行收藏操作；如果全部已收藏，则执行取消收藏操作
+    const hasUnfavorited = fileArray.some((file) => !file.isFavorite);
+    const action = hasUnfavorited ? favoriteFile : unfavoriteFile;
+
+    let successMsg = '';
+    if (fileIds.length === 1) {
+      successMsg = hasUnfavorited ? '已添加到收藏' : '已取消收藏';
+    } else {
+      successMsg = hasUnfavorited
+        ? `已收藏 ${fileIds.length} 个文件`
+        : `已取消收藏 ${fileIds.length} 个文件`;
+    }
+
+    await action(fileIds)
       .then(() => {
         Message.success(successMsg);
         refreshCallback();
@@ -303,7 +411,9 @@ export default function useFileOperations(refreshCallback: () => void) {
     // 删除相关
     deleteConfirmVisible,
     deletingFile,
+    deletingFiles,
     openDeleteConfirm,
+    openBatchDeleteConfirm,
     handleDelete,
 
     // 下载

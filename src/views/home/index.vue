@@ -201,7 +201,7 @@
 
   const router = useRouter();
   const loading = ref(false);
-  
+
   // 静态数据
   const userStats = ref({
     storageUsed: 5368709120, // 5GB
@@ -304,7 +304,6 @@
       Message.info(`打开文件: ${file.displayName}`);
     }
   };
-
 </script>
 
 <style lang="less" scoped>

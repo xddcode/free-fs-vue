@@ -38,8 +38,6 @@
         </a-breadcrumb-item>
       </template>
     </a-breadcrumb>
-
-    <div class="breadcrumb-info">共 {{ total }} 个文件</div>
   </div>
 </template>
 
@@ -48,7 +46,6 @@
   import type { BreadcrumbItem } from '../hooks';
 
   interface Props {
-    total: number;
     breadcrumbPath: BreadcrumbItem[];
     customTitle?: string;
   }
@@ -72,7 +69,6 @@
   .file-breadcrumb {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 12px 24px;
     border-bottom: 1px solid var(--color-border-2);
     background-color: var(--color-bg-2);
@@ -104,12 +100,6 @@
           color: rgb(var(--primary-6));
         }
       }
-    }
-
-    .breadcrumb-info {
-      font-size: 14px;
-      color: var(--color-text-3);
-      white-space: nowrap;
     }
   }
 </style>

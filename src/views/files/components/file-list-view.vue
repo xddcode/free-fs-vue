@@ -1,115 +1,153 @@
 <template>
-  <div class="file-list-view">
-    <a-table
-      :data="fileList"
-      :pagination="false"
-      :bordered="false"
-      row-key="id"
-      :row-class="() => 'file-row'"
-      @change="handleTableChange"
-    >
-      <template #columns>
-        <a-table-column title="文件名" data-index="displayName" :width="400">
-          <template #cell="{ record }">
-            <div
-              class="file-name-cell"
-              :class="{ 'is-folder': record.isDir }"
-              @dblclick="handleDoubleClick(record)"
-            >
-              <div class="file-icon-wrapper">
-                <img
-                  :src="
-                    getFileIconPath(record.isDir ? 'dir' : record.suffix || '')
-                  "
-                  :alt="record.displayName"
-                  class="file-icon-img"
-                />
+  <div class="file-list-view-container">
+    <div class="file-list-header">
+      <div class="header-left">
+        <span class="file-count-text">
+          {{
+            selectedKeys && selectedKeys.length > 0
+              ? `已选 ${selectedKeys.length} 个文件`
+              : `共 ${fileList.length} 个文件`
+          }}
+        </span>
+      </div>
+      <div class="header-right">
+        <a-button-group size="large">
+          <a-button @click="$emit('update:viewMode', 'list')">
+            <icon-list
+              :style="{ color: viewMode === 'list' ? '#165dff' : '' }"
+            />
+          </a-button>
+          <a-button @click="$emit('update:viewMode', 'grid')">
+            <icon-apps
+              :style="{ color: viewMode === 'grid' ? '#165dff' : '' }"
+            />
+          </a-button>
+        </a-button-group>
+        <a-button size="large" @click="$emit('refresh')">
+          <icon-refresh />
+        </a-button>
+      </div>
+    </div>
+    <div class="file-list-view">
+      <a-table
+        v-model:selected-keys="selectedKeysModel"
+        :data="fileList"
+        :pagination="false"
+        :bordered="false"
+        row-key="id"
+        :row-class="() => 'file-row'"
+        :row-selection="{
+          type: 'checkbox',
+          showCheckedAll: true,
+        }"
+        @change="handleTableChange"
+      >
+        <template #columns>
+          <a-table-column title="文件名" data-index="displayName" :width="400">
+            <template #cell="{ record }">
+              <div
+                class="file-name-cell"
+                :class="{ 'is-folder': record.isDir }"
+                @dblclick="handleDoubleClick(record)"
+              >
+                <div class="file-icon-wrapper">
+                  <img
+                    :src="
+                      getFileIconPath(
+                        record.isDir ? 'dir' : record.suffix || ''
+                      )
+                    "
+                    :alt="record.displayName"
+                    class="file-icon-img"
+                  />
+                </div>
+                <span class="file-name">{{ record.displayName }}</span>
               </div>
-              <span class="file-name">{{ record.displayName }}</span>
-            </div>
-          </template>
-        </a-table-column>
+            </template>
+          </a-table-column>
 
-        <a-table-column title="大小" data-index="size" :width="120">
-          <template #cell="{ record }">
-            <span class="file-size">{{ formatFileSize(record.size) }}</span>
-          </template>
-        </a-table-column>
+          <a-table-column title="大小" data-index="size" :width="120">
+            <template #cell="{ record }">
+              <span class="file-size">{{ formatFileSize(record.size) }}</span>
+            </template>
+          </a-table-column>
 
-        <a-table-column
-          title="修改时间"
-          data-index="updateTime"
-          :width="180"
-          :sortable="{
-            sortDirections: ['ascend', 'descend'],
-          }"
-        >
-          <template #cell="{ record }">
-            <span class="file-time">{{
-              formatFileTime(record.updateTime)
-            }}</span>
-          </template>
-        </a-table-column>
+          <a-table-column
+            title="修改时间"
+            data-index="updateTime"
+            :width="180"
+            :sortable="{
+              sortDirections: ['ascend', 'descend'],
+            }"
+          >
+            <template #cell="{ record }">
+              <span class="file-time">{{
+                formatFileTime(record.updateTime)
+              }}</span>
+            </template>
+          </a-table-column>
 
-        <a-table-column title="操作" :width="200" align="center">
-          <template #cell="{ record }">
-            <div class="file-actions">
-              <a-button
-                v-if="!record.isDir"
-                size="small"
-                type="text"
-                @click.stop="$emit('download', record)"
-              >
-                <icon-download />
-              </a-button>
-              <a-button
-                size="small"
-                type="text"
-                @click.stop="$emit('share', record)"
-              >
-                <icon-share-alt />
-              </a-button>
-              <a-button
-                size="small"
-                type="text"
-                :class="{ 'is-favorite': record.isFavorite }"
-                @click.stop="$emit('favorite', record)"
-              >
-                <icon-star-fill v-if="record.isFavorite" />
-                <icon-star v-else />
-              </a-button>
-              <a-button
-                size="small"
-                type="text"
-                status="danger"
-                @click.stop="$emit('delete', record)"
-              >
-                <icon-delete />
-              </a-button>
-              <a-dropdown trigger="hover">
-                <a-button size="small" type="text" @click.stop>
-                  <icon-more />
+          <a-table-column title="操作" :width="200" align="center">
+            <template #cell="{ record }">
+              <div v-if="!isRowSelected(record.id)" class="file-actions">
+                <a-button
+                  v-if="!record.isDir"
+                  size="small"
+                  type="text"
+                  @click.stop="$emit('download', record)"
+                >
+                  <icon-download />
                 </a-button>
-                <template #content>
-                  <a-doption @click="$emit('rename', record)">
-                    <icon-edit />
-                    重命名
-                  </a-doption>
-                  <a-doption @click="$emit('move', record)">
-                    <icon-drag-arrow />
-                    移动到
-                  </a-doption>
-                </template>
-              </a-dropdown>
-            </div>
-          </template>
-        </a-table-column>
-      </template>
-    </a-table>
+                <a-button
+                  size="small"
+                  type="text"
+                  @click.stop="$emit('share', record)"
+                >
+                  <icon-share-alt />
+                </a-button>
+                <a-button
+                  size="small"
+                  type="text"
+                  :class="{ 'is-favorite': record.isFavorite }"
+                  @click.stop="$emit('favorite', record)"
+                >
+                  <icon-star-fill v-if="record.isFavorite" />
+                  <icon-star v-else />
+                </a-button>
+                <a-button
+                  size="small"
+                  type="text"
+                  status="danger"
+                  @click.stop="$emit('delete', record)"
+                >
+                  <icon-delete />
+                </a-button>
+                <a-dropdown trigger="hover">
+                  <a-button size="small" type="text" @click.stop>
+                    <icon-more />
+                  </a-button>
+                  <template #content>
+                    <a-doption @click="$emit('rename', record)">
+                      <icon-edit />
+                      重命名
+                    </a-doption>
+                    <a-doption @click="$emit('move', record)">
+                      <icon-drag-arrow />
+                      移动到
+                    </a-doption>
+                  </template>
+                </a-dropdown>
+              </div>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+  import { computed } from 'vue';
   import {
     IconDownload,
     IconDelete,
@@ -119,6 +157,9 @@
     IconDragArrow,
     IconStar,
     IconStarFill,
+    IconRefresh,
+    IconApps,
+    IconList,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -126,9 +167,11 @@
 
   interface Props {
     fileList: FileItem[];
+    selectedKeys?: string[];
+    viewMode?: 'list' | 'grid';
   }
 
-  defineProps<Props>();
+  const props = defineProps<Props>();
 
   const emit = defineEmits<{
     (e: 'rowClick', record: FileItem): void;
@@ -143,7 +186,21 @@
     (e: 'rename', record: FileItem): void;
     (e: 'move', record: FileItem): void;
     (e: 'favorite', record: FileItem): void;
+    (e: 'update:selectedKeys', keys: string[]): void;
+    (e: 'update:viewMode', value: 'list' | 'grid'): void;
+    (e: 'refresh'): void;
   }>();
+
+  // 双向绑定选中的 keys
+  const selectedKeysModel = computed({
+    get: () => props.selectedKeys || [],
+    set: (value) => emit('update:selectedKeys', value),
+  });
+
+  // 检查行是否被选中
+  const isRowSelected = (rowId: string) => {
+    return selectedKeysModel.value.includes(rowId);
+  };
 
   const handleDoubleClick = (record: FileItem) => {
     if (record.isDir) {
@@ -160,7 +217,41 @@
 </script>
 
 <style lang="less" scoped>
+  .file-list-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .file-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border-2);
+    background-color: var(--color-bg-1);
+
+    .header-left {
+      display: flex;
+      align-items: center;
+
+      .file-count-text {
+        font-size: 14px;
+        color: var(--color-text-2);
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+  }
+
   .file-list-view {
+    flex: 1;
+    overflow: auto;
+
     :deep(.arco-table) {
       .arco-table-th {
         background-color: var(--color-fill-2);

@@ -37,15 +37,9 @@
 
       <!-- 分享链接展示 -->
       <div v-if="shareLink" class="share-result">
-        <a-alert type="success" banner>
-          分享链接已生成
-        </a-alert>
+        <a-alert type="success" banner> 分享链接已生成 </a-alert>
         <div class="link-box">
-          <a-input
-            :model-value="shareLink"
-            readonly
-            class="link-input"
-          />
+          <a-input :model-value="shareLink" readonly class="link-input" />
           <a-button type="primary" @click="handleCopy">
             <template #icon>
               <icon-copy />
@@ -53,9 +47,7 @@
             复制链接
           </a-button>
         </div>
-        <div class="link-tip">
-          分享链接将在 {{ getExpireText() }} 后失效
-        </div>
+        <div class="link-tip"> 分享链接将在 {{ getExpireText() }} 后失效 </div>
       </div>
     </div>
   </a-modal>
@@ -89,7 +81,7 @@
 
   const handleOk = async () => {
     if (!props.file) return;
-    
+
     loading.value = true;
     // 模拟生成分享链接
     setTimeout(() => {
@@ -97,8 +89,12 @@
       const shareId = Math.random().toString(36).substring(2, 15);
       shareLink.value = `${baseUrl}/share/${shareId}`;
       loading.value = false;
-      
-      emit('confirm', props.file!.id, form.expireDays === 0 ? undefined : form.expireDays);
+
+      emit(
+        'confirm',
+        props.file!.id,
+        form.expireDays === 0 ? undefined : form.expireDays
+      );
     }, 500);
   };
 
@@ -211,4 +207,3 @@
     }
   }
 </style>
-

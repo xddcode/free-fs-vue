@@ -44,7 +44,7 @@ const useUserStore = defineStore('user', {
       const res = await getUserInfo();
       this.setInfo(res.data);
     },
-    
+
     // 保持兼容性，添加 getUserInfo 别名
     async getUserInfo() {
       return this.info();

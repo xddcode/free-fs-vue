@@ -47,22 +47,26 @@ export function uploadFile(file: File, parentId?: string) {
 }
 
 /**
- * 下载文件
+ * 下载文件（支持单个和批量）
  */
-export function downloadFile(fileId: string) {
-  return request.get(`/apis/file/download/${fileId}`, {
-    responseType: 'blob',
-  });
+export function downloadFiles(fileIds: string[]) {
+  return request.post(
+    '/apis/file/download',
+    { fileIds },
+    {
+      responseType: 'blob',
+    }
+  );
 }
 
 /**
  * 预览文件
  */
-export function previewFile(fileId: string) {
-  return request.get(`/apis/file/preview/${fileId}`, {
-    responseType: 'blob',
-  });
-}
+// export function previewFile(fileId: string) {
+//   return request.get(`/apis/file/preview/${fileId}`, {
+//     responseType: 'blob',
+//   });
+// }
 
 /**
  * 创建文件夹
@@ -72,17 +76,12 @@ export function createFolder(data: { folderName: string; parentId?: string }) {
 }
 
 /**
- * 删除文件
+ * 删除文件（移到回收站，支持单个和批量）
  */
-export function deleteFile(fileId: string) {
-  return request.delete(`/apis/file/${fileId}`);
-}
-
-/**
- * 批量删除文件
- */
-export function batchDeleteFiles(fileIds: string[]) {
-  return request.post('/apis/file/batch-delete', { fileIds });
+export function deleteFiles(fileIds: string[]) {
+  return request.delete('/apis/file', {
+    data: fileIds,
+  });
 }
 
 /**
@@ -93,24 +92,17 @@ export function renameFile(fileId: string, displayName: string) {
 }
 
 /**
- * 移动文件
+ * 移动文件（支持单个和批量）
  */
-export function moveFile(fileId: string, targetParentId: string) {
-  return request.put(`/apis/file/${fileId}/move`, { targetParentId });
+export function moveFiles(fileIds: string[], targetParentId: string) {
+  return request.put('/apis/file/move', { fileIds, targetParentId });
 }
 
 /**
- * 复制文件
+ * 分享文件（支持单个和批量）
  */
-export function copyFile(fileId: string, targetParentId: string) {
-  return request.post(`/apis/file/${fileId}/copy`, { targetParentId });
-}
-
-/**
- * 分享文件
- */
-export function shareFile(fileId: string, expireDays?: number) {
-  return request.post(`/apis/file/${fileId}/share`, { expireDays });
+export function shareFiles(fileIds: string[], expireDays?: number) {
+  return request.post('/apis/file/share', { fileIds, expireDays });
 }
 
 /**
@@ -123,8 +115,10 @@ export function unshareFile(fileId: string) {
 /**
  * 获取回收站文件列表
  */
-export function getRecycleList() {
-  return request.get<FileRecycleItem[]>('/apis/file/recycles');
+export function getRecycleList(keyword?: string) {
+  return request.get<FileRecycleItem[]>('/apis/file/recycles', {
+    params: { keyword },
+  });
 }
 
 /**

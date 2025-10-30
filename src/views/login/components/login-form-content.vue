@@ -150,7 +150,9 @@
       }
     }
   };
-  const setRememberPassword = (value: boolean | (string | number | boolean)[]) => {
+  const setRememberPassword = (
+    value: boolean | (string | number | boolean)[]
+  ) => {
     userInfo.isRemember = value as boolean;
   };
 
