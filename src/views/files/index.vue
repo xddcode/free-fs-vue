@@ -170,7 +170,9 @@
     <move-modal
       v-model:visible="operations.moveModalVisible.value"
       :file="operations.movingFile.value"
+      :files="operations.movingFiles.value"
       @confirm="handleMove"
+      @refresh="fileList.refresh"
     />
 
     <!-- 分享弹窗 -->
@@ -363,15 +365,9 @@
   /**
    * 处理移动
    */
-  const handleMove = async (fileId: string, targetParentId: string) => {
-    // 如果有选中的文件，移动所有选中的文件
-    if (selectedKeys.value.length > 0) {
-      await operations.handleMove(selectedKeys.value, targetParentId);
-      clearSelection();
-    } else {
-      // 否则只移动单个文件
-      await operations.handleMove(fileId, targetParentId);
-    }
+  const handleMove = async (fileIds: string[], targetDirId: string) => {
+    await operations.handleMove(fileIds, targetDirId);
+    clearSelection();
   };
 
   /**
@@ -451,13 +447,7 @@
    */
   const handleBatchMove = () => {
     if (selectedKeys.value.length === 0) return;
-
-    // 打开移动弹窗 - 使用第一个文件作为代表
-    const [firstFile] = selectedFiles.value;
-    if (firstFile) {
-      operations.movingFile.value = firstFile;
-      operations.moveModalVisible.value = true;
-    }
+    operations.openBatchMoveModal(selectedFiles.value);
   };
 
   /**

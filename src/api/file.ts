@@ -23,6 +23,15 @@ export function getFileDetail(fileId: string) {
 }
 
 /**
+ * 查询目录列表
+ */
+export function getFolders(parentId?: string) {
+  return request.get<FileItem[]>('/apis/file/dirs', {
+    params: { parentId },
+  });
+}
+
+/**
  * 获取文件夹路径（面包屑导航）
  * 返回从根目录到当前目录的所有父级文件夹
  */
@@ -94,8 +103,11 @@ export function renameFile(fileId: string, displayName: string) {
 /**
  * 移动文件（支持单个和批量）
  */
-export function moveFiles(fileIds: string[], targetParentId: string) {
-  return request.put('/apis/file/move', { fileIds, targetParentId });
+export function moveFiles(dirId: string, fileIds: string[]) {
+  return request.put('/apis/file/moves', {
+    dirId,
+    fileIds,
+  });
 }
 
 /**

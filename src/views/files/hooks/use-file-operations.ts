@@ -32,6 +32,7 @@ export default function useFileOperations(refreshCallback: () => void) {
   // 移动文件相关
   const moveModalVisible = ref(false);
   const movingFile = ref<FileItem | null>(null);
+  const movingFiles = ref<FileItem[]>([]);
 
   // 分享相关
   const shareModalVisible = ref(false);
@@ -122,15 +123,11 @@ export default function useFileOperations(refreshCallback: () => void) {
     await createFolder({
       folderName: folderName.trim(),
       parentId,
-    })
-      .then(() => {
-        Message.success('文件夹创建成功');
-        createFolderModalVisible.value = false;
-        refreshCallback();
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-      });
+    }).then(() => {
+      Message.success('文件夹创建成功');
+      createFolderModalVisible.value = false;
+      refreshCallback();
+    });
   };
 
   /**
@@ -145,23 +142,29 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 重命名文件
    */
   const handleRename = async (fileId: string, newName: string) => {
-    await renameFile(fileId, newName.trim())
-      .then(() => {
-        Message.success('重命名成功');
-        renameModalVisible.value = false;
-        renamingFile.value = null;
-        refreshCallback();
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-      });
+    await renameFile(fileId, newName.trim()).then(() => {
+      Message.success('重命名成功');
+      renameModalVisible.value = false;
+      renamingFile.value = null;
+      refreshCallback();
+    });
   };
 
   /**
-   * 打开移动文件弹窗
+   * 打开移动文件弹窗（单个）
    */
   const openMoveModal = (file: FileItem) => {
     movingFile.value = file;
+    movingFiles.value = [file];
+    moveModalVisible.value = true;
+  };
+
+  /**
+   * 打开批量移动文件弹窗
+   */
+  const openBatchMoveModal = (files: FileItem[]) => {
+    movingFile.value = null;
+    movingFiles.value = files;
     moveModalVisible.value = true;
   };
 
@@ -170,22 +173,19 @@ export default function useFileOperations(refreshCallback: () => void) {
    */
   const handleMove = async (
     fileIds: string | string[],
-    targetParentId: string
+    targetDirId: string
   ) => {
     const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
 
-    await moveFiles(ids, targetParentId)
-      .then(() => {
-        const successMsg =
-          ids.length === 1 ? '移动成功' : `成功移动 ${ids.length} 个文件`;
-        Message.success(successMsg);
-        moveModalVisible.value = false;
-        movingFile.value = null;
-        refreshCallback();
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-      });
+    await moveFiles(targetDirId, ids).then(() => {
+      const successMsg =
+        ids.length === 1 ? '移动成功' : `成功移动 ${ids.length} 个文件`;
+      Message.success(successMsg);
+      moveModalVisible.value = false;
+      movingFile.value = null;
+      movingFiles.value = [];
+      refreshCallback();
+    });
   };
 
   /**
@@ -205,19 +205,14 @@ export default function useFileOperations(refreshCallback: () => void) {
   ) => {
     const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
 
-    return shareFiles(ids, expireDays)
-      .then((response) => {
-        const successMsg =
-          ids.length === 1
-            ? '分享链接已生成'
-            : `成功生成 ${ids.length} 个分享链接`;
-        Message.success(successMsg);
-        return response.data;
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-        return null;
-      });
+    return shareFiles(ids, expireDays).then((response) => {
+      const successMsg =
+        ids.length === 1
+          ? '分享链接已生成'
+          : `成功生成 ${ids.length} 个分享链接`;
+      Message.success(successMsg);
+      return response.data;
+    });
   };
 
   /**
@@ -244,21 +239,17 @@ export default function useFileOperations(refreshCallback: () => void) {
   const handleDelete = async (fileIds: string | string[]) => {
     const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
 
-    await deleteFiles(ids)
-      .then(() => {
-        const successMsg =
-          ids.length === 1
-            ? '已移到回收站'
-            : `已将 ${ids.length} 个文件移到回收站`;
-        Message.success(successMsg);
-        deleteConfirmVisible.value = false;
-        deletingFile.value = null;
-        deletingFiles.value = [];
-        refreshCallback();
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-      });
+    await deleteFiles(ids).then(() => {
+      const successMsg =
+        ids.length === 1
+          ? '已移到回收站'
+          : `已将 ${ids.length} 个文件移到回收站`;
+      Message.success(successMsg);
+      deleteConfirmVisible.value = false;
+      deletingFile.value = null;
+      deletingFiles.value = [];
+      refreshCallback();
+    });
   };
 
   /**
@@ -283,67 +274,63 @@ export default function useFileOperations(refreshCallback: () => void) {
     const fileArray = Array.isArray(files) ? files : [files];
     const fileIds = fileArray.map((f) => f.id);
 
-    await downloadFiles(fileIds)
-      .then(async (response) => {
-        const blob = new Blob([response.data]);
+    await downloadFiles(fileIds).then(async (response) => {
+      const blob = new Blob([response.data]);
 
-        // 单个文件使用原文件名，多个文件打包为zip
-        const fileName =
-          fileIds.length === 1
-            ? fileArray[0].displayName
-            : `批量下载_${Date.now()}.zip`;
+      // 单个文件使用原文件名，多个文件打包为zip
+      const fileName =
+        fileIds.length === 1
+          ? fileArray[0].displayName
+          : `批量下载_${Date.now()}.zip`;
 
-        // 检查浏览器是否支持 File System Access API
-        if ('showSaveFilePicker' in window) {
-          try {
-            const fileTypes =
-              fileIds.length === 1 && fileArray[0].suffix
-                ? [
-                    {
-                      description: '文件',
-                      accept: {
-                        '*/*': [`.${fileArray[0].suffix}`],
-                      },
+      // 检查浏览器是否支持 File System Access API
+      if ('showSaveFilePicker' in window) {
+        try {
+          const fileTypes =
+            fileIds.length === 1 && fileArray[0].suffix
+              ? [
+                  {
+                    description: '文件',
+                    accept: {
+                      '*/*': [`.${fileArray[0].suffix}`],
                     },
-                  ]
-                : [
-                    {
-                      description: 'ZIP 文件',
-                      accept: {
-                        'application/zip': ['.zip'],
-                      },
+                  },
+                ]
+              : [
+                  {
+                    description: 'ZIP 文件',
+                    accept: {
+                      'application/zip': ['.zip'],
                     },
-                  ];
+                  },
+                ];
 
-            const handle = await (window as any).showSaveFilePicker({
-              suggestedName: fileName,
-              types: fileTypes,
-            });
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: fileName,
+            types: fileTypes,
+          });
 
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
 
-            const successMsg =
-              fileIds.length === 1
-                ? '下载成功'
-                : `成功下载 ${fileIds.length} 个文件`;
-            Message.success(successMsg);
-          } catch (error: any) {
-            if (error.name === 'AbortError') {
-              Message.info('已取消下载');
-              return;
-            }
-            Message.warning('保存失败，使用默认下载方式');
-            fallbackDownload(blob, fileName);
+          const successMsg =
+            fileIds.length === 1
+              ? '下载成功'
+              : `成功下载 ${fileIds.length} 个文件`;
+          Message.success(successMsg);
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            Message.info('已取消下载');
+            return;
           }
-        } else {
+          Message.warning('保存失败，使用默认下载方式');
           fallbackDownload(blob, fileName);
         }
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-      });
+      } else {
+        fallbackDownload(blob, fileName);
+      }
+    });
   };
 
   /**
@@ -367,14 +354,10 @@ export default function useFileOperations(refreshCallback: () => void) {
         : `已取消收藏 ${fileIds.length} 个文件`;
     }
 
-    await action(fileIds)
-      .then(() => {
-        Message.success(successMsg);
-        refreshCallback();
-      })
-      .catch(() => {
-        // 拦截器已统一处理错误提示
-      });
+    await action(fileIds).then(() => {
+      Message.success(successMsg);
+      refreshCallback();
+    });
   };
 
   return {
@@ -399,7 +382,9 @@ export default function useFileOperations(refreshCallback: () => void) {
     // 移动相关
     moveModalVisible,
     movingFile,
+    movingFiles,
     openMoveModal,
+    openBatchMoveModal,
     handleMove,
 
     // 分享相关

@@ -235,7 +235,6 @@
       const response = await getRecycleList(keyword);
       fileList.value = response.data || [];
     } catch {
-      // 拦截器已统一处理错误提示
       fileList.value = [];
     } finally {
       loading.value = false;

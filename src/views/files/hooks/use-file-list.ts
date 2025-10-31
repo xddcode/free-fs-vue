@@ -87,7 +87,6 @@ export default function useFileList() {
         await updateBreadcrumbPath();
       }
     } catch {
-      // 拦截器已统一处理错误提示
       fileList.value = [];
       total.value = 0;
     } finally {
