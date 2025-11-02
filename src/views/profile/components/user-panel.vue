@@ -22,7 +22,7 @@
         :data="renderData"
         :column="2"
         align="right"
-        layout="-horizontal"
+        layout="horizontal"
         :label-style="{
           width: '140px',
           fontWeight: 'normal',
@@ -44,7 +44,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import { Message } from '@arco-design/web-vue';
   import type {
     FileItem,
@@ -54,11 +54,6 @@
   import type { DescData } from '@arco-design/web-vue/es/descriptions/interface';
 
   const userStore = useUserStore();
-  const file = {
-    uid: '-2',
-    name: 'avatar.png',
-    url: userStore.avatar,
-  };
 
   // 格式化时间显示
   const formatDate = (date?: string) => {
@@ -73,7 +68,8 @@
     });
   };
 
-  const renderData = [
+  // 使用计算属性，使其响应式更新
+  const renderData = computed(() => [
     {
       label: '账号ID',
       value: userStore.id,
@@ -98,11 +94,29 @@
       label: '最后登录时间',
       value: formatDate(userStore.lastLoginAt),
     },
-  ] as DescData[];
-  const fileList = ref<FileItem[]>([file]);
+  ] as DescData[]);
+
+  // 使用计算属性，使头像URL响应式更新
+  const file = computed<FileItem>(() => ({
+    uid: '-2',
+    name: 'avatar.png',
+    url: userStore.avatar,
+  }));
+
+  const fileList = ref<FileItem[]>([file.value]);
   const uploadChange = (fileItemList: FileItem[], fileItem: FileItem) => {
     fileList.value = [fileItem];
   };
+
+  // 监听 userStore 的变化，更新 fileList
+  watch(
+    () => file.value.url,
+    (newUrl) => {
+      if (fileList.value[0]?.url !== newUrl && !fileList.value[0]?.url?.startsWith('blob:')) {
+        fileList.value = [file.value];
+      }
+    }
+  );
   const customRequest = (options: RequestOption) => {
     const controller = new AbortController();
 
