@@ -322,7 +322,7 @@
           // 调用启用/禁用接口
           await toggleStorageSetting(id.toString(), action);
 
-          // 无论启用还是禁用，都需要更新 store 和刷新页面
+          // 更新 store 中的数据
           const storageStore = useStorageStore();
           await storageStore.fetchActivePlatforms();
 
@@ -334,13 +334,10 @@
             );
           }
 
-          // 延迟刷新页面
+          // 延迟刷新页面，确保 store 更新完成
           setTimeout(() => {
             window.location.reload();
           }, 800);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('操作失败:', error);
         } finally {
           btnLoading.value = false;
         }
@@ -390,6 +387,9 @@
           };
           await updateStorageSetting(submitData);
           Message.success('配置保存成功');
+          // 更新 store 中的数据
+          const storageStore = useStorageStore();
+          await storageStore.fetchActivePlatforms();
           emit('refresh');
           done(true);
         } else {

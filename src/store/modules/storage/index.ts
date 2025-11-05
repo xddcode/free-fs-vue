@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { Message } from '@arco-design/web-vue';
 import { getActiveStoragePlatforms } from '@/api/storage';
 import type { ActiveStoragePlatform } from '@/api/storage';
 
@@ -50,7 +49,8 @@ const useStorageStore = defineStore('storage', {
         }
       } catch (error) {
         this.activePlatforms = [];
-        this.currentPlatform = null;
+        // 使用 setCurrentPlatform 确保 localStorage 也被清除
+        this.setCurrentPlatform(null);
       }
     },
 
