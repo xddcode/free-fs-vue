@@ -4,6 +4,7 @@ import type {
   FileItem,
   FileRecycleItem,
 } from '@/types/modules/file';
+import { AxiosProgressEvent } from 'axios';
 
 /**
  * 查询文件列表
@@ -41,8 +42,12 @@ export function getFolderPath(folderId: string) {
 
 /**
  * 上传文件
+ *
+ * @param file 文件
+ * @param parentId pid
+ * @param onProgress progress
  */
-export function uploadFile(file: File, parentId?: string) {
+export function uploadFile(file: File, parentId?: string, onProgress?: (progressEvent: AxiosProgressEvent) => void) {
   const formData = new FormData();
   formData.append('file', file);
   if (parentId) {
@@ -52,6 +57,7 @@ export function uploadFile(file: File, parentId?: string) {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    onUploadProgress: onProgress,
   });
 }
 
