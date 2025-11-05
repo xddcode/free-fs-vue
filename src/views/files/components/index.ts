@@ -17,3 +17,5 @@ export { default as ShareModal } from './share-modal.vue';
 export { default as DeleteConfirmModal } from './delete-confirm-modal.vue';
 export { default as RecycleBinView } from './recycle-bin-view.vue';
 export { default as MySharesView } from './my-shares-view.vue';
+export { default as UploadModalV2 } from './upload-modal-v2.vue';
+export { default as UploadPanel } from './upload-panel.vue';
