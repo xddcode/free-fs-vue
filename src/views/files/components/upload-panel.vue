@@ -1,93 +1,195 @@
 <template>
-  <div v-if="uploadStore.showPanel" class="upload-panel-wrapper">
-    <div
-      v-if="!uploadStore.isExpanded"
-      class="upload-panel-collapsed"
-      @click="uploadStore.toggleExpand"
+  <div>
+    <a-button
+      class="custom-upload-fab"
+      type="primary"
+      shape="circle"
+      :style="{ bottom: fabButtonBottom }"
+      @click="handleOpen"
     >
-      <a-spin v-if="isUploading" :size="14" />
-      <icon-check-circle-fill v-else style="color: rgb(var(--success-6))" />
-      <span class="summary-text">{{ summaryText }}</span>
-      <icon-close class="panel-icon" @click.stop="uploadStore.closePanel" />
-    </div>
+      <template #icon>
+        <icon-upload :size="38" style="margin: auto" />
+      </template>
+    </a-button>
 
-    <div v-else class="upload-panel-expanded">
-      <div class="panel-header">
+    <div v-if="uploadStore.showPanel" class="upload-panel-wrapper">
+      <div
+        v-if="!uploadStore.isExpanded"
+        class="upload-panel-collapsed"
+        @click="uploadStore.toggleExpand"
+      >
+        <a-spin v-if="isUploading" :size="14" />
+        <icon-check-circle-fill v-else style="color: rgb(var(--success-6))" />
         <span class="summary-text">{{ summaryText }}</span>
-        <div>
-          <icon-close class="panel-icon" @click="uploadStore.closePanel" />
-        </div>
+        <icon-close class="panel-icon" @click.stop="uploadStore.closePanel" />
       </div>
 
-      <div class="panel-body">
-        <div v-if="taskList.length === 0"> 没有更多内容了 </div>
-        <div
-          v-for="task in taskList"
-          :key="task.id"
-          class="task-item"
-        >
-          <icon-file :size="24" />
-          <div class="task-info">
-            <div class="file-name">{{ task.file.name }}</div>
-            <a-progress
-              v-if="task.status === 'uploading'"
-              :percent="task.progress / 100"
-              size="small"
-              :style="{ width: '160px' }"
-            />
-            <span
-              v-else-if="task.status === 'success'"
-              class="status-text success"
-            >
-              已上传至 目标文件夹
-            </span>
-            <span v-else-if="task.status === 'error'" class="status-text error">
-              {{ task.errorMessage }}
-            </span>
+      <div v-else ref="expandedPanelRef" class="upload-panel-expanded">
+        <div class="panel-header">
+          <span class="summary-text">{{ summaryText }}</span>
+          <div>
+            <icon-close class="panel-icon" @click="uploadStore.closePanel" />
           </div>
         </div>
-      </div>
 
-      <div class="panel-footer" @click="uploadStore.toggleExpand"> 收起 </div>
+        <div class="panel-body">
+          <div v-if="taskList.length === 0"> 没有更多内容了 </div>
+          <div v-for="task in taskList" :key="task.id" class="task-item">
+            <icon-file :size="24" />
+            <div class="task-info">
+              <div class="file-name">{{ task.file.name }}</div>
+              <a-progress
+                v-if="task.status === 'uploading'"
+                :percent="task.progress / 100"
+                size="small"
+                :style="{ width: '160px' }"
+              />
+              <span
+                v-else-if="task.status === 'success'"
+                class="status-text success"
+              >
+                已上传至 目标文件夹
+              </span>
+              <span
+                v-else-if="task.status === 'error'"
+                class="status-text error"
+              >
+                {{ task.errorMessage }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-footer" @click="uploadStore.toggleExpand"> 收起 </div>
+      </div>
     </div>
+
+    <upload-modal-v2 v-model:visible="visible" :parent-id="props.parentId" />
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import {
     IconCheckCircleFill,
     IconFile,
     IconClose,
+    IconUpload,
   } from '@arco-design/web-vue/es/icon';
   import { useUploadTaskStore } from '@/store';
   import { storeToRefs } from 'pinia';
+  import UploadModalV2 from '@/views/files/components/upload-modal-v2.vue';
 
+  interface Props {
+    parentId?: string;
+  }
+  const props = defineProps<Props>();
+  const emit = defineEmits<{
+    (e: 'success'): void;
+  }>();
+
+  const visible = ref(false);
   const uploadStore = useUploadTaskStore();
   const { taskList } = storeToRefs(uploadStore);
+
+  const handleOpen = () => {
+    visible.value = true;
+  };
 
   const isUploading = computed(() =>
     uploadStore.taskList.some((t) => t.status === 'uploading')
   );
 
+  const completedCount = computed(() => {
+    return taskList.value.filter((t) => t.status === 'success').length;
+  });
+
+  watch(completedCount, (newCount, oldCount) => {
+    if (newCount > oldCount) {
+      emit('success');
+    }
+  });
+
   const summaryText = computed(() => {
     const total = taskList.value.length;
-    const completed = taskList.value.filter(
-      (t) => t.status === 'success'
-    ).length;
+    const completed = completedCount.value;
 
     if (isUploading.value) {
       return `正在上传... (${completed}/${total})`;
     }
     return `上传完成 · 共 ${total} 项`;
   });
+
+  const expandedPanelRef = ref<HTMLDivElement | null>(null);
+  const panelObserver = ref<ResizeObserver | null>(null);
+  const measuredPanelHeight = ref(0);
+
+  watch(
+    () => uploadStore.isExpanded,
+    (isExpanded) => {
+      if (isExpanded) {
+        // (A) 当面板展开时:
+        // 使用 nextTick 确保 DOM 元素已经渲染
+        requestAnimationFrame(() => {
+          // requestAnimationFrame 比 nextTick 更适合测量
+          if (!expandedPanelRef.value) return;
+
+          // 创建一个 Observer 实例
+          panelObserver.value = new ResizeObserver((entries) => {
+            // 当尺寸变化时，更新我们的 ref
+            if (entries[0]) {
+              measuredPanelHeight.value = entries[0].contentRect.height;
+            }
+          });
+          // 开始监视！
+          panelObserver.value.observe(expandedPanelRef.value);
+        });
+      } else {
+        // (B) 当面板折叠时:
+        if (panelObserver.value) {
+          // 停止监视，清理资源
+          panelObserver.value.disconnect();
+          panelObserver.value = null;
+        }
+        // 重置测量高度
+        measuredPanelHeight.value = 0;
+      }
+    }
+  );
+
+  /** 计算按钮样式 */
+  const fabButtonBottom = computed(() => {
+    const defaultBottom = 40;
+    if (!uploadStore.showPanel) {
+      return `${defaultBottom}px`;
+    }
+    const buttonSpacing = 14;
+    if (!uploadStore.isExpanded) {
+      return `${20 + defaultBottom + buttonSpacing}px`;
+    }
+    // 修改需要同步修改 .upload-panel-expanded
+    const panelWrapperBottom = 24;
+    return `${
+      measuredPanelHeight.value + panelWrapperBottom + buttonSpacing
+    }px`;
+  });
 </script>
 
 <style lang="less" scoped>
+  .custom-upload-fab {
+    height: 56px;
+    width: 56px;
+    position: fixed;
+    right: 40px;
+    //bottom: 40px;
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
   .upload-panel-wrapper {
     position: fixed;
     bottom: 24px;
-    right: 100px;
+    right: 40px;
     z-index: 1000;
     border-radius: 8px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08),
@@ -124,6 +226,8 @@
     max-height: 400px; // 最大高度
     display: flex;
     flex-direction: column;
+    transform-origin: bottom right;
+    transform: scale(1);
 
     .panel-header {
       display: flex;
