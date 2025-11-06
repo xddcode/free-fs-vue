@@ -128,30 +128,21 @@
     () => uploadStore.isExpanded,
     (isExpanded) => {
       if (isExpanded) {
-        // (A) 当面板展开时:
-        // 使用 nextTick 确保 DOM 元素已经渲染
         requestAnimationFrame(() => {
-          // requestAnimationFrame 比 nextTick 更适合测量
           if (!expandedPanelRef.value) return;
 
-          // 创建一个 Observer 实例
           panelObserver.value = new ResizeObserver((entries) => {
-            // 当尺寸变化时，更新我们的 ref
             if (entries[0]) {
               measuredPanelHeight.value = entries[0].contentRect.height;
             }
           });
-          // 开始监视！
           panelObserver.value.observe(expandedPanelRef.value);
         });
       } else {
-        // (B) 当面板折叠时:
         if (panelObserver.value) {
-          // 停止监视，清理资源
           panelObserver.value.disconnect();
           panelObserver.value = null;
         }
-        // 重置测量高度
         measuredPanelHeight.value = 0;
       }
     }

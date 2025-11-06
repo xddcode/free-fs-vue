@@ -46,6 +46,18 @@ const ROOT: AppRouteRecordRaw = {
       },
     },
     {
+      path: 'transmission',
+      name: 'transmission',
+      component: () => import('@/views/files/transmission.vue'),
+      meta: {
+        title: '传输',
+        requiresAuth: true,
+        icon: 'IconSwap',
+        hideInMenu: false,
+        order: 4,
+      },
+    },
+    {
       path: 'profile',
       name: 'profile',
       component: () => import('@/views/profile/index.vue'),
