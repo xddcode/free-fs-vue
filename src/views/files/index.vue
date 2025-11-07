@@ -145,21 +145,8 @@
       </a-layout-content>
     </a-layout>
 
-    <!-- 上传按钮 -->
-    <a-button
-      v-if="!isRecycleBin && !isSharesView && !isFavoritesView"
-      class="custom-upload-fab"
-      type="primary"
-      shape="circle"
-      @click="operations.openUploadModal"
-    >
-      <template #icon>
-        <icon-upload :size="38" style="margin: auto;" />
-      </template>
-    </a-button>
-
     <!-- 上传文件弹窗 -->
-    <upload-modal-v2
+    <upload-modal
       v-model:visible="operations.uploadModalVisible.value"
       :parent-id="fileList.currentParentId.value"
       @success="fileList.refresh"
@@ -204,7 +191,10 @@
     />
 
     <!-- 上传面板 -->
-    <upload-panel />
+    <upload-panel
+      :parent-id="fileList.currentParentId.value"
+      @success="fileList.refresh"
+    />
   </div>
 </template>
 
@@ -223,7 +213,6 @@
     IconFileVideo,
     IconMore,
     IconShareAlt,
-    IconUpload
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { useFileList, useFileOperations } from './hooks';
@@ -240,8 +229,7 @@
     DeleteConfirmModal,
     RecycleBinView,
     MySharesView,
-    UploadModalV2,
-    UploadPanel
+    UploadPanel,
   } from './components';
 
   const route = useRoute();
@@ -613,17 +601,5 @@
       padding: 16px 24px;
       overflow-y: auto;
     }
-  }
-
-  /** 上传按钮 */
-  .custom-upload-fab {
-    height: 56px;
-    width: 56px;
-    position: fixed;
-    right: 40px;
-    bottom: 40px;
-    z-index: 99;
-
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 </style>

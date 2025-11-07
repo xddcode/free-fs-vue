@@ -94,7 +94,7 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
         status: 'pending',
         progress: 0,
         parentId,
-      }
+      };
     });
     taskList.value.push(...newTasks);
 
