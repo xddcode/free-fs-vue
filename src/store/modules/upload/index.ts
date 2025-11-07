@@ -1,21 +1,32 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { Message } from '@arco-design/web-vue';
-import { uploadFile } from '@/api/file';
+import { uploadService } from '@/services/upload.service';
+import transferWebSocketService from '@/services/transfer-websocket.service';
 
+/**
+ * 上传任务（仅用于UI展示）
+ */
 export interface UploadTask {
   id: string | number;
   file: File;
+  fileName: string;
+  fileSize: number;
   status: 'pending' | 'uploading' | 'success' | 'error';
   progress: number;
   parentId: string | null;
   errorMessage?: string;
+  taskId?: string; // 服务端任务ID
 }
 
 let taskIdCounter = 0;
 
+/**
+ * 上传任务Store
+ * 简化版：只负责UI状态管理，不处理实际上传逻辑
+ * 实际上传由uploadService处理，状态由WebSocket推送
+ */
 export const useUploadTaskStore = defineStore('uploadTask', () => {
-  // 正在进行和已完成的上传任务列表
+  // 任务列表（仅用于上传面板UI展示）
   const taskList = ref<UploadTask[]>([]);
   // 面板是否展开
   const isExpanded = ref(false);
@@ -23,44 +34,22 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
   const showPanel = ref(false);
 
   /**
-   * 内部私有方法：执行单个文件上传
+   * 添加上传任务
+   * 只负责添加到UI列表并调用上传服务
    */
-  const doUpload = async (task: UploadTask) => {
-    try {
-      task.status = 'uploading';
-
-      const formData = new FormData();
-      formData.append('file', task.file);
-      if (task.parentId) {
-        formData.append('parentId', task.parentId);
-      }
-
-      await uploadFile(task.file, task.parentId ?? '', (progressEvent) => {
-        task.progress = Math.round(
-          (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-        );
-      });
-
-      task.status = 'success';
-      task.progress = 100;
-    } catch (error) {
-      task.status = 'error';
-      task.errorMessage = (error as Error).message || '上传失败';
-      Message.error(`${task.file.name} 上传失败`);
+  const addUploadTasks = async (files: File[], parentId: string) => {
+    // 确保WebSocket已连接
+    if (!transferWebSocketService.isConnected()) {
+      transferWebSocketService.connect();
     }
-  };
 
-  /**
-   * 添加新文件到上传队列
-   * @param files File[] 文件列表
-   * @param parentId 目标目录ID
-   */
-  const addUploadTasks = (files: File[], parentId: string) => {
+    // 显示上传面板
     if (!showPanel.value) {
       showPanel.value = true;
       isExpanded.value = true;
     }
 
+    // 过滤重复文件
     const existingFingerprints = new Set(
       taskList.value.map((task) => {
         const { file } = task;
@@ -68,9 +57,8 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
       })
     );
 
-    const newFilesToUpload = files.filter((file) => {
+    const newFiles = files.filter((file) => {
       const fingerprint = `${file.name}-${file.size}-${file.lastModified}`;
-
       if (existingFingerprints.has(fingerprint)) {
         return false;
       }
@@ -78,19 +66,18 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
       return true;
     });
 
-    if (newFilesToUpload.length === 0) {
-      Message.info('所选文件均已在上传列表中');
+    if (newFiles.length === 0) {
       return;
     }
-    if (newFilesToUpload.length < files.length) {
-      Message.warning('已自动跳过列表中已存在的文件');
-    }
 
-    const newTasks: UploadTask[] = newFilesToUpload.map((file) => {
+    // 添加到UI列表
+    const newTasks: UploadTask[] = newFiles.map((file) => {
       taskIdCounter += 1;
       return {
         id: `upload-task-${taskIdCounter}`,
         file,
+        fileName: file.name,
+        fileSize: file.size,
         status: 'pending',
         progress: 0,
         parentId,
@@ -98,8 +85,41 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
     });
     taskList.value.push(...newTasks);
 
-    taskList.value.forEach((task) => {
-      doUpload(task);
+    // 并发调用上传服务，确保所有文件同时开始上传
+    Promise.all(
+      newTasks.map(async (task) => {
+        task.status = 'uploading';
+        const result = await uploadService.uploadFile({
+          file: task.file,
+          parentId: task.parentId || undefined,
+        });
+
+        if (result.success && result.taskId) {
+          // 任务已提交，等待WebSocket推送状态和进度
+          task.taskId = result.taskId;
+
+          // 订阅进度更新（包括初始化和分片上传的所有状态）
+          transferWebSocketService.subscribe(result.taskId, {
+            onProgress: (data) => {
+              task.progress = Math.round(data.progress);
+            },
+            onComplete: () => {
+              task.status = 'success';
+              task.progress = 100;
+            },
+            onError: (message) => {
+              task.status = 'error';
+              task.errorMessage = message;
+            },
+          });
+        } else {
+          task.status = 'error';
+          task.errorMessage = result.message || '上传失败';
+        }
+      })
+    ).catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('[上传任务] 批量上传出错:', error);
     });
   };
 
@@ -123,5 +143,3 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
     closePanel,
   };
 });
-
-export default useUploadTaskStore;

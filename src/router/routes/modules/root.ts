@@ -34,18 +34,6 @@ const ROOT: AppRouteRecordRaw = {
       },
     },
     {
-      path: 'storage',
-      name: 'storage',
-      component: () => import('@/views/storage/index.vue'),
-      meta: {
-        title: '存储配置',
-        requiresAuth: true,
-        icon: 'IconCloud',
-        hideInMenu: false,
-        order: 3,
-      },
-    },
-    {
       path: 'transmission',
       name: 'transmission',
       component: () => import('@/views/files/transmission.vue'),
@@ -53,6 +41,18 @@ const ROOT: AppRouteRecordRaw = {
         title: '传输',
         requiresAuth: true,
         icon: 'IconSwap',
+        hideInMenu: false,
+        order: 3,
+      },
+    },
+    {
+      path: 'storage',
+      name: 'storage',
+      component: () => import('@/views/storage/index.vue'),
+      meta: {
+        title: '存储配置',
+        requiresAuth: true,
+        icon: 'IconCloud',
         hideInMenu: false,
         order: 4,
       },

@@ -47,7 +47,11 @@ export function getFolderPath(folderId: string) {
  * @param parentId pid
  * @param onProgress progress
  */
-export function uploadFile(file: File, parentId?: string, onProgress?: (progressEvent: AxiosProgressEvent) => void) {
+export function uploadFile(
+  file: File,
+  parentId?: string,
+  onProgress?: (progressEvent: AxiosProgressEvent) => void
+) {
   const formData = new FormData();
   formData.append('file', file);
   if (parentId) {

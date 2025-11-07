@@ -69,32 +69,35 @@
   };
 
   // 使用计算属性，使其响应式更新
-  const renderData = computed(() => [
-    {
-      label: '账号ID',
-      value: userStore.id,
-    },
-    {
-      label: '用户名',
-      value: userStore.username,
-    },
-    {
-      label: '昵称',
-      value: userStore.nickname,
-    },
-    {
-      label: '邮箱',
-      value: userStore.email,
-    },
-    {
-      label: '注册时间',
-      value: formatDate(userStore.createdAt),
-    },
-    {
-      label: '最后登录时间',
-      value: formatDate(userStore.lastLoginAt),
-    },
-  ] as DescData[]);
+  const renderData = computed(
+    () =>
+      [
+        {
+          label: '账号ID',
+          value: userStore.id,
+        },
+        {
+          label: '用户名',
+          value: userStore.username,
+        },
+        {
+          label: '昵称',
+          value: userStore.nickname,
+        },
+        {
+          label: '邮箱',
+          value: userStore.email,
+        },
+        {
+          label: '注册时间',
+          value: formatDate(userStore.createdAt),
+        },
+        {
+          label: '最后登录时间',
+          value: formatDate(userStore.lastLoginAt),
+        },
+      ] as DescData[]
+  );
 
   // 使用计算属性，使头像URL响应式更新
   const file = computed<FileItem>(() => ({
@@ -112,7 +115,10 @@
   watch(
     () => file.value.url,
     (newUrl) => {
-      if (fileList.value[0]?.url !== newUrl && !fileList.value[0]?.url?.startsWith('blob:')) {
+      if (
+        fileList.value[0]?.url !== newUrl &&
+        !fileList.value[0]?.url?.startsWith('blob:')
+      ) {
         fileList.value = [file.value];
       }
     }

@@ -70,17 +70,11 @@
       layout="vertical"
     >
       <a-form-item field="newEmail" label="新邮箱">
-        <a-input
-          v-model="emailFormData.newEmail"
-          placeholder="请输入新邮箱"
-        />
+        <a-input v-model="emailFormData.newEmail" placeholder="请输入新邮箱" />
       </a-form-item>
       <a-form-item field="code" label="验证码">
         <a-input-group>
-          <a-input
-            v-model="emailFormData.code"
-            placeholder="请输入验证码"
-          />
+          <a-input v-model="emailFormData.code" placeholder="请输入验证码" />
           <a-button
             type="primary"
             :loading="codeLoading"
@@ -93,7 +87,11 @@
       </a-form-item>
       <a-form-item>
         <a-space>
-          <a-button type="primary" :loading="loading" @click="handleSubmitEmail">
+          <a-button
+            type="primary"
+            :loading="loading"
+            @click="handleSubmitEmail"
+          >
             确定
           </a-button>
           <a-button @click="handleEmailModalCancel">取消</a-button>

@@ -16,6 +16,41 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
+ * 格式化传输速度
+ * @param bytesPerSecond 每秒字节数
+ * @returns 格式化后的速度字符串（如 "8.5 MB/s"）
+ */
+export function formatSpeed(bytesPerSecond: number): string {
+  if (!bytesPerSecond || bytesPerSecond === 0) return '0 B/s';
+  const k = 1024;
+  const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+  const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+  return `${parseFloat((bytesPerSecond / k ** i).toFixed(2))} ${sizes[i]}`;
+}
+
+/**
+ * 格式化剩余时间
+ * @param seconds 剩余秒数
+ * @returns 格式化后的时间字符串（如 "2分30秒"、"1小时5分"）
+ */
+export function formatRemainingTime(seconds: number): string {
+  if (!seconds || seconds <= 0) return '计算中...';
+  if (seconds === Infinity) return '未知';
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}小时${minutes}分` : `${hours}小时`;
+  }
+  if (minutes > 0) {
+    return secs > 0 ? `${minutes}分${secs}秒` : `${minutes}分钟`;
+  }
+  return `${secs}秒`;
+}
+
+/**
  * 格式化时间
  * 规则：
  * - 今天：显示"今天 HH:mm"

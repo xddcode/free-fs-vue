@@ -1,5 +1,14 @@
 <template>
   <div>
+    <!-- 隐藏的文件选择input -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      style="display: none"
+      @change="handleFileSelect"
+    />
+
     <a-button
       class="custom-upload-fab"
       type="primary"
@@ -63,8 +72,6 @@
         <div class="panel-footer" @click="uploadStore.toggleExpand"> 收起 </div>
       </div>
     </div>
-
-    <upload-modal-v2 v-model:visible="visible" :parent-id="props.parentId" />
   </div>
 </template>
 
@@ -78,7 +85,7 @@
   } from '@arco-design/web-vue/es/icon';
   import { useUploadTaskStore } from '@/store';
   import { storeToRefs } from 'pinia';
-  import UploadModalV2 from '@/views/files/components/upload-modal-v2.vue';
+  import { uploadService } from '@/services/upload.service';
 
   interface Props {
     parentId?: string;
@@ -88,12 +95,26 @@
     (e: 'success'): void;
   }>();
 
-  const visible = ref(false);
+  const fileInputRef = ref<HTMLInputElement | null>(null);
   const uploadStore = useUploadTaskStore();
   const { taskList } = storeToRefs(uploadStore);
 
   const handleOpen = () => {
-    visible.value = true;
+    // 触发文件选择
+    fileInputRef.value?.click();
+  };
+
+  const handleFileSelect = async (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const { files } = target;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      await uploadService.uploadFiles(fileArray, props.parentId);
+      // 清空input，以便可以重复选择相同文件
+      target.value = '';
+      // 触发成功事件
+      emit('success');
+    }
   };
 
   const isUploading = computed(() =>

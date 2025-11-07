@@ -75,7 +75,7 @@
             :hide-actions="isFavoritesView"
             :selected-count="selectedKeys.length"
             :selected-files="selectedFiles"
-            @upload="operations.openUploadModal"
+            @upload="triggerFileSelect"
             @create-folder="operations.openCreateFolderModal"
             @search="fileList.search"
             @batch-delete="handleBatchDelete"
@@ -145,11 +145,13 @@
       </a-layout-content>
     </a-layout>
 
-    <!-- 上传文件弹窗 -->
-    <upload-modal
-      v-model:visible="operations.uploadModalVisible.value"
-      :parent-id="fileList.currentParentId.value"
-      @success="fileList.refresh"
+    <!-- 隐藏的文件选择input -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      style="display: none"
+      @change="handleFileSelect"
     />
 
     <!-- 新建文件夹弹窗 -->
@@ -189,17 +191,18 @@
       :files="operations.deletingFiles.value"
       @confirm="handleDelete"
     />
-
-    <!-- 上传面板 -->
-    <upload-panel
-      :parent-id="fileList.currentParentId.value"
-      @success="fileList.refresh"
-    />
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted, markRaw, watch } from 'vue';
+  import {
+    ref,
+    computed,
+    onMounted,
+    onBeforeUnmount,
+    markRaw,
+    watch,
+  } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import {
@@ -215,13 +218,14 @@
     IconShareAlt,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
+  import { uploadService } from '@/services/upload.service';
+  import { useUploadTaskStore } from '@/store';
   import { useFileList, useFileOperations } from './hooks';
   import {
     Toolbar,
     FileBreadcrumb,
     FileListView,
     FileGridView,
-    UploadModal,
     CreateFolderModal,
     RenameModal,
     MoveModal,
@@ -229,11 +233,13 @@
     DeleteConfirmModal,
     RecycleBinView,
     MySharesView,
-    UploadPanel,
   } from './components';
 
   const route = useRoute();
   const router = useRouter();
+
+  // 文件选择input引用
+  const fileInputRef = ref<HTMLInputElement | null>(null);
 
   // 文件分类（对应后端 FileTypeEnum）
   const fileCategories = [
@@ -334,6 +340,32 @@
   const operations = useFileOperations(() => {
     fileList.refresh();
   });
+
+  /**
+   * 触发文件选择
+   */
+  const triggerFileSelect = () => {
+    fileInputRef.value?.click();
+  };
+
+  /**
+   * 处理文件选择
+   */
+  const handleFileSelect = async (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const { files } = target;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      await uploadService.uploadFiles(
+        fileArray,
+        fileList.currentParentId.value
+      );
+      // 清空input，以便可以重复选择相同文件
+      target.value = '';
+      // 刷新文件列表
+      fileList.refresh();
+    }
+  };
 
   /**
    * 处理文件点击（进入文件夹）
@@ -494,8 +526,31 @@
   );
 
   // 初始化加载数据
+  // 防止用户在上传过程中刷新页面
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    // 检查是否有正在上传的任务
+    const uploadStore = useUploadTaskStore();
+    const hasUploadingTasks = uploadStore.taskList.some(
+      (task) => task.status === 'uploading'
+    );
+
+    if (hasUploadingTasks) {
+      e.preventDefault();
+      e.returnValue = ''; // Chrome requires returnValue to be set
+      return '有文件正在上传，确定要离开吗？';
+    }
+    return undefined;
+  };
+
   onMounted(() => {
     fileList.fetchFileList();
+    // 添加页面刷新/关闭警告
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  });
+
+  onBeforeUnmount(() => {
+    // 移除事件监听器
+    window.removeEventListener('beforeunload', handleBeforeUnload);
   });
 </script>
 
