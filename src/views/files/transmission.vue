@@ -1,8 +1,8 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { Message } from '@arco-design/web-vue';
   import {
-    IconSettings,
+    IconRefresh,
     IconSearch,
     IconPlayArrow,
     IconPause,
@@ -282,45 +282,19 @@
     return colorMap[status] || 'gray';
   };
 
-  // 定时刷新任务列表（每3秒检查一次是否有新任务）
-  let refreshTimer: number | null = null;
-
-  const startAutoRefresh = () => {
-    // 立即获取一次
-    fetchTransferList().then(() => {
-      subscribeActiveTasksUpdates();
-    });
-
-    // 定时刷新
-    refreshTimer = window.setInterval(async () => {
-      const currentTaskIds = new Set(transferList.value.map((t) => t.taskId));
-      await fetchTransferList();
-
-      // 检查是否有新任务，如果有则重新订阅
-      const hasNewTasks = transferList.value.some(
-        (t) => !currentTaskIds.has(t.taskId)
-      );
-      if (hasNewTasks) {
-        subscribeActiveTasksUpdates();
-      }
-    }, 3000); // 每3秒刷新一次
-  };
-
-  const stopAutoRefresh = () => {
-    if (refreshTimer) {
-      clearInterval(refreshTimer);
-      refreshTimer = null;
-    }
+  /**
+   * 手动刷新列表
+   */
+  const handleRefresh = async () => {
+    await fetchTransferList();
+    subscribeActiveTasksUpdates();
   };
 
   onMounted(() => {
-    // 页面加载时开始自动刷新
-    startAutoRefresh();
-  });
-
-  // 组件卸载时停止刷新
-  onUnmounted(() => {
-    stopAutoRefresh();
+    // 页面加载时获取一次列表并订阅 WebSocket
+    fetchTransferList().then(() => {
+      subscribeActiveTasksUpdates();
+    });
   });
 </script>
 
@@ -345,10 +319,12 @@
         </div>
 
         <div class="header-right">
-          <a-space size="small">
-            <icon-settings />
-            <span>传输设置</span>
-          </a-space>
+          <a-button type="text" @click="handleRefresh">
+            <template #icon>
+              <icon-refresh />
+            </template>
+            刷新
+          </a-button>
         </div>
       </a-layout-header>
 
@@ -455,7 +431,7 @@
                     v-if="record.status === UploadTaskStatus.INITIALIZED"
                     class="progress-container"
                   >
-                    <a-spin size="small" />
+                    <a-spin :size="16" />
                     <span class="progress-text" style="margin-left: 8px">
                       准备中...
                     </span>
@@ -465,7 +441,7 @@
                     v-else-if="record.status === UploadTaskStatus.CHECKING"
                     class="progress-container"
                   >
-                    <a-spin size="small" />
+                    <a-spin :size="16" />
                     <span class="progress-text" style="margin-left: 8px">
                       校验文件...
                     </span>
@@ -504,7 +480,7 @@
                     v-else-if="record.status === UploadTaskStatus.MERGING"
                     class="progress-container"
                   >
-                    <a-spin size="small" />
+                    <a-spin :size="16" />
                     <span class="progress-text" style="margin-left: 8px">
                       正在处理文件...
                     </span>

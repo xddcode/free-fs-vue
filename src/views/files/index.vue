@@ -356,6 +356,14 @@
     const { files } = target;
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
+
+      // 限制一次最多上传5个文件
+      if (fileArray.length > 5) {
+        Message.warning('一次最多只能上传5个文件');
+        target.value = '';
+        return;
+      }
+
       await uploadService.uploadFiles(
         fileArray,
         fileList.currentParentId.value
