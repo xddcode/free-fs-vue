@@ -271,9 +271,11 @@ class UploadService {
     await Promise.all(uploadPromises);
 
     if (successCount === files.length) {
-      Message.success(`成功提交 ${successCount} 个上传任务`);
+      Message.success(`已添加 ${successCount} 项到上传列表，请查看传输页面`);
     } else if (successCount > 0) {
-      Message.warning(`成功提交 ${successCount} 个，失败 ${failedCount} 个`);
+      Message.warning(
+        `已添加 ${successCount} 项到上传列表，${failedCount} 项失败，请查看传输页面`
+      );
     } else if (failedCount > 0) {
       Message.error(`所有任务提交失败`);
     }

@@ -253,11 +253,11 @@
    */
   const getStatusText = (status: UploadTaskStatus) => {
     const statusMap = {
-      [UploadTaskStatus.INITIALIZED]: '初始化',
+      [UploadTaskStatus.INITIALIZED]: '准备中',
       [UploadTaskStatus.CHECKING]: '校验中',
       [UploadTaskStatus.UPLOADING]: '上传中',
       [UploadTaskStatus.PAUSED]: '已暂停',
-      [UploadTaskStatus.MERGING]: '合并中',
+      [UploadTaskStatus.MERGING]: '处理中',
       [UploadTaskStatus.COMPLETED]: '已完成',
       [UploadTaskStatus.FAILED]: '失败',
       [UploadTaskStatus.CANCELED]: '已取消',
@@ -506,7 +506,7 @@
                   >
                     <a-spin size="small" />
                     <span class="progress-text" style="margin-left: 8px">
-                      合并文件...
+                      正在处理文件...
                     </span>
                   </div>
                   <!-- 完成状态 -->
