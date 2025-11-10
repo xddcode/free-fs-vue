@@ -154,8 +154,16 @@
             await fetchTransferList();
             subscribeActiveTasksUpdates();
           },
-          onError: async () => {
+          onError: async (errorMsg) => {
             subscribedTasks.delete(task.taskId);
+            // 更新任务状态为失败，并显示错误信息
+            const targetTask = transferList.value.find(
+              (t) => t.taskId === task.taskId
+            );
+            if (targetTask) {
+              targetTask.status = UploadTaskStatus.FAILED;
+              targetTask.errorMsg = errorMsg;
+            }
             await fetchTransferList();
             subscribeActiveTasksUpdates();
           },

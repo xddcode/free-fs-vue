@@ -66,7 +66,7 @@ export function updateStorageSetting(data: {
  * @param id 配置ID
  */
 export function deleteStorageSetting(id: number) {
-  return request.delete(`/apis/storage/platform/settings/${id}`);
+  return request.delete(`/apis/storage/settings/${id}`);
 }
 
 /**

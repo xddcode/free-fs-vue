@@ -77,6 +77,8 @@ class TransferWebSocketService {
       if (listener?.onError) {
         listener.onError(message);
       }
+      // 错误后删除监听器
+      this.listeners.delete(taskId);
     });
 
     this.wsInstance.onInitialized((taskId: string, message: string) => {
