@@ -55,14 +55,6 @@
         }
       });
 
-      // 调试：检查是否有重复任务
-      if (response.data.length > taskMap.size) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `[传输列表] 检测到重复任务！原始数量: ${response.data.length}, 去重后: ${taskMap.size}`
-        );
-      }
-
       transferList.value = Array.from(taskMap.values()).map((item) => {
         // 计算进度百分比
         const progress =
@@ -70,25 +62,13 @@
             ? Math.round((item.uploadedChunks / item.totalChunks) * 100)
             : 0;
 
-        // 调试日志：查看任务信息
-        // eslint-disable-next-line no-console
-        console.log(
-          `[传输列表] 加载任务 ${item.fileName}:`,
-          `文件大小: ${item.fileSize} 字节`,
-          `分片大小: ${item.chunkSize} 字节`,
-          `总分片数: ${item.totalChunks}`,
-          `已上传: ${item.uploadedChunks}`,
-          `计算进度: ${progress}%`
-        );
-
         return {
           ...item,
           progress,
         };
       });
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取传输列表失败:', error);
+      Message.error('获取传输列表失败');
     } finally {
       loading.value = false;
     }
@@ -103,16 +83,17 @@
   function subscribeActiveTasksUpdates() {
     // 确保WebSocket已连接
     if (!transferWebSocketService.isConnected()) {
-      // eslint-disable-next-line no-console
-      console.log('[传输列表] WebSocket未连接，正在连接...');
       transferWebSocketService.connect();
     }
 
     // 为所有活动任务订阅WebSocket进度更新
     transferList.value.forEach((task) => {
       if (
+        task.status === UploadTaskStatus.INITIALIZED ||
+        task.status === UploadTaskStatus.CHECKING ||
         task.status === UploadTaskStatus.UPLOADING ||
-        task.status === UploadTaskStatus.PAUSED
+        task.status === UploadTaskStatus.PAUSED ||
+        task.status === UploadTaskStatus.MERGING
       ) {
         // 避免重复订阅
         if (subscribedTasks.has(task.taskId)) {
@@ -120,38 +101,27 @@
         }
         subscribedTasks.add(task.taskId);
 
-        // eslint-disable-next-line no-console
-        console.log(`[传输列表] 订阅任务 ${task.fileName} (${task.taskId})`);
-
         transferWebSocketService.subscribe(task.taskId, {
+          onInitialized: () => {
+            // 初始化状态
+          },
+          onChecking: () => {
+            // 校验中状态
+          },
+          onQuickUpload: async () => {
+            subscribedTasks.delete(task.taskId);
+            await fetchTransferList();
+            subscribeActiveTasksUpdates();
+          },
+          onReadyToUpload: () => {
+            // 准备上传
+          },
           onProgress: (data) => {
             // 实时更新任务进度
             const targetTask = transferList.value.find(
               (t) => t.taskId === task.taskId
             );
             if (targetTask) {
-              // 调试日志：查看后端返回的进度数据
-              // eslint-disable-next-line no-console
-              console.log(
-                `[传输列表] 任务 ${task.fileName} 进度更新:`,
-                `已上传: ${data.uploadedChunks}/${data.totalChunks}`,
-                `进度: ${data.progress}%`,
-                `已上传大小: ${data.uploadedSize}, 总大小: ${data.totalSize}`
-              );
-
-              // 检测异常情况：已上传分片数超过总分片数
-              if (data.uploadedChunks > data.totalChunks) {
-                // eslint-disable-next-line no-console
-                console.warn(
-                  `[传输列表] ⚠️ 检测到异常：已上传分片数(${data.uploadedChunks})超过总分片数(${data.totalChunks})！`,
-                  `这可能是后端计算totalChunks时的错误。`,
-                  `文件大小: ${data.totalSize}, 分片大小: ${targetTask.chunkSize}`,
-                  `正确的总分片数应该是: ${Math.ceil(
-                    data.totalSize / targetTask.chunkSize
-                  )}`
-                );
-              }
-
               targetTask.uploadedChunks = data.uploadedChunks;
               // 更新总分片数（如果后端修正了的话）
               if (data.totalChunks) {
@@ -170,18 +140,26 @@
               }
             }
           },
+          onPaused: async () => {
+            await fetchTransferList();
+          },
+          onResumed: async () => {
+            await fetchTransferList();
+          },
+          onMerging: () => {
+            // 合并中状态
+          },
           onComplete: async () => {
-            // 任务完成，刷新列表
-            // eslint-disable-next-line no-console
-            console.log(`[传输列表] 任务 ${task.taskId} 完成，刷新列表`);
             subscribedTasks.delete(task.taskId);
             await fetchTransferList();
             subscribeActiveTasksUpdates();
           },
-          onError: async (message) => {
-            // 任务失败，刷新列表
-            // eslint-disable-next-line no-console
-            console.error(`[传输列表] 任务 ${task.taskId} 失败: ${message}`);
+          onError: async () => {
+            subscribedTasks.delete(task.taskId);
+            await fetchTransferList();
+            subscribeActiveTasksUpdates();
+          },
+          onCancelled: async () => {
             subscribedTasks.delete(task.taskId);
             await fetchTransferList();
             subscribeActiveTasksUpdates();
@@ -192,13 +170,16 @@
   }
 
   /**
-   * 上传中的任务
+   * 上传中的任务（包括初始化、校验中、上传中、暂停、合并中）
    */
   const uploadingTasks = computed(() =>
     transferList.value.filter(
       (task) =>
+        task.status === UploadTaskStatus.INITIALIZED ||
+        task.status === UploadTaskStatus.CHECKING ||
         task.status === UploadTaskStatus.UPLOADING ||
-        task.status === UploadTaskStatus.PAUSED
+        task.status === UploadTaskStatus.PAUSED ||
+        task.status === UploadTaskStatus.MERGING
     )
   );
 
@@ -272,8 +253,11 @@
    */
   const getStatusText = (status: UploadTaskStatus) => {
     const statusMap = {
+      [UploadTaskStatus.INITIALIZED]: '初始化',
+      [UploadTaskStatus.CHECKING]: '校验中',
       [UploadTaskStatus.UPLOADING]: '上传中',
       [UploadTaskStatus.PAUSED]: '已暂停',
+      [UploadTaskStatus.MERGING]: '合并中',
       [UploadTaskStatus.COMPLETED]: '已完成',
       [UploadTaskStatus.FAILED]: '失败',
       [UploadTaskStatus.CANCELED]: '已取消',
@@ -286,8 +270,11 @@
    */
   const getStatusColor = (status: UploadTaskStatus) => {
     const colorMap = {
+      [UploadTaskStatus.INITIALIZED]: 'cyan',
+      [UploadTaskStatus.CHECKING]: 'arcoblue',
       [UploadTaskStatus.UPLOADING]: 'blue',
       [UploadTaskStatus.PAUSED]: 'orange',
+      [UploadTaskStatus.MERGING]: 'purple',
       [UploadTaskStatus.COMPLETED]: 'green',
       [UploadTaskStatus.FAILED]: 'red',
       [UploadTaskStatus.CANCELED]: 'gray',
@@ -314,8 +301,6 @@
         (t) => !currentTaskIds.has(t.taskId)
       );
       if (hasNewTasks) {
-        // eslint-disable-next-line no-console
-        console.log('[传输列表] 检测到新任务，重新订阅WebSocket');
         subscribeActiveTasksUpdates();
       }
     }, 3000); // 每3秒刷新一次
@@ -330,8 +315,6 @@
 
   onMounted(() => {
     // 页面加载时开始自动刷新
-    // eslint-disable-next-line no-console
-    console.log('[传输列表] 页面加载，开始自动刷新任务列表');
     startAutoRefresh();
   });
 
@@ -467,8 +450,29 @@
 
               <a-table-column title="进度" :width="260">
                 <template #cell="{ record }">
+                  <!-- 初始化状态 -->
                   <div
-                    v-if="record.status === UploadTaskStatus.UPLOADING"
+                    v-if="record.status === UploadTaskStatus.INITIALIZED"
+                    class="progress-container"
+                  >
+                    <a-spin size="small" />
+                    <span class="progress-text" style="margin-left: 8px">
+                      准备中...
+                    </span>
+                  </div>
+                  <!-- 校验中状态 -->
+                  <div
+                    v-else-if="record.status === UploadTaskStatus.CHECKING"
+                    class="progress-container"
+                  >
+                    <a-spin size="small" />
+                    <span class="progress-text" style="margin-left: 8px">
+                      校验文件...
+                    </span>
+                  </div>
+                  <!-- 上传中状态 -->
+                  <div
+                    v-else-if="record.status === UploadTaskStatus.UPLOADING"
                     class="progress-container"
                   >
                     <a-progress
@@ -485,6 +489,7 @@
                       </span>
                     </div>
                   </div>
+                  <!-- 暂停状态 -->
                   <div v-else-if="record.status === UploadTaskStatus.PAUSED">
                     <a-progress
                       :percent="record.progress / 100"
@@ -494,14 +499,27 @@
                     />
                     <span class="progress-text">已暂停</span>
                   </div>
+                  <!-- 合并中状态 -->
+                  <div
+                    v-else-if="record.status === UploadTaskStatus.MERGING"
+                    class="progress-container"
+                  >
+                    <a-spin size="small" />
+                    <span class="progress-text" style="margin-left: 8px">
+                      合并文件...
+                    </span>
+                  </div>
+                  <!-- 完成状态 -->
                   <div v-else-if="record.status === UploadTaskStatus.COMPLETED">
                     <span class="status-text success">100%</span>
                   </div>
+                  <!-- 失败状态 -->
                   <div v-else-if="record.status === UploadTaskStatus.FAILED">
                     <span class="status-text error">{{
                       record.errorMsg || '上传失败'
                     }}</span>
                   </div>
+                  <!-- 其他状态 -->
                   <div v-else>
                     <span class="status-text">-</span>
                   </div>

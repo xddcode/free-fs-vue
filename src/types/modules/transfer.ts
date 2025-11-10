@@ -3,11 +3,60 @@
  */
 // eslint-disable-next-line no-shadow
 export enum UploadTaskStatus {
+  INITIALIZED = 'initialized', // 已初始化
+  CHECKING = 'checking', // 校验中
   UPLOADING = 'uploading', // 上传中
   PAUSED = 'paused', // 已暂停
+  MERGING = 'merging', // 合并中
   COMPLETED = 'completed', // 已完成
   FAILED = 'failed', // 失败
   CANCELED = 'canceled', // 已取消
+}
+
+/**
+ * 初始化上传请求参数
+ */
+export interface InitUploadCmd {
+  fileName: string;
+  fileSize: number;
+  parentId?: string;
+  totalChunks: number;
+  chunkSize: number;
+  mimeType: string;
+}
+
+/**
+ * 校验上传请求参数
+ */
+export interface CheckUploadCmd {
+  taskId: string;
+  fileMd5: string;
+  fileName: string;
+}
+
+/**
+ * 校验上传响应结果
+ */
+export interface CheckUploadResultVO {
+  /**
+   * 是否秒传
+   */
+  isQuickUpload: boolean;
+
+  /**
+   * 秒传成功后的文件信息
+   */
+  fileId?: string;
+
+  /**
+   * 任务ID
+   */
+  taskId: string;
+
+  /**
+   * 提示信息
+   */
+  message?: string;
 }
 
 /**

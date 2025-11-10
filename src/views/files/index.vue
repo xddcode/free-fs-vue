@@ -542,15 +542,34 @@
     return undefined;
   };
 
+  /**
+   * 处理文件上传完成事件
+   */
+  const handleFileUploadComplete = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const { parentId } = customEvent.detail;
+
+    // 如果上传的文件在当前目录，刷新列表
+    if (parentId === fileList.currentParentId.value || !parentId) {
+      fileList.refresh();
+    }
+  };
+
   onMounted(() => {
     fileList.fetchFileList();
     // 添加页面刷新/关闭警告
     window.addEventListener('beforeunload', handleBeforeUnload);
+    // 监听文件上传完成事件
+    window.addEventListener('file-upload-complete', handleFileUploadComplete);
   });
 
   onBeforeUnmount(() => {
     // 移除事件监听器
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener(
+      'file-upload-complete',
+      handleFileUploadComplete
+    );
   });
 </script>
 

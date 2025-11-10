@@ -3,14 +3,19 @@
  */
 interface WebSocketMessage {
   type?:
-    | 'progress'
-    | 'complete'
-    | 'error'
-    | 'success'
-    | 'pong'
-    | 'init_start' // 初始化开始
-    | 'init_success' // 初始化成功
-    | 'chunk_success'; // 分片上传成功
+    | 'success' // 成功消息（如订阅成功）
+    | 'error' // 错误消息
+    | 'pong' // 心跳响应
+    | 'initialized' // 任务初始化成功
+    | 'checking' // 文件校验中
+    | 'quick_upload' // 秒传成功
+    | 'ready_to_upload' // 准备上传（校验完成，非秒传）
+    | 'progress' // 上传进度
+    | 'paused' // 已暂停
+    | 'resumed' // 已继续
+    | 'merging' // 合并中
+    | 'complete' // 上传完成
+    | 'cancelled'; // 已取消
   action?: 'subscribe' | 'unsubscribe' | 'ping';
   taskId?: string;
   data?: any;
@@ -41,9 +46,14 @@ type CompleteCallback = (
 ) => void;
 type ErrorCallback = (taskId: string, message: string) => void;
 type ConnectCallback = () => void;
-type InitStartCallback = (taskId: string, fileName: string) => void;
-type InitSuccessCallback = (taskId: string, task: any) => void;
-type ChunkSuccessCallback = (taskId: string, chunkIndex: number) => void;
+type InitializedCallback = (taskId: string, message: string) => void;
+type CheckingCallback = (taskId: string, message: string) => void;
+type QuickUploadCallback = (taskId: string, fileId: string) => void;
+type ReadyToUploadCallback = (taskId: string, uploadId: string) => void;
+type PausedCallback = (taskId: string, message: string) => void;
+type ResumedCallback = (taskId: string, uploadedChunks: number[]) => void;
+type MergingCallback = (taskId: string, message: string) => void;
+type CancelledCallback = (taskId: string, message: string) => void;
 
 /**
  * WebSocket上传管理类
@@ -75,11 +85,21 @@ export class UploadWebSocket {
 
   private onConnectCallback: ConnectCallback | null = null;
 
-  private onInitStartCallback: InitStartCallback | null = null;
+  private onInitializedCallback: InitializedCallback | null = null;
 
-  private onInitSuccessCallback: InitSuccessCallback | null = null;
+  private onCheckingCallback: CheckingCallback | null = null;
 
-  private onChunkSuccessCallback: ChunkSuccessCallback | null = null;
+  private onQuickUploadCallback: QuickUploadCallback | null = null;
+
+  private onReadyToUploadCallback: ReadyToUploadCallback | null = null;
+
+  private onPausedCallback: PausedCallback | null = null;
+
+  private onResumedCallback: ResumedCallback | null = null;
+
+  private onMergingCallback: MergingCallback | null = null;
+
+  private onCancelledCallback: CancelledCallback | null = null;
 
   constructor(userId: string, baseUrl?: string) {
     this.userId = userId;
@@ -177,20 +197,10 @@ export class UploadWebSocket {
    */
   private handleMessage(message: WebSocketMessage): void {
     switch (message.type) {
-      case 'progress':
-        if (message.taskId && message.data && this.onProgressCallback) {
-          this.onProgressCallback(message.taskId, message.data);
-        }
-        break;
-
-      case 'complete':
-        if (message.taskId && this.onCompleteCallback) {
-          this.onCompleteCallback(
-            message.taskId,
-            message.data || '',
-            message.message || '上传成功'
-          );
-        }
+      case 'success':
+        // 订阅成功的确认消息
+        // eslint-disable-next-line no-console
+        console.log('[UploadWebSocket] 订阅成功:', message.message);
         break;
 
       case 'error':
@@ -199,37 +209,97 @@ export class UploadWebSocket {
         }
         break;
 
-      case 'success':
-        // 订阅成功的确认消息
-        // eslint-disable-next-line no-console
-        console.log('[UploadWebSocket] 订阅成功:', message.message);
-        break;
-
-      case 'init_start':
-        // 初始化开始
-        if (message.taskId && this.onInitStartCallback) {
-          const fileName = message.data?.fileName || '';
-          this.onInitStartCallback(message.taskId, fileName);
-        }
-        break;
-
-      case 'init_success':
-        // 初始化成功
-        if (message.taskId && message.data && this.onInitSuccessCallback) {
-          this.onInitSuccessCallback(message.taskId, message.data);
-        }
-        break;
-
-      case 'chunk_success':
-        // 分片上传成功
-        if (message.taskId && this.onChunkSuccessCallback) {
-          const chunkIndex = message.data?.chunkIndex || 0;
-          this.onChunkSuccessCallback(message.taskId, chunkIndex);
-        }
-        break;
-
       case 'pong':
         // 心跳响应，不需要处理
+        break;
+
+      case 'initialized':
+        // 任务初始化成功
+        if (message.taskId && this.onInitializedCallback) {
+          this.onInitializedCallback(
+            message.taskId,
+            message.message || '任务创建成功'
+          );
+        }
+        break;
+
+      case 'checking':
+        // 文件校验中
+        if (message.taskId && this.onCheckingCallback) {
+          this.onCheckingCallback(
+            message.taskId,
+            message.message || '正在校验文件...'
+          );
+        }
+        break;
+
+      case 'quick_upload':
+        // 秒传成功
+        if (message.taskId && this.onQuickUploadCallback) {
+          this.onQuickUploadCallback(message.taskId, message.data || '');
+        }
+        break;
+
+      case 'ready_to_upload':
+        // 准备上传（校验完成，非秒传）
+        if (message.taskId && this.onReadyToUploadCallback) {
+          this.onReadyToUploadCallback(message.taskId, message.data || '');
+        }
+        break;
+
+      case 'progress':
+        // 上传进度
+        if (message.taskId && message.data && this.onProgressCallback) {
+          this.onProgressCallback(message.taskId, message.data);
+        }
+        break;
+
+      case 'paused':
+        // 已暂停
+        if (message.taskId && this.onPausedCallback) {
+          this.onPausedCallback(
+            message.taskId,
+            message.message || '上传已暂停'
+          );
+        }
+        break;
+
+      case 'resumed':
+        // 已继续
+        if (message.taskId && this.onResumedCallback) {
+          this.onResumedCallback(message.taskId, message.data || []);
+        }
+        break;
+
+      case 'merging':
+        // 合并中
+        if (message.taskId && this.onMergingCallback) {
+          this.onMergingCallback(
+            message.taskId,
+            message.message || '正在合并文件...'
+          );
+        }
+        break;
+
+      case 'complete':
+        // 上传完成
+        if (message.taskId && this.onCompleteCallback) {
+          this.onCompleteCallback(
+            message.taskId,
+            message.data || '',
+            message.message || '上传完成'
+          );
+        }
+        break;
+
+      case 'cancelled':
+        // 已取消
+        if (message.taskId && this.onCancelledCallback) {
+          this.onCancelledCallback(
+            message.taskId,
+            message.message || '上传已取消'
+          );
+        }
         break;
 
       default:
@@ -337,24 +407,59 @@ export class UploadWebSocket {
   }
 
   /**
-   * 注册初始化开始回调
+   * 注册任务初始化成功回调
    */
-  onInitStart(callback: InitStartCallback): void {
-    this.onInitStartCallback = callback;
+  onInitialized(callback: InitializedCallback): void {
+    this.onInitializedCallback = callback;
   }
 
   /**
-   * 注册初始化成功回调
+   * 注册文件校验中回调
    */
-  onInitSuccess(callback: InitSuccessCallback): void {
-    this.onInitSuccessCallback = callback;
+  onChecking(callback: CheckingCallback): void {
+    this.onCheckingCallback = callback;
   }
 
   /**
-   * 注册分片成功回调
+   * 注册秒传成功回调
    */
-  onChunkSuccess(callback: ChunkSuccessCallback): void {
-    this.onChunkSuccessCallback = callback;
+  onQuickUpload(callback: QuickUploadCallback): void {
+    this.onQuickUploadCallback = callback;
+  }
+
+  /**
+   * 注册准备上传回调
+   */
+  onReadyToUpload(callback: ReadyToUploadCallback): void {
+    this.onReadyToUploadCallback = callback;
+  }
+
+  /**
+   * 注册已暂停回调
+   */
+  onPaused(callback: PausedCallback): void {
+    this.onPausedCallback = callback;
+  }
+
+  /**
+   * 注册已继续回调
+   */
+  onResumed(callback: ResumedCallback): void {
+    this.onResumedCallback = callback;
+  }
+
+  /**
+   * 注册合并中回调
+   */
+  onMerging(callback: MergingCallback): void {
+    this.onMergingCallback = callback;
+  }
+
+  /**
+   * 注册已取消回调
+   */
+  onCancelled(callback: CancelledCallback): void {
+    this.onCancelledCallback = callback;
   }
 
   /**

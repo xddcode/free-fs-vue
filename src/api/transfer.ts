@@ -1,74 +1,26 @@
 import { request } from '@/api/interceptor';
-import type { FileUploadTaskVO } from '@/types/modules/transfer';
+import type {
+  FileUploadTaskVO,
+  InitUploadCmd,
+  CheckUploadCmd,
+  CheckUploadResultVO,
+} from '@/types/modules/transfer';
 import { UploadTaskStatus } from '@/types/modules/transfer';
 
 /**
- * 初始化上传请求参数
+ * 初始化上传
+ * 创建上传任务，返回taskId用于后续分片上传
  */
-export interface InitUploadParams {
-  fileName: string;
-  fileSize: number;
-  fileMd5: string;
-  parentId?: string;
-  totalChunks: number;
-  chunkSize: number;
-  mimeType?: string;
-}
-
-/**
- * 上传任务信息
- */
-export interface UploadTask {
-  taskId: string;
-  fileName: string;
-  totalChunks: number;
-  uploadedChunks: number;
-  status: string;
-}
-
-/**
- * 文件信息
- */
-export interface FileInfo {
-  id: string;
-  fileName: string;
-  size: number;
-  mimeType?: string;
-  [key: string]: any;
-}
-
-/**
- * 初始化上传响应（秒传）
- */
-export interface InitUploadInstantResponse {
-  instant: true;
-  message: string;
-  fileInfo: FileInfo;
-}
-
-/**
- * 初始化上传响应
- */
-export interface InitUploadNormalResponse {
-  instant: false;
-  message: string;
-  taskId: string;
-}
-
-/**
- * 初始化上传响应
- */
-export type InitUploadResponse =
-  | InitUploadInstantResponse
-  | InitUploadNormalResponse;
-
-/**
- * 初始化上传（异步）
- * 检查文件是否可以秒传，如果不能则立即返回taskId
- * 后续状态通过WebSocket推送
- */
-export function initUpload(params: InitUploadParams) {
+export function initUpload(params: InitUploadCmd) {
   return request.post<string>('/apis/transfer/init', params);
+}
+
+/**
+ * 校验文件
+ * 前端计算完MD5后调用，判断是否秒传
+ */
+export function checkUpload(params: CheckUploadCmd) {
+  return request.post<CheckUploadResultVO>('/apis/transfer/check', params);
 }
 
 /**
@@ -90,6 +42,7 @@ export function uploadChunk(
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    timeout: 60000, // 上传分片超时时间设置为60秒
   });
 }
 
@@ -106,7 +59,7 @@ export function getUploadedChunks(taskId: string) {
  * 所有分片上传完成后调用此接口合并文件
  */
 export function mergeChunks(taskId: string) {
-  return request.post<FileInfo>(`/apis/transfer/merge/${taskId}`);
+  return request.post<string>(`/apis/transfer/merge/${taskId}`);
 }
 
 /**
@@ -129,14 +82,14 @@ export function getTransferFiles() {
  * 暂停上传任务
  */
 export function pauseUpload(taskId: string) {
-  return request.put(`/apis/transfer/task/${taskId}/pause`);
+  return request.post(`/apis/transfer/pause/${taskId}`);
 }
 
 /**
  * 恢复上传任务
  */
 export function resumeUpload(taskId: string) {
-  return request.put(`/apis/transfer/task/${taskId}/resume`);
+  return request.post(`/apis/transfer/resume/${taskId}`);
 }
 
 // 导出类型

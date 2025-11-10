@@ -48,7 +48,7 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
-  import { Message } from '@arco-design/web-vue';
+  import { Message, Notification } from '@arco-design/web-vue';
   import {
     IconUpload,
     IconFile,
@@ -77,12 +77,12 @@
 
   const handleRemoveFile = (fileToRemove: FileItem) => {
     fileList.value = fileList.value.filter(
-      (item) => item.uid !== fileToRemove.uid
+      (item: FileItem) => item.uid !== fileToRemove.uid
     );
   };
 
   /**
-   * 点击"开始上传"按钮
+   * 点击"添加到上传列表"按钮
    */
   const handleSubmit = () => {
     if (fileList.value.length === 0) {
@@ -91,12 +91,34 @@
     }
 
     const filesToUpload = fileList.value
-      .map((item) => item.file)
+      .map((item: FileItem) => item.file)
       .filter(Boolean) as File[];
 
     if (filesToUpload.length === 0) return;
 
+    // 添加到上传任务列表
     uploadStore.addUploadTasks(filesToUpload, props.parentId ?? '');
+
+    // 关闭弹窗
+    emit('update:visible', false);
+
+    // 显示通知，引导用户查看传输列表
+    const notificationId = `upload-notification-${Date.now()}`;
+    Notification.success({
+      id: notificationId,
+      title: '文件已添加到传输列表',
+      content: '立即查看传输进度',
+      duration: 5000,
+      closable: true,
+    });
+
+    // 延迟一下再提示用户可以跳转
+    setTimeout(() => {
+      Message.info({
+        content: '可前往传输列表查看上传进度',
+        duration: 3000,
+      });
+    }, 500);
   };
 
   const handleCancel = () => {
