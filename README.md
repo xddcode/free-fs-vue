@@ -1,6 +1,8 @@
-# Free FS - 现代化文件管理网盘系统
+# 🔥Free FS - 现代化文件管理网盘系统
 
 <div align="center">
+
+<img alt="Free FS Logo" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/logo.png" width="180"/>
 
 一个基于 Vue 3 的现代化文件管理系统前端，支持多存储平台、完整的文件操作和优雅的用户界面。
 
