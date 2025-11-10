@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { Message } from '@arco-design/web-vue';
   import {
     IconRefresh,
@@ -290,11 +290,50 @@
     subscribeActiveTasksUpdates();
   };
 
-  onMounted(() => {
-    // 页面加载时获取一次列表并订阅 WebSocket
+  // 定时检查新任务（仅在有活动任务时轮询）
+  let refreshTimer: number | null = null;
+
+  const startAutoRefresh = () => {
+    // 立即获取一次
     fetchTransferList().then(() => {
       subscribeActiveTasksUpdates();
     });
+
+    // 定时检查新任务
+    refreshTimer = window.setInterval(async () => {
+      // 只有在有活动任务时才轮询
+      const hasActiveTasks = uploadingTasks.value.length > 0;
+
+      if (hasActiveTasks) {
+        const currentTaskIds = new Set(transferList.value.map((t) => t.taskId));
+        await fetchTransferList();
+
+        // 检查是否有新任务，如果有则重新订阅
+        const hasNewTasks = transferList.value.some(
+          (t) => !currentTaskIds.has(t.taskId)
+        );
+        if (hasNewTasks) {
+          subscribeActiveTasksUpdates();
+        }
+      }
+    }, 3000); // 每3秒检查一次
+  };
+
+  const stopAutoRefresh = () => {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+  };
+
+  onMounted(() => {
+    // 页面加载时开始自动刷新
+    startAutoRefresh();
+  });
+
+  // 组件卸载时停止刷新
+  onUnmounted(() => {
+    stopAutoRefresh();
   });
 </script>
 
