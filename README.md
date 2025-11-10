@@ -18,9 +18,9 @@
 
 ## 源码链接：
 
-Gitee：https://gitee.com/xddcode/free-fs
+Gitee：https://gitee.com/xddcode/free-fs-vue
 
-GitHub：https://github.com/xddcode/free-fs
+GitHub：https://github.com/xddcode/free-fs-vue
 
 ## 🔗 相关项目
 
