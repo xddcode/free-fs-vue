@@ -2,6 +2,7 @@
   import { computed } from 'vue';
   import { IconQuestion } from '@arco-design/web-vue/es/icon';
   import VideoPlayer from '@/components/video-player/index.vue';
+  import CodePlayer from '@/components/code-player/index.vue';
 
   /** 文件预览组件 */
   interface FileInfo {
@@ -112,6 +113,10 @@
           <video-player :url="file.fileUrl" />
         </div>
 
+        <div v-if="fileType === 'code-text'" class="code-text-viewer">
+          <code-player :url="file.fileUrl" :language="fileExtension" />
+        </div>
+
         <div v-if="fileType === 'unsupported'" class="unsupported-viewer">
           <a-empty>
             <template #image>
@@ -151,6 +156,7 @@
 
   .image-preview,
   .video-viewer,
+  .code-text-viewer,
   .unsupported-viewer {
     width: 100%;
     height: 100%;
