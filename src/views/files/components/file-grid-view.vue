@@ -113,6 +113,10 @@
               <icon-more :size="18" />
             </a-button>
             <template #content>
+              <a-doption v-if="!file.isDir" @click="$emit('preview', file)">
+                <icon-eye />
+                预览
+              </a-doption>
               <a-doption @click="$emit('share', file)">
                 <icon-share-alt />
                 分享
@@ -162,6 +166,7 @@
     IconRefresh,
     IconApps,
     IconList,
+    IconEye,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -187,6 +192,7 @@
     (e: 'update:selectedKeys', keys: string[]): void;
     (e: 'update:viewMode', value: 'list' | 'grid'): void;
     (e: 'refresh'): void;
+    (e: 'preview', file: FileItem): void;
   }>();
 
   const isSelected = (fileId: string) => {

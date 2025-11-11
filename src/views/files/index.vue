@@ -138,6 +138,7 @@
                 @move="operations.openMoveModal"
                 @favorite="handleFavorite"
                 @refresh="fileList.refresh"
+                @preview="operations.openPreview"
               />
             </a-spin>
           </div>
@@ -153,6 +154,7 @@
       style="display: none"
       @change="handleFileSelect"
     />
+    <upload-panel />
 
     <!-- 新建文件夹弹窗 -->
     <create-folder-modal
@@ -190,6 +192,12 @@
       :file="operations.deletingFile.value"
       :files="operations.deletingFiles.value"
       @confirm="handleDelete"
+    />
+
+    <!-- 文件预览 -->
+    <file-previewer
+      v-model:visible="operations.previewModalVisible.value"
+      :file="operations.previewFile.value"
     />
   </div>
 </template>
@@ -233,6 +241,8 @@
     DeleteConfirmModal,
     RecycleBinView,
     MySharesView,
+    UploadPanel,
+    FilePreviewer,
   } from './components';
 
   const route = useRoute();
