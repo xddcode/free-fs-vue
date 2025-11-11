@@ -9,7 +9,7 @@ export { default as FileBreadcrumb } from './file-breadcrumb.vue';
 export { default as FileListView } from './file-list-view.vue';
 export { default as FileGridView } from './file-grid-view.vue';
 export { default as FileTooltip } from './file-tooltip.vue';
-export { default as UploadModal } from './upload-modal-v2.vue';
+export { default as UploadModal } from './upload-modal.vue';
 export { default as CreateFolderModal } from './create-folder-modal.vue';
 export { default as RenameModal } from './rename-modal.vue';
 export { default as MoveModal } from './move-modal.vue';

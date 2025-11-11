@@ -257,7 +257,7 @@
   .file-grid-view-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    min-height: 0;
   }
 
   .file-grid-header {
@@ -291,8 +291,6 @@
   }
 
   .file-grid-view {
-    flex: 1;
-    overflow: auto;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
