@@ -1,8 +1,20 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, defineAsyncComponent } from 'vue';
   import { IconQuestion } from '@arco-design/web-vue/es/icon';
-  import VideoPlayer from '@/components/video-player/index.vue';
-  import CodePlayer from '@/components/code-player/index.vue';
+
+  /** 改为异步导入组件 */
+  const VideoPlayer = defineAsyncComponent(
+    () => import('@/components/video-player/index.vue')
+  );
+  const AudioPlayer = defineAsyncComponent(
+    () => import('@/components/audio-player/index.vue')
+  );
+  const CodePlayer = defineAsyncComponent(
+    () => import('@/components/code-player/index.vue')
+  );
+  const pdfPlayer = defineAsyncComponent(
+    () => import('@/components/pdf-player/index.vue')
+  );
 
   /** 文件预览组件 */
   interface FileInfo {
@@ -113,6 +125,14 @@
           <video-player :url="file.fileUrl" />
         </div>
 
+        <div v-if="fileType === 'audio'" class="audio-viewer">
+          <audio-player :url="file.fileUrl" :name="file.fileName" />
+        </div>
+
+        <div v-if="fileType === 'pdf'" class="pdf-viewer">
+          <pdf-player :url="file.fileUrl" />
+        </div>
+
         <div v-if="fileType === 'code-text'" class="code-text-viewer">
           <code-player :url="file.fileUrl" :language="fileExtension" />
         </div>
@@ -156,6 +176,8 @@
 
   .image-preview,
   .video-viewer,
+  .audio-viewer,
+  .pdf-viewer,
   .code-text-viewer,
   .unsupported-viewer {
     width: 100%;
