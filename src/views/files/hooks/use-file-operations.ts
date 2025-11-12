@@ -10,6 +10,7 @@ import {
   createFolder,
   favoriteFile,
   unfavoriteFile,
+  getFilePreviewUrl,
 } from '@/api/file';
 import type { FileItem } from '@/types/modules/file';
 
@@ -42,6 +43,10 @@ export default function useFileOperations(refreshCallback: () => void) {
   const deleteConfirmVisible = ref(false);
   const deletingFile = ref<FileItem | null>(null);
   const deletingFiles = ref<FileItem[]>([]);
+
+  // 预览相关
+  const previewModalVisible = ref(false);
+  const previewFile = ref({ fileName: '', fileUrl: '', fileSuffix: '' });
 
   /**
    * 打开上传弹窗
@@ -360,6 +365,23 @@ export default function useFileOperations(refreshCallback: () => void) {
     });
   };
 
+  /**
+   * 预览文件
+   */
+  const openPreview = async (file: FileItem) => {
+    previewModalVisible.value = true;
+    try {
+      const res = await getFilePreviewUrl(file.id);
+      previewFile.value = {
+        fileName: file.originalName,
+        fileSuffix: file.suffix,
+        fileUrl: res.data,
+      };
+    } catch (e) {
+      Message.error('预览失败，请联系管理员');
+    }
+  };
+
   return {
     // 上传相关
     uploadModalVisible,
@@ -406,5 +428,10 @@ export default function useFileOperations(refreshCallback: () => void) {
 
     // 收藏
     handleFavorite,
+
+    // 预览
+    previewModalVisible,
+    openPreview,
+    previewFile,
   };
 }

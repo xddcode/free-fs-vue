@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import svgLoader from 'vite-svg-loader';
+import monacoEditorPlugin from 'vite-plugin-monaco-editor';
 import configArcoStyleImportPlugin from './plugin/arcoStyleImport';
 
 export default defineConfig({
@@ -11,6 +12,9 @@ export default defineConfig({
     vueJsx(),
     svgLoader({ svgoConfig: {} }),
     configArcoStyleImportPlugin(),
+    monacoEditorPlugin({
+      languageWorkers: ['json', 'css', 'html', 'typescript'],
+    }),
   ],
   resolve: {
     alias: [

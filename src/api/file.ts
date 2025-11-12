@@ -182,5 +182,12 @@ export function unfavoriteFile(fileIds: string[]) {
   });
 }
 
+/**
+ * 获取文件访问URL
+ */
+export function getFilePreviewUrl(fileId: string, expireSeconds = 180) {
+  return request.get(`/apis/file/url/${fileId}`, { params: { expireSeconds } });
+}
+
 // 导出类型以便在组件中使用
 export type { FileListParams, FileItem };
