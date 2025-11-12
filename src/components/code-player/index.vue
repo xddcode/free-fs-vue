@@ -47,6 +47,8 @@
         return 'go';
       case 'sh':
         return 'shell';
+      case 'vue':
+        return 'html';
       // 默认返回纯文本
       default:
         return 'plaintext';

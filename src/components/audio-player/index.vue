@@ -115,38 +115,28 @@
 </template>
 
 <style scoped lang="less">
-  /*
-    这是总容器, 它会撑满 80vh 的模态框
-  */
   .audio-player-wrapper {
     width: 100%;
     height: 100%;
 
-    // 使用 flex 布局让画布和控件垂直居中
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
 
-    // 给一点内边距
     padding: 20px;
   }
 
   /* 频谱画布的样式*/
   .audio-canvas {
     width: 100%;
-    //max-width: 600px;
-    height: 120px; // 给频谱一个固定的高度
+    height: 260px; // 给频谱一个固定的高度
     margin-bottom: 20px; // 和播放器拉开一点距离
   }
 
   /* 播放器控件的容器 */
   .player-container {
     width: 100%;
-    //max-width: 600px;
-
-    // 【样式修复】
-    // 移除 height: 100%
     // 播放器自己有 height: 50px, 我们只需要给个最小高度
     min-height: 50px;
   }
