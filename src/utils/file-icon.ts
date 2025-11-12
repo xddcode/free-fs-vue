@@ -94,6 +94,31 @@ export function getFileIconName(suffix: string): string {
   // Flash类型 - flash.png
   const flashTypes = ['swf'];
 
+  // 图片类型
+  const imageTypes: string[] = [
+    // 常见格式
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'bmp',
+    'webp',
+    // 矢量格式
+    'svg',
+    // 图标格式
+    'ico',
+    // 高质量/原始格式
+    'tif',
+    'tiff',
+    // 现代图片格式
+    'avif',
+    'heic',
+    'heif',
+    // (可选) 设计软件格式
+    'psd', // Photoshop
+    'ai',  // Illustrator
+  ];
+
   // 按优先级匹配
   if (documentTypes[suffix]) {
     return documentTypes[suffix];
@@ -125,6 +150,10 @@ export function getFileIconName(suffix: string): string {
 
   if (flashTypes.includes(suffix)) {
     return 'flash';
+  }
+
+  if (imageTypes.includes(suffix)) {
+    return 'image';
   }
 
   // 默认文件图标
