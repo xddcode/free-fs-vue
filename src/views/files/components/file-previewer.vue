@@ -24,7 +24,7 @@
   }
 
   interface Props {
-    visible: boolean;
+    visible: false;
     file: FileInfo;
   }
 
@@ -72,6 +72,7 @@
         'go',
         'c',
         'cpp',
+        'vue',
       ].includes(ext)
     )
       return 'code-text';
@@ -85,14 +86,6 @@
     return `${props.file.fileName} - 预览`;
   });
 
-  const isImagePreviewVisible = computed(() => {
-    return props.visible && fileType.value === 'image';
-  });
-
-  const isOtherPreviewVisible = computed(() => {
-    return props.visible && fileType.value !== 'image';
-  });
-
   const handleClose = () => {
     emit('update:visible', false);
     emit('close');
@@ -101,18 +94,9 @@
 
 <template>
   <div>
-    <div v-if="fileType === 'image'" class="image-preview">
-      <a-image-preview
-        :src="file.fileUrl"
-        :visible="isImagePreviewVisible"
-        :z-index="3000"
-        @close="handleClose"
-      ></a-image-preview>
-    </div>
-
     <!-- 需要弹框的组件 -->
     <a-modal
-      :visible="isOtherPreviewVisible"
+      :visible="props.visible"
       :title="previewTitle"
       width="90vw"
       unmount-on-close
@@ -121,6 +105,15 @@
       @cancel="handleClose"
     >
       <div class="preview-container">
+        <div v-if="fileType === 'image'" class="image-preview">
+          <a-image
+            :src="file.fileUrl"
+            width="100%"
+            height="100%"
+            fit="contain"
+          ></a-image>
+        </div>
+
         <div v-if="fileType === 'video'" class="video-viewer">
           <video-player :url="file.fileUrl" />
         </div>
