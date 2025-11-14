@@ -42,6 +42,31 @@
         }"
         @change="handleTableChange"
       >
+        <template #tr="slotProps">
+          <tr
+            v-bind="slotProps.props"
+            :class="[
+              'file-row',
+              {
+                'is-dragging-row': draggingItemIds.includes(
+                  slotProps.record.id
+                ),
+              },
+            ]"
+            draggable="true"
+            @dragstart="handleDragStart(slotProps.record, $event)"
+            @dragover="handleDragOver(slotProps.record, $event)"
+            @dragleave="handleDragLeave($event)"
+            @drop="handleDrop(slotProps.record, $event)"
+            @dragend="handleDragEnd($event)"
+          >
+            <component
+              :is="s"
+              v-for="(s, index) in slotProps.slots"
+              :key="index"
+            />
+          </tr>
+        </template>
         <template #columns>
           <a-table-column title="文件名" data-index="displayName" :width="400">
             <template #cell="{ record }">
@@ -90,6 +115,14 @@
           <a-table-column title="操作" :width="200" align="center">
             <template #cell="{ record }">
               <div v-if="!isRowSelected(record.id)" class="file-actions">
+                <a-button
+                  v-if="!record.isDir"
+                  size="small"
+                  type="text"
+                  @click.stop="$emit('preview', record)"
+                >
+                  <icon-eye />
+                </a-button>
                 <a-button
                   v-if="!record.isDir"
                   size="small"
@@ -147,7 +180,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import {
     IconDownload,
     IconDelete,
@@ -189,6 +222,9 @@
     (e: 'update:selectedKeys', keys: string[]): void;
     (e: 'update:viewMode', value: 'list' | 'grid'): void;
     (e: 'refresh'): void;
+    (e: 'preview', file: FileItem): void;
+    // 拖拽事件
+    (e: 'moveItems', itemIds: string[], targetDirId: string): void;
   }>();
 
   // 双向绑定选中的 keys
@@ -213,6 +249,78 @@
       const { field, direction } = extra.sorter;
       emit('sortChange', field, direction);
     }
+  };
+
+  // 拖拽相关
+  const draggingItemIds = ref<string[]>([]);
+  /**
+   * 拖拽开始
+   */
+  const handleDragStart = (file: FileItem, event: DragEvent) => {
+    const isDraggingSelected = props.selectedKeys?.includes(file.id) || false;
+
+    if (
+      isDraggingSelected &&
+      props.selectedKeys &&
+      props.selectedKeys.length > 0
+    ) {
+      draggingItemIds.value = [...props.selectedKeys];
+    } else {
+      draggingItemIds.value = [file.id];
+    }
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData(
+        'application/x-file-ids',
+        JSON.stringify(draggingItemIds.value)
+      );
+    }
+  };
+
+  /**
+   * 拖拽物在目标上
+   */
+  const handleDragOver = (file: FileItem, event: DragEvent) => {
+    event.preventDefault(); // 允许释放
+
+    if (!file.isDir) return;
+    if (draggingItemIds.value.includes(file.id)) return;
+
+    // 添加“即将释放”的视觉提示
+    (event.currentTarget as HTMLElement).classList.add('is-drop-target-row');
+  };
+
+  /**
+   * 拖拽物离开目标
+   */
+  const handleDragLeave = (event: DragEvent) => {
+    (event.currentTarget as HTMLElement).classList.remove('is-drop-target-row');
+  };
+
+  /**
+   * 释放
+   */
+  const handleDrop = (file: FileItem, event: DragEvent) => {
+    event.preventDefault();
+    (event.currentTarget as HTMLElement).classList.remove('is-drop-target-row');
+
+    if (!file.isDir) return;
+    if (draggingItemIds.value.includes(file.id)) return;
+    if (draggingItemIds.value.length === 0) return;
+
+    emit('moveItems', draggingItemIds.value, file.id);
+    draggingItemIds.value = [];
+  };
+
+  /**
+   * 拖拽结束
+   */
+  const handleDragEnd = (event: DragEvent) => {
+    document.querySelectorAll('.is-drop-target-row').forEach((el) => {
+      el.classList.remove('is-drop-target-row');
+    });
+    draggingItemIds.value = [];
   };
 </script>
 
@@ -264,6 +372,19 @@
 
         &:hover {
           background-color: var(--color-fill-2);
+        }
+      }
+
+      // 正在被拖拽的行
+      .is-dragging-row {
+        opacity: 0.5;
+      }
+      .is-drop-target-row {
+        box-shadow: 0 0 0 2px var(--color-primary-light-4);
+        position: relative;
+        z-index: 1;
+        td {
+          background-color: var(--color-primary-light-1) !important;
         }
       }
     }

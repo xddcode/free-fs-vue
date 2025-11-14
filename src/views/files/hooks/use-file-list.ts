@@ -98,12 +98,13 @@ export default function useFileList() {
    * 进入文件夹
    * @param folderId 文件夹ID
    */
-  const enterFolder = (folderId: string) => {
+  const enterFolder = (folderId: string, viewMode: string) => {
     // 更新 URL query 参数
     router.push({
       query: {
         ...route.query,
         parentId: folderId,
+        viewMode
       },
     });
   };

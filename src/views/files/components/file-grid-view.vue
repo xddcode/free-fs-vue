@@ -39,9 +39,19 @@
         v-for="file in fileList"
         :key="file.id"
         class="grid-item"
-        :class="{ 'is-folder': file.isDir, 'is-selected': isSelected(file.id) }"
+        :class="{
+          'is-folder': file.isDir,
+          'is-selected': isSelected(file.id),
+          'is-dragging': draggingItemIds.includes(file.id),
+        }"
+        draggable="true"
         @click="handleItemClick(file, $event)"
         @dblclick="handleFileDoubleClick(file)"
+        @dragstart="handleDragStart(file, $event)"
+        @dragover="handleDragOver(file, $event)"
+        @dragleave="handleDragLeave($event)"
+        @drop="handleDrop(file, $event)"
+        @dragend="handleDragEnd($event)"
       >
         <div class="grid-item-checkbox">
           <a-checkbox
@@ -153,7 +163,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import {
     IconDownload,
     IconDelete,
@@ -193,6 +203,8 @@
     (e: 'update:viewMode', value: 'list' | 'grid'): void;
     (e: 'refresh'): void;
     (e: 'preview', file: FileItem): void;
+    // 拖拽事件
+    (e: 'moveItems', itemIds: string[], targetDirId: string): void;
   }>();
 
   const isSelected = (fileId: string) => {
@@ -256,6 +268,85 @@
       // 取消全选
       emit('update:selectedKeys', []);
     }
+  };
+
+  /** 拖拽部分 */
+  const draggingItemIds = ref<string[]>([]);
+  const handleDragStart = (file: FileItem, event: DragEvent) => {
+    const isDraggingSelected = props.selectedKeys?.includes(file.id) || false;
+
+    if (
+      isDraggingSelected &&
+      props.selectedKeys &&
+      props.selectedKeys.length > 0
+    ) {
+      draggingItemIds.value = [...props.selectedKeys];
+    } else {
+      // 否则，只移动当前这一项
+      draggingItemIds.value = [file.id];
+    }
+
+    // 设置拖拽数据
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData(
+        'application/x-file-ids',
+        JSON.stringify(draggingItemIds.value)
+      );
+    }
+  };
+
+  /**
+   * 当拖拽物在一个合法的释放目标上移动时
+   */
+  const handleDragOver = (file: FileItem, event: DragEvent) => {
+    event.preventDefault(); // 允许释放
+
+    // 必须是文件夹
+    if (!file.isDir) return;
+    // 不能拖到自己身上，也不能拖到“被拖拽的文件夹”之一上
+    if (draggingItemIds.value.includes(file.id)) return;
+
+    // 添加“即将释放”的视觉提示
+    (event.currentTarget as HTMLElement).classList.add('is-drop-target');
+  };
+
+  /**
+   * 当拖拽物离开一个释放目标时
+   */
+  const handleDragLeave = (event: DragEvent) => {
+    // 移除视觉提示
+    (event.currentTarget as HTMLElement).classList.remove('is-drop-target');
+  };
+
+  /**
+   * 当在释放目标上释放时
+   */
+  const handleDrop = (file: FileItem, event: DragEvent) => {
+    event.preventDefault();
+    const targetEl = event.currentTarget as HTMLElement;
+    targetEl.classList.remove('is-drop-target');
+
+    // 再次校验
+    if (!file.isDir) return;
+    if (draggingItemIds.value.includes(file.id)) return;
+    if (draggingItemIds.value.length === 0) return; // 没有任何拖拽项
+
+    // 'moveItems' 事件
+    emit('moveItems', draggingItemIds.value, file.id);
+    // 清理
+    draggingItemIds.value = [];
+  };
+
+  /**
+   * 当拖拽操作结束时
+   */
+  const handleDragEnd = (event: DragEvent) => {
+    document.querySelectorAll('.is-drop-target').forEach((el) => {
+      el.classList.remove('is-drop-target');
+    });
+    // 清理拖拽状态
+    draggingItemIds.value = [];
   };
 </script>
 
@@ -334,6 +425,18 @@
         .grid-item-checkbox {
           opacity: 1;
         }
+      }
+
+      // 正在被拖拽的元素样式
+      &.is-dragging {
+        opacity: 0.5;
+        scale: (0.95);
+      }
+
+      // 作为释放目标的元素样式 (当拖拽物悬停时)
+      &.is-drop-target {
+        background-color: var(--color-primary-light-1);
+        box-shadow: 0 0 0 2px var(--color-primary-light-4) inset;
       }
     }
 

@@ -122,6 +122,8 @@
                 @move="operations.openMoveModal"
                 @favorite="handleFavorite"
                 @refresh="fileList.refresh"
+                @preview="operations.openPreview"
+                @move-items="operations.handleMove"
               />
 
               <!-- 网格视图 -->
@@ -139,6 +141,7 @@
                 @favorite="handleFavorite"
                 @refresh="fileList.refresh"
                 @preview="operations.openPreview"
+                @move-items="operations.handleMove"
               />
             </a-spin>
           </div>
@@ -400,7 +403,7 @@
         });
       } else {
         // 正常进入文件夹
-        fileList.enterFolder(file.id);
+        fileList.enterFolder(file.id, viewMode.value);
       }
     }
   };
@@ -574,6 +577,9 @@
   };
 
   onMounted(() => {
+    // 获取样式变量
+    viewMode.value = (route.query.viewMode ?? 'grid') as 'grid' | 'list';
+
     fileList.fetchFileList();
     // 添加页面刷新/关闭警告
     window.addEventListener('beforeunload', handleBeforeUnload);
