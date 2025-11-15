@@ -52,6 +52,7 @@
   } from '@arco-design/web-vue/es/upload/interfaces';
   import { useUserStore } from '@/store';
   import type { DescData } from '@arco-design/web-vue/es/descriptions/interface';
+  import { maskEmail } from '@/utils/format';
 
   const userStore = useUserStore();
 
@@ -86,7 +87,7 @@
         },
         {
           label: '邮箱',
-          value: userStore.email,
+          value: maskEmail(userStore.email),
         },
         {
           label: '注册时间',

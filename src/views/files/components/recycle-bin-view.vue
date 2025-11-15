@@ -53,6 +53,10 @@
           </span>
         </a-breadcrumb-item>
       </a-breadcrumb>
+      <span class="recycle-breadcrumb-tip">
+        <icon-info-circle />
+        回收站默认保存7天，到期自动清理！
+      </span>
     </div>
 
     <!-- 文件列表 -->
@@ -423,6 +427,19 @@
         color: var(--color-text-1);
         font-weight: 500;
         cursor: default;
+      }
+    }
+
+    .recycle-breadcrumb-tip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 12px;
+      font-size: 13px;
+      color: var(--color-text-3);
+
+      .arco-icon {
+        font-size: 14px;
       }
     }
   }

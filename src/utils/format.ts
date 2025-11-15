@@ -110,3 +110,30 @@ export function formatDateTime(dateStr: string | number | Date): string {
   const seconds = date.getSeconds().toString().padStart(2, '0');
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
+
+/**
+ * 邮箱脱敏显示
+ * 规则：保留前3位和后2位，中间用****替代
+ * 例如：459102951@qq.com -> 459****51@qq.com
+ * @param email 邮箱地址
+ * @returns 脱敏后的邮箱地址
+ */
+export function maskEmail(email: string | undefined | null): string {
+  if (!email) return '';
+  const [localPart, domain] = email.split('@');
+  if (!localPart || !domain) return email;
+  
+  // 如果前缀长度小于5，只保留前1位，其余用****替代
+  if (localPart.length < 5) {
+    if (localPart.length <= 1) {
+      return email; // 太短，不脱敏
+    }
+    const firstChar = localPart[0];
+    return `${firstChar}****@${domain}`;
+  }
+  
+  // 前缀长度 >= 5，保留前3位和后2位
+  const prefix = localPart.substring(0, 3);
+  const suffix = localPart.substring(localPart.length - 2);
+  return `${prefix}****${suffix}@${domain}`;
+}

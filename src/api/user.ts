@@ -60,10 +60,11 @@ export function updateForgetPassword(data: {
  * 修改密码
  */
 export function changePassword(data: {
-  currentPassword: string;
+  oldPassword: string;
   newPassword: string;
+  confirmPassword: string;
 }) {
-  return request.put('/apis/user/change-password', data);
+  return request.put('/apis/user/password', data);
 }
 
 /**

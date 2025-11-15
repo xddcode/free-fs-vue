@@ -116,7 +116,7 @@ export function getFileIconName(suffix: string): string {
     'heif',
     // (可选) 设计软件格式
     'psd', // Photoshop
-    'ai',  // Illustrator
+    'ai', // Illustrator
   ];
 
   // 按优先级匹配

@@ -10,7 +10,7 @@
             <a-typography-paragraph> 当前密码强度：强 </a-typography-paragraph>
           </div>
           <div class="operation">
-            <a-link> 修改 </a-link>
+            <a-link @click="handlePasswordClick"> 修改 </a-link>
           </div>
         </template>
       </a-list-item-meta>
@@ -42,7 +42,7 @@
             <a-typography-paragraph :class="userStore.email ? '' : 'tip'">
               {{
                 userStore.email
-                  ? `已绑定：${userStore.email}`
+                  ? `已绑定：${maskEmail(userStore.email)}`
                   : '未绑定邮箱，绑定后，可以作为登录名或找回密码的依据'
               }}
             </a-typography-paragraph>
@@ -60,7 +60,10 @@
   <a-modal
     v-model:visible="emailModalVisible"
     title="修改邮箱"
-    :footer="false"
+    ok-text="确定"
+    cancel-text="取消"
+    :ok-button-props="{ loading }"
+    @before-ok="handleSubmitEmail"
     @cancel="handleEmailModalCancel"
   >
     <a-form
@@ -85,17 +88,44 @@
           </a-button>
         </a-input-group>
       </a-form-item>
-      <a-form-item>
-        <a-space>
-          <a-button
-            type="primary"
-            :loading="loading"
-            @click="handleSubmitEmail"
-          >
-            确定
-          </a-button>
-          <a-button @click="handleEmailModalCancel">取消</a-button>
-        </a-space>
+    </a-form>
+  </a-modal>
+
+  <a-modal
+    v-model:visible="passwordModalVisible"
+    title="修改密码"
+    ok-text="确定"
+    cancel-text="取消"
+    :ok-button-props="{ loading: passwordLoading }"
+    @before-ok="handleSubmitPassword"
+    @cancel="handlePasswordModalCancel"
+  >
+    <a-form
+      ref="passwordFormRef"
+      :model="passwordFormData"
+      :rules="passwordFormRules"
+      layout="vertical"
+    >
+      <a-form-item field="oldPassword" label="当前密码">
+        <a-input-password
+          v-model="passwordFormData.oldPassword"
+          placeholder="请输入当前密码"
+          allow-clear
+        />
+      </a-form-item>
+      <a-form-item field="newPassword" label="新密码">
+        <a-input-password
+          v-model="passwordFormData.newPassword"
+          placeholder="请输入新密码"
+          allow-clear
+        />
+      </a-form-item>
+      <a-form-item field="confirmPassword" label="确认新密码">
+        <a-input-password
+          v-model="passwordFormData.confirmPassword"
+          placeholder="请再次输入新密码"
+          allow-clear
+        />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -106,15 +136,23 @@
   import { Message } from '@arco-design/web-vue';
   import type { FormInstance } from '@arco-design/web-vue';
   import { useUserStore } from '@/store';
-  import { sendChangeEmailCode, changeEmail } from '@/api/user';
+  import { sendChangeEmailCode, changeEmail, changePassword } from '@/api/user';
+  import useUser from '@/hooks/user';
+  import { maskEmail } from '@/utils/format';
 
   const userStore = useUserStore();
+  const { logout } = useUser();
   const emailModalVisible = ref(false);
   const emailFormRef = ref<FormInstance>();
   const loading = ref(false);
   const codeLoading = ref(false);
   const countdown = ref(0);
   let countdownTimer: number | null = null;
+
+  // 修改密码相关
+  const passwordModalVisible = ref(false);
+  const passwordFormRef = ref<FormInstance>();
+  const passwordLoading = ref(false);
 
   const emailFormData = reactive({
     newEmail: '',
@@ -129,10 +167,55 @@
     code: [{ required: true, message: '请输入验证码' }],
   };
 
+  const passwordFormData = reactive({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // 验证确认密码
+  const validateConfirmPassword = (
+    value: string,
+    callback: (error?: string) => void
+  ) => {
+    if (value !== passwordFormData.newPassword) {
+      callback('两次输入的密码不一致');
+    } else {
+      callback();
+    }
+  };
+
+  const passwordFormRules = {
+    oldPassword: [{ required: true, message: '请输入当前密码' }],
+    newPassword: [
+      { required: true, message: '请输入新密码' },
+      { minLength: 6, message: '密码长度不能少于6位' },
+    ],
+    confirmPassword: [
+      { required: true, message: '请再次输入新密码' },
+      {
+        validator: validateConfirmPassword,
+        message: '两次输入的密码不一致',
+      },
+    ],
+  };
+
   const handleEmailClick = () => {
     emailFormData.newEmail = '';
     emailFormData.code = '';
     emailModalVisible.value = true;
+  };
+
+  const handlePasswordClick = () => {
+    passwordFormData.oldPassword = '';
+    passwordFormData.newPassword = '';
+    passwordFormData.confirmPassword = '';
+    passwordModalVisible.value = true;
+  };
+
+  const handlePasswordModalCancel = () => {
+    passwordModalVisible.value = false;
+    passwordFormRef.value?.resetFields();
   };
 
   const handleEmailModalCancel = () => {
@@ -177,28 +260,59 @@
     }
   };
 
-  const handleSubmitEmail = async () => {
-    const res = await emailFormRef.value?.validate();
-    if (!res) {
-      loading.value = true;
-      try {
-        await changeEmail({
-          newEmail: emailFormData.newEmail,
-          code: emailFormData.code,
-        });
-        // 更新store中的用户信息
-        userStore.setInfo({ email: emailFormData.newEmail });
-        Message.success('邮箱修改成功');
-        emailModalVisible.value = false;
-        emailFormRef.value?.resetFields();
-        if (countdownTimer) {
-          clearInterval(countdownTimer);
-          countdownTimer = null;
-          countdown.value = 0;
-        }
-      } finally {
-        loading.value = false;
+  const handleSubmitEmail = async (done: (closed: boolean) => void) => {
+    try {
+      const res = await emailFormRef.value?.validate();
+      if (res) {
+        done(false); // 验证失败，阻止弹窗关闭
+        return;
       }
+      loading.value = true;
+      await changeEmail({
+        newEmail: emailFormData.newEmail,
+        code: emailFormData.code,
+      });
+      // 更新store中的用户信息
+      userStore.setInfo({ email: emailFormData.newEmail });
+      Message.success('邮箱修改成功');
+      emailFormRef.value?.resetFields();
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        countdown.value = 0;
+      }
+      done(true); // 验证成功，允许弹窗关闭
+    } catch (error) {
+      done(false); // 发生错误，阻止弹窗关闭
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const handleSubmitPassword = async (done: (closed: boolean) => void) => {
+    try {
+      const res = await passwordFormRef.value?.validate();
+      if (res) {
+        done(false); // 验证失败，阻止弹窗关闭
+        return;
+      }
+      passwordLoading.value = true;
+      await changePassword({
+        oldPassword: passwordFormData.oldPassword,
+        newPassword: passwordFormData.newPassword,
+        confirmPassword: passwordFormData.confirmPassword,
+      });
+      Message.success('密码修改成功，请重新登录');
+      passwordFormRef.value?.resetFields();
+      done(true); // 验证成功，允许弹窗关闭
+      // 延迟一下再退出登录，让用户看到成功提示
+      setTimeout(async () => {
+        await logout();
+      }, 1000);
+    } catch (error) {
+      done(false); // 发生错误，阻止弹窗关闭
+    } finally {
+      passwordLoading.value = false;
     }
   };
 

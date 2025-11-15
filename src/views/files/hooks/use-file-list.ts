@@ -104,7 +104,7 @@ export default function useFileList() {
       query: {
         ...route.query,
         parentId: folderId,
-        viewMode
+        viewMode,
       },
     });
   };
