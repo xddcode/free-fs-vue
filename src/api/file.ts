@@ -121,20 +121,6 @@ export function moveFiles(dirId: string, fileIds: string[]) {
 }
 
 /**
- * 分享文件（支持单个和批量）
- */
-export function shareFiles(fileIds: string[], expireDays?: number) {
-  return request.post('/apis/file/share', { fileIds, expireDays });
-}
-
-/**
- * 取消分享
- */
-export function unshareFile(fileId: string) {
-  return request.delete(`/apis/file/${fileId}/share`);
-}
-
-/**
  * 获取回收站文件列表
  */
 export function getRecycleList(keyword?: string) {

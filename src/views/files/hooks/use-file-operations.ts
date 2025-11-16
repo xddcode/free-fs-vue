@@ -6,13 +6,13 @@ import {
   deleteFiles,
   renameFile,
   moveFiles,
-  shareFiles,
   createFolder,
   favoriteFile,
   unfavoriteFile,
   getFilePreviewUrl,
 } from '@/api/file';
 import type { FileItem } from '@/types/modules/file';
+import { shareFiles } from '@/api/share';
 
 /**
  * 文件操作 Hook
@@ -369,17 +369,13 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 预览文件
    */
   const openPreview = async (file: FileItem) => {
+    const res = await getFilePreviewUrl(file.id);
     previewModalVisible.value = true;
-    try {
-      const res = await getFilePreviewUrl(file.id);
-      previewFile.value = {
-        fileName: file.originalName,
-        fileSuffix: file.suffix,
-        fileUrl: res.data,
-      };
-    } catch (e) {
-      Message.error('预览失败，请联系管理员');
-    }
+    previewFile.value = {
+      fileName: file.originalName,
+      fileSuffix: file.suffix,
+      fileUrl: res.data,
+    };
   };
 
   return {

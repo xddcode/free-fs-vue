@@ -4,16 +4,16 @@
 
   /** 改为异步导入组件 */
   const VideoPlayer = defineAsyncComponent(
-    () => import('@/components/video-player/index.vue')
+    () => import('@/components/previews/video/index.vue')
   );
   const AudioPlayer = defineAsyncComponent(
-    () => import('@/components/audio-player/index.vue')
+    () => import('@/components/previews/audio/index.vue')
   );
   const CodePlayer = defineAsyncComponent(
-    () => import('@/components/code-player/index.vue')
+    () => import('@/components/previews/code/index.vue')
   );
   const pdfPlayer = defineAsyncComponent(
-    () => import('@/components/pdf-player/index.vue')
+    () => import('@/components/previews/pdf/index.vue')
   );
 
   /** 文件预览组件 */

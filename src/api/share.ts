@@ -12,6 +12,13 @@ export function getMyShareList(params: ShareListQuery) {
 }
 
 /**
+ * 分享
+ */
+export function shareFiles(fileIds: string[], expireDays?: number) {
+  return request.post('/apis/share/create', { fileIds, expireDays });
+}
+
+/**
  * 取消分享
  */
 export function cancelShare(shareId: string) {
