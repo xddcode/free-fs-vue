@@ -35,6 +35,8 @@ class UploadService {
 
   private pausedTasks = new Set<string>();
 
+  private cancelledTasks = new Set<string>();
+
   private uploadingFiles = new Map<string, FileUploadInfo>();
 
   public static getInstance(): UploadService {
@@ -68,7 +70,7 @@ class UploadService {
     const uploadWorker = async (): Promise<void> => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        if (this.pausedTasks.has(taskId)) {
+        if (this.pausedTasks.has(taskId) || this.cancelledTasks.has(taskId)) {
           break;
         }
 
@@ -89,7 +91,7 @@ class UploadService {
           // eslint-disable-next-line no-await-in-loop
           const chunkMd5 = await calculateBlobMD5(chunkBlob);
 
-          if (this.pausedTasks.has(taskId)) {
+          if (this.pausedTasks.has(taskId) || this.cancelledTasks.has(taskId)) {
             break;
           }
 
@@ -158,6 +160,11 @@ class UploadService {
         onMerging: () => {
           // 合并中状态由传输列表页面处理
         },
+        onCancelling: () => {
+          // 收到取消中状态，立即停止上传分片
+          this.cancelledTasks.add(taskId);
+          this.pausedTasks.delete(taskId);
+        },
         onComplete: (fileId) => {
           Notification.success({
             title: '文件上传完成',
@@ -182,6 +189,7 @@ class UploadService {
         },
         onCancelled: () => {
           this.pausedTasks.delete(taskId);
+          this.cancelledTasks.delete(taskId);
           this.uploadingFiles.delete(taskId);
         },
       });

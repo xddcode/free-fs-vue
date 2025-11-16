@@ -15,6 +15,7 @@ interface WebSocketMessage {
     | 'resumed' // 已继续
     | 'merging' // 合并中
     | 'complete' // 上传完成
+    | 'cancelling' // 取消中
     | 'cancelled'; // 已取消
   action?: 'subscribe' | 'unsubscribe' | 'ping';
   taskId?: string;
@@ -53,6 +54,7 @@ type ReadyToUploadCallback = (taskId: string, uploadId: string) => void;
 type PausedCallback = (taskId: string, message: string) => void;
 type ResumedCallback = (taskId: string, uploadedChunks: number[]) => void;
 type MergingCallback = (taskId: string, message: string) => void;
+type CancellingCallback = (taskId: string, message: string) => void;
 type CancelledCallback = (taskId: string, message: string) => void;
 
 /**
@@ -98,6 +100,8 @@ export class UploadWebSocket {
   private onResumedCallback: ResumedCallback | null = null;
 
   private onMergingCallback: MergingCallback | null = null;
+
+  private onCancellingCallback: CancellingCallback | null = null;
 
   private onCancelledCallback: CancelledCallback | null = null;
 
@@ -292,6 +296,16 @@ export class UploadWebSocket {
         }
         break;
 
+      case 'cancelling':
+        // 取消中
+        if (message.taskId && this.onCancellingCallback) {
+          this.onCancellingCallback(
+            message.taskId,
+            message.message || '正在取消...'
+          );
+        }
+        break;
+
       case 'cancelled':
         // 已取消
         if (message.taskId && this.onCancelledCallback) {
@@ -453,6 +467,13 @@ export class UploadWebSocket {
    */
   onMerging(callback: MergingCallback): void {
     this.onMergingCallback = callback;
+  }
+
+  /**
+   * 注册取消中回调
+   */
+  onCancelling(callback: CancellingCallback): void {
+    this.onCancellingCallback = callback;
   }
 
   /**

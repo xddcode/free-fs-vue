@@ -67,7 +67,7 @@ export function mergeChunks(taskId: string) {
  * 删除已上传的分片数据
  */
 export function cancelUpload(taskId: string) {
-  return request.delete(`/apis/transfer/task/${taskId}`);
+  return request.delete(`/apis/transfer/cancel/${taskId}`);
 }
 
 /**

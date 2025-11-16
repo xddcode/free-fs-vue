@@ -12,6 +12,7 @@ type TaskCallback = {
   onPaused?: (message: string) => void;
   onResumed?: (uploadedChunks: number[]) => void;
   onMerging?: (message: string) => void;
+  onCancelling?: (message: string) => void;
   onCancelled?: (message: string) => void;
 };
 
@@ -128,6 +129,13 @@ class TransferWebSocketService {
       const listener = this.listeners.get(taskId);
       if (listener?.onMerging) {
         listener.onMerging(message);
+      }
+    });
+
+    this.wsInstance.onCancelling((taskId: string, message: string) => {
+      const listener = this.listeners.get(taskId);
+      if (listener?.onCancelling) {
+        listener.onCancelling(message);
       }
     });
 

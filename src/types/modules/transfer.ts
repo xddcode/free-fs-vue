@@ -10,6 +10,7 @@ export enum UploadTaskStatus {
   MERGING = 'merging', // 合并中
   COMPLETED = 'completed', // 已完成
   FAILED = 'failed', // 失败
+  CANCELLING = 'cancelling', // 取消中
   CANCELED = 'canceled', // 已取消
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue';
-  import { Message } from '@arco-design/web-vue';
+  import { Message, Modal } from '@arco-design/web-vue';
   import {
     IconRefresh,
     IconSearch,
@@ -82,8 +82,26 @@
           finalProgress = existingTask.progress;
         }
 
+        // 如果本地状态是取消中，但后端还没有更新，保留取消中状态
+        // 如果后端已经返回 CANCELLING 或 CANCELED，则使用后端状态
+        let finalStatus = item.status;
+        if (
+          existingTask &&
+          existingTask.status === UploadTaskStatus.CANCELLING &&
+          item.status !== UploadTaskStatus.CANCELLING &&
+          item.status !== UploadTaskStatus.CANCELED
+        ) {
+          // 保留取消中状态，直到后端确认已取消
+          finalStatus = UploadTaskStatus.CANCELLING;
+          // 同时保留进度值，避免进度条继续显示
+          if (existingTask.progress !== undefined) {
+            finalProgress = existingTask.progress;
+          }
+        }
+
         return {
           ...item,
+          status: finalStatus,
           progress: finalProgress,
         };
       });
@@ -113,7 +131,8 @@
         task.status === UploadTaskStatus.CHECKING ||
         task.status === UploadTaskStatus.UPLOADING ||
         task.status === UploadTaskStatus.PAUSED ||
-        task.status === UploadTaskStatus.MERGING
+        task.status === UploadTaskStatus.MERGING ||
+        task.status === UploadTaskStatus.CANCELLING
       ) {
         // 避免重复订阅
         if (subscribedTasks.has(task.taskId)) {
@@ -169,6 +188,17 @@
           onMerging: () => {
             // 合并中状态
           },
+          onCancelling: async () => {
+            // 更新任务状态为取消中
+            const targetTask = transferList.value.find(
+              (t) => t.taskId === task.taskId
+            );
+            if (targetTask) {
+              targetTask.status = UploadTaskStatus.CANCELLING;
+            }
+            // 不立即刷新列表，避免后端状态还没更新时覆盖取消中状态
+            // 等待后端推送 cancelled 消息时再刷新
+          },
           onComplete: async () => {
             subscribedTasks.delete(task.taskId);
             await fetchTransferList();
@@ -198,7 +228,7 @@
   }
 
   /**
-   * 上传中的任务（包括初始化、校验中、上传中、暂停、合并中）
+   * 上传中的任务（包括初始化、校验中、上传中、暂停、合并中、取消中）
    */
   const uploadingTasks = computed(() =>
     transferList.value.filter(
@@ -207,7 +237,8 @@
         task.status === UploadTaskStatus.CHECKING ||
         task.status === UploadTaskStatus.UPLOADING ||
         task.status === UploadTaskStatus.PAUSED ||
-        task.status === UploadTaskStatus.MERGING
+        task.status === UploadTaskStatus.MERGING ||
+        task.status === UploadTaskStatus.CANCELLING
     )
   );
 
@@ -267,13 +298,17 @@
    * 取消/删除任务
    */
   const handleCancel = async (task: FileUploadTaskVO) => {
-    try {
-      await cancelUpload(task.taskId);
-      Message.success('已删除');
-      await fetchTransferList();
-    } catch (error) {
-      Message.error('删除失败');
-    }
+    Modal.confirm({
+      title: '确认取消',
+      content: `确定要取消此任务吗？`,
+      okText: '确认取消',
+      cancelText: '继续保留',
+      onOk: async () => {
+        await cancelUpload(task.taskId);
+        Message.success('已取消');
+        await fetchTransferList();
+      },
+    });
   };
 
   /**
@@ -288,6 +323,7 @@
       [UploadTaskStatus.MERGING]: '处理中',
       [UploadTaskStatus.COMPLETED]: '已完成',
       [UploadTaskStatus.FAILED]: '失败',
+      [UploadTaskStatus.CANCELLING]: '取消中',
       [UploadTaskStatus.CANCELED]: '已取消',
     };
     return statusMap[status] || '未知';
@@ -305,6 +341,7 @@
       [UploadTaskStatus.MERGING]: 'purple',
       [UploadTaskStatus.COMPLETED]: 'green',
       [UploadTaskStatus.FAILED]: 'red',
+      [UploadTaskStatus.CANCELLING]: 'orange',
       [UploadTaskStatus.CANCELED]: 'gray',
     };
     return colorMap[status] || 'gray';
@@ -552,6 +589,16 @@
                       正在处理文件...
                     </span>
                   </div>
+                  <!-- 取消中状态 -->
+                  <div
+                    v-else-if="record.status === UploadTaskStatus.CANCELLING"
+                    class="progress-container"
+                  >
+                    <a-spin :size="16" />
+                    <span class="progress-text" style="margin-left: 8px">
+                      正在取消...
+                    </span>
+                  </div>
                   <!-- 完成状态 -->
                   <div v-else-if="record.status === UploadTaskStatus.COMPLETED">
                     <span class="status-text success">100%</span>
@@ -604,8 +651,9 @@
                       开始
                     </a-button>
 
-                    <!-- 删除按钮 -->
+                    <!-- 删除按钮（取消中状态不显示） -->
                     <a-button
+                      v-if="record.status !== UploadTaskStatus.CANCELLING"
                       type="text"
                       size="small"
                       status="danger"
@@ -614,7 +662,7 @@
                       <template #icon>
                         <icon-delete />
                       </template>
-                      删除
+                      取消
                     </a-button>
                   </a-space>
                 </template>
