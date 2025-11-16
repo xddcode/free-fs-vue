@@ -48,6 +48,15 @@
         登录
       </a-button>
 
+      <a-button
+        class="login-form-register-btn"
+        long
+        type="text"
+        @click="$emit('switchForm', 'register')"
+      >
+        注册账号
+      </a-button>
+
       <!-- 第三方登录分隔线 -->
       <a-divider class="social-login-divider">
         <span class="divider-text">或使用第三方登录</span>
@@ -80,15 +89,6 @@
           </div>
         </a-tooltip>
       </div>
-
-      <a-button
-        class="login-form-register-btn"
-        long
-        type="text"
-        @click="$emit('switchForm', 'register')"
-      >
-        注册账号
-      </a-button>
     </a-space>
   </a-form>
 </template>
