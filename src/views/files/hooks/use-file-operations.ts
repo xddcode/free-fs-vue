@@ -38,6 +38,7 @@ export default function useFileOperations(refreshCallback: () => void) {
   // 分享相关
   const shareModalVisible = ref(false);
   const sharingFile = ref<FileItem | null>(null);
+  const sharingFiles = ref<FileItem[]>([]);
 
   // 删除确认相关
   const deleteConfirmVisible = ref(false);
@@ -194,23 +195,45 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 打开分享弹窗
+   * 打开分享弹窗（单个）
    */
   const openShareModal = (file: FileItem) => {
     sharingFile.value = file;
+    sharingFiles.value = [file];
+    shareModalVisible.value = true;
+  };
+
+  /**
+   * 打开批量分享弹窗
+   */
+  const openBatchShareModal = (files: FileItem[]) => {
+    sharingFile.value = null;
+    sharingFiles.value = files;
     shareModalVisible.value = true;
   };
 
   /**
    * 分享文件（支持单个和批量）
+   * 注意：此方法不再直接调用，现在都通过打开分享弹窗来完成
    */
   const handleShare = async (
     fileIds: string | string[],
-    expireDays?: number
+    expireType?: number | null,
+    expireTime?: string,
+    needShareCode?: boolean,
+    maxViewCount?: number,
+    maxDownloadCount?: number
   ) => {
     const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
 
-    return shareFiles(ids, expireDays).then((response) => {
+    return shareFiles({
+      fileIds: ids,
+      expireType,
+      expireTime,
+      needShareCode,
+      maxViewCount,
+      maxDownloadCount,
+    }).then((response) => {
       const successMsg =
         ids.length === 1
           ? '分享链接已生成'
@@ -408,7 +431,9 @@ export default function useFileOperations(refreshCallback: () => void) {
     // 分享相关
     shareModalVisible,
     sharingFile,
+    sharingFiles,
     openShareModal,
+    openBatchShareModal,
     handleShare,
 
     // 删除相关

@@ -26,36 +26,6 @@
       </div>
     </template>
     <div class="move-content">
-      <!-- 显示要移动的文件信息 -->
-      <div v-if="files && files.length > 0" class="moving-files">
-        <div v-if="files.length === 1" class="moving-file">
-          <img
-            :src="
-              getFileIconPath(files[0].isDir ? 'dir' : files[0].suffix || '')
-            "
-            :alt="files[0].displayName"
-            class="file-icon"
-          />
-          <div class="file-info">
-            <div class="file-name">{{ files[0].displayName }}</div>
-            <div class="file-size">
-              {{ formatFileSize(files[0].size || 0) }}
-            </div>
-          </div>
-        </div>
-        <div v-else class="batch-moving">
-          <icon-folder-add :size="48" />
-          <div class="batch-info">
-            <div class="batch-title">批量移动文件</div>
-            <div class="batch-count">共 {{ files.length }} 个文件/文件夹</div>
-          </div>
-        </div>
-      </div>
-
-      <a-divider orientation="center">
-        <icon-arrow-down />
-      </a-divider>
-
       <!-- 面包屑导航 -->
       <div class="breadcrumb-container">
         <a-breadcrumb>
@@ -173,7 +143,6 @@
   import { Message } from '@arco-design/web-vue';
   import {
     IconFolder,
-    IconArrowDown,
     IconFolderAdd,
     IconCheck,
     IconClose,
@@ -181,7 +150,6 @@
   import type { FileItem } from '@/types/modules/file';
   import { getFolders, createFolder } from '@/api/file';
   import { getFileIconPath } from '@/utils/file-icon';
-  import { formatFileSize } from '../hooks/use-file-format';
 
   interface Props {
     visible: boolean;
@@ -345,76 +313,10 @@
   }
 
   .move-content {
-    padding: 20px 0;
-
-    .moving-files {
-      .moving-file {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px;
-        background-color: var(--color-fill-2);
-        border-radius: 8px;
-
-        .file-icon {
-          width: 48px;
-          height: 48px;
-          object-fit: contain;
-        }
-
-        .file-info {
-          flex: 1;
-          overflow: hidden;
-
-          .file-name {
-            font-size: 14px;
-            color: var(--color-text-1);
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: 4px;
-          }
-
-          .file-size {
-            font-size: 12px;
-            color: var(--color-text-3);
-          }
-        }
-      }
-
-      .batch-moving {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px;
-        background-color: var(--color-fill-2);
-        border-radius: 8px;
-
-        .batch-info {
-          flex: 1;
-
-          .batch-title {
-            font-size: 14px;
-            color: var(--color-text-1);
-            font-weight: 500;
-            margin-bottom: 4px;
-          }
-
-          .batch-count {
-            font-size: 12px;
-            color: var(--color-text-3);
-          }
-        }
-      }
-    }
-
-    :deep(.arco-divider) {
-      margin: 20px 0;
-    }
+    padding: 0;
 
     .breadcrumb-container {
-      padding: 12px 16px;
+      padding: 8px 12px;
       background-color: var(--color-fill-1);
       border-radius: 8px;
       margin-bottom: 16px;
