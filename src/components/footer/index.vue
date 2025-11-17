@@ -1,5 +1,7 @@
 <template>
-  <a-layout-footer class="footer">Free Fs</a-layout-footer>
+  <a-layout-footer class="footer">
+    Copyright © 2025 Free Fs All Rights Reserved.
+  </a-layout-footer>
 </template>
 
 <script lang="ts" setup></script>
