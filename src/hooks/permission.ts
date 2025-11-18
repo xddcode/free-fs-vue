@@ -7,7 +7,10 @@ export default function usePermission() {
   return {
     accessRouter(route: RouteLocationNormalized | RouteRecordRaw) {
       // 简化权限逻辑：只需要检查是否已登录
-      return !route.meta?.requiresAuth || (isLogin() && !!userStore.id);
+      if (route.meta?.requiresAuth === false) {
+        return true;
+      }
+      return isLogin() && !!userStore.id;
     },
     findFirstPermissionRoute(_routers: any) {
       // 简化：返回第一个路由

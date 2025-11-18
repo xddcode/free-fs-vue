@@ -19,6 +19,14 @@ const router = createRouter({
         requiresAuth: false,
       },
     },
+    {
+      path: '/s/:shareToken',
+      name: 'sharePage',
+      component: () => import('@/views/share/index.vue'),
+      meta: {
+        requiresAuth: false,
+      }
+    },
     ...appRoutes,
     REDIRECT_MAIN,
     NOT_FOUND_ROUTE,

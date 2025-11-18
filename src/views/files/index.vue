@@ -186,7 +186,8 @@
     <share-modal
       v-model:visible="operations.shareModalVisible.value"
       :file="operations.sharingFile.value"
-      @confirm="handleShare"
+      :files="operations.sharingFiles.value"
+      @success="clearSelection"
     />
 
     <!-- 删除确认弹窗 -->
@@ -430,19 +431,6 @@
     clearSelection();
   };
 
-  /**
-   * 处理分享
-   */
-  const handleShare = async (fileId: string, expireDays?: number) => {
-    // 如果有选中的文件，分享所有选中的文件
-    if (selectedKeys.value.length > 0) {
-      await operations.handleShare(selectedKeys.value, expireDays);
-      clearSelection();
-    } else {
-      // 否则只分享单个文件
-      await operations.handleShare(fileId, expireDays);
-    }
-  };
 
   /**
    * 处理删除
@@ -483,12 +471,9 @@
   /**
    * 处理批量分享
    */
-  const handleBatchShare = async () => {
+  const handleBatchShare = () => {
     if (selectedKeys.value.length === 0) return;
-
-    // 调用批量分享
-    await operations.handleShare(selectedKeys.value);
-    clearSelection();
+    operations.openBatchShareModal(selectedFiles.value);
   };
 
   /**
@@ -576,6 +561,16 @@
     }
   };
 
+  /**
+   * 处理键盘按键事件
+   */
+  const handleKeyDown = (event: KeyboardEvent) => {
+    // 按下ESC键时取消全选
+    if (event.key === 'Escape') {
+      clearSelection();
+    }
+  };
+
   onMounted(() => {
     // 获取样式变量
     viewMode.value = (route.query.viewMode ?? 'grid') as 'grid' | 'list';
@@ -585,6 +580,8 @@
     window.addEventListener('beforeunload', handleBeforeUnload);
     // 监听文件上传完成事件
     window.addEventListener('file-upload-complete', handleFileUploadComplete);
+    // 监听键盘事件
+    window.addEventListener('keydown', handleKeyDown);
   });
 
   onBeforeUnmount(() => {
@@ -594,6 +591,7 @@
       'file-upload-complete',
       handleFileUploadComplete
     );
+    window.removeEventListener('keydown', handleKeyDown);
   });
 </script>
 

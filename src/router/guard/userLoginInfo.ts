@@ -9,6 +9,10 @@ export default function setupUserLoginInfoGuard(router: Router) {
     const userStore = useUserStore();
 
     if (isLogin()) {
+      if (to.name === 'login') {
+        next({ name: 'root' });
+        return;
+      }
       // 已登录
       if (userStore.userInfo && userStore.userInfo.id) {
         // 用户信息已存在，直接通过
@@ -32,6 +36,10 @@ export default function setupUserLoginInfoGuard(router: Router) {
         }
       }
     } else {
+      if (to.meta.requiresAuth === false) {
+        next();
+        return;
+      }
       // 未登录
       if (to.name === 'login') {
         next();
