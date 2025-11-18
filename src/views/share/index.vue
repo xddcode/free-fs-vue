@@ -10,7 +10,7 @@
               <icon-user />
             </a-avatar>
             <div class="verify-text">
-              <h2>前端高手 的私密分享</h2>
+              <h2>Free-fs 的文件分享</h2>
               <p>需要提取码才能访问</p>
             </div>
           </div>
@@ -18,7 +18,7 @@
           <div class="verify-input-box">
             <a-input-search
               v-model="accessCode"
-              placeholder="请输入 4 位提取码"
+              placeholder="请输入提取码"
               button-text="查看文件"
               search-button
               size="large"
@@ -38,18 +38,15 @@
                 <icon-folder style="font-size: 24px; color: #ffb400" />
               </div>
               <div class="meta-text">
-                <div class="title">Vue3_项目源码_2025版</div>
+                <div class="title">{{ shareData.shareName }}</div>
                 <div class="subtitle"
-                  >2025-11-17 分享 · {{ currentList.length }} 个文件</div
+                  >{{ shareData.expireTime }} 分享 -
+                  {{ currentList.length }} 个文件</div
                 >
               </div>
             </div>
             <div class="header-actions">
-              <a-button type="primary" class="btn-save">
-                <template #icon><icon-save /></template>
-                转存
-              </a-button>
-              <a-button class="btn-download">
+              <a-button class="btn-download" type="primary">
                 <template #icon><icon-download /></template>
                 下载
               </a-button>
@@ -137,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive } from 'vue';
+  import { ref, reactive, onMounted } from 'vue';
   import { Message } from '@arco-design/web-vue';
   import {
     IconUser,
@@ -147,11 +144,12 @@
     IconFilePdf,
     IconFileImage,
     IconHome,
-    IconSave,
     IconDownload,
   } from '@arco-design/web-vue/es/icon';
+  import { useRoute } from 'vue-router';
 
-  // --- 数据与逻辑 (与之前基本一致，省略部分 mock 数据以节省篇幅) ---
+  const route = useRoute();
+
   interface FileItem {
     id: string;
     name: string;
@@ -160,9 +158,13 @@
     size?: string;
     updateTime: string;
   }
+  /** 是否验证 */
   const isVerified = ref(false);
+  /** 验证码 */
   const accessCode = ref('');
+  /** 验证状态 */
   const verifying = ref(false);
+  /** 面包屑 */
   const breadcrumbs = reactive<{ name: string; id: string }[]>([]);
 
   // Mock 数据
@@ -200,6 +202,25 @@
   ];
   const currentList = ref(rootData);
 
+  const shareData = {
+    id: '01ka8y7js92cq8rf6tvmcyw4sf',
+    shareName: 'WebStorm-2025.2.3.exe',
+    expireTime: '2025-11-24 20:56:56',
+    hasCheckCode: false,
+  };
+
+  /** 获取分享情况 */
+  const fetchShare = async () => {
+    const shareToken = route.params.shareToken as string;
+    setTimeout(() => {
+      isVerified.value = !shareData.hasCheckCode;
+    }, 500);
+  };
+
+  /** 获取分享文件内容 */
+  const fetchShareFile = async () => {};
+
+  /** 验证提取码 */
   const handleVerify = () => {
     if (!accessCode.value) return Message.warning('请输入提取码');
     verifying.value = true;
@@ -225,18 +246,21 @@
     else breadcrumbs.splice(index + 1);
     currentList.value = rootData;
   };
+
+  onMounted(() => {
+    fetchShare();
+  });
 </script>
 
 <style scoped lang="less">
-  /* 1. 全局背景与 布局 */
   .share-page-bg {
     min-height: 100vh;
-    background-color: #f2f3f5; /* 浅灰背景 */
+    background-color: #f2f3f5;
     position: relative;
     overflow: hidden;
     display: flex;
-    align-items: center; /* 垂直居中 */
-    justify-content: center; /* 水平居中 */
+    align-items: center;
+    justify-content: center;
   }
 
   .bg-decoration {
@@ -262,7 +286,6 @@
     justify-content: center;
   }
 
-  /* 2. 卡片通用容器样式 */
   .card-wrapper {
     background: #fff;
     border-radius: 16px;
@@ -271,7 +294,6 @@
     transition: all 0.3s ease;
   }
 
-  /* 3. 验证模式样式 (小卡片) */
   .verify-mode {
     width: 400px;
     padding: 40px 32px;
@@ -293,14 +315,13 @@
     }
   }
 
-  /* 4. 浏览模式样式 (大卡片 - 限制了宽度!) */
   .explorer-mode {
-    width: 900px; /* 核心：限制最大宽度，防止松散 */
+    width: 900px;
     max-width: 100%;
     display: flex;
     flex-direction: column;
-    min-height: 500px; /* 给一个最小高度 */
-    max-height: 85vh; /* 防止超出屏幕高度 */
+    min-height: 500px;
+    max-height: 85vh;
   }
 
   /* A. 头部 */
@@ -310,7 +331,7 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--color-border-1);
-    background: #fafafa; /* 头部稍微有点区别 */
+    background: #fafafa;
 
     .header-meta {
       display: flex;
@@ -340,11 +361,10 @@
     }
   }
 
-  /* C. 内容列表 */
   .app-body {
-    flex: 1; /* 占满剩余空间 */
-    padding: 8px 16px; /* 稍微留点白 */
-    overflow: hidden; /* 表格自己滚动 */
+    flex: 1;
+    padding: 8px 16px;
+    overflow: hidden;
   }
 
   .compact-table {
@@ -387,7 +407,6 @@
     font-size: 13px;
   }
 
-  /* D. 底部 */
   .app-footer {
     padding: 12px;
     text-align: center;
