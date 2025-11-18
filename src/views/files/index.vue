@@ -197,12 +197,6 @@
       :files="operations.deletingFiles.value"
       @confirm="handleDelete"
     />
-
-    <!-- 文件预览 -->
-    <file-previewer
-      v-model:visible="operations.previewModalVisible.value"
-      :file="operations.previewFile.value"
-    />
   </div>
 </template>
 
@@ -246,7 +240,6 @@
     RecycleBinView,
     MySharesView,
     UploadPanel,
-    FilePreviewer,
   } from './components';
 
   const route = useRoute();
