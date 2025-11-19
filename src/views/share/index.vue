@@ -261,9 +261,9 @@
           // 如果 URL 里有码，自动填充并尝试验证
           accessCode.value = urlCode;
           // 这里不加 await，让它静默执行，或者你可以加 loading 效果
-          // handleVerify();
-          // 或者不走验证接口直接修改变量即可
-          isVerified.value = true;
+          handleVerify();
+          // 或者不走验证接口直接修改变量即可 【还是得验证，如果不怀好意的人直接拼一个code直接G了】
+          // isVerified.value = true;
         }
       }
     } catch (error: any) {
