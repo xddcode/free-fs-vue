@@ -23,16 +23,40 @@ export default function setupUserLoginInfoGuard(router: Router) {
           await userStore.info();
           next();
         } catch (error) {
-          console.error('获取用户信息失败:', error);
           // 在路由守卫中处理认证错误，不依赖拦截器
           userStore.logoutCallBack(); // 直接调用logoutCallBack，不调用logout API
-          next({
-            name: 'login',
-            query: {
-              redirect: to.name,
-              ...to.query,
-            } as LocationQueryRaw,
-          });
+
+          // 检查目标页面是否需要登录
+          if (to.meta.requiresAuth === false) {
+            // 不需要登录的页面（如分享页面），直接放行
+            next();
+          } else {
+            // 需要登录的页面，跳转到登录页
+            // 保存完整的路由信息（包括 params）到 sessionStorage
+            if (
+              to.name &&
+              (Object.keys(to.params).length > 0 ||
+                Object.keys(to.query).length > 0)
+            ) {
+              const routeInfo = {
+                name: to.name,
+                params: to.params,
+                query: to.query,
+              };
+              sessionStorage.setItem(
+                'redirect_route',
+                JSON.stringify(routeInfo)
+              );
+            }
+
+            next({
+              name: 'login',
+              query: {
+                redirect: to.name,
+                ...to.query,
+              } as LocationQueryRaw,
+            });
+          }
         }
       }
     } else {
@@ -45,6 +69,20 @@ export default function setupUserLoginInfoGuard(router: Router) {
         next();
         return;
       }
+
+      // 保存完整的路由信息（包括 params）到 sessionStorage
+      if (
+        to.name &&
+        (Object.keys(to.params).length > 0 || Object.keys(to.query).length > 0)
+      ) {
+        const routeInfo = {
+          name: to.name,
+          params: to.params,
+          query: to.query,
+        };
+        sessionStorage.setItem('redirect_route', JSON.stringify(routeInfo));
+      }
+
       next({
         name: 'login',
         query: {

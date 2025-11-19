@@ -85,7 +85,7 @@ GitHub：https://github.com/xddcode/free-fs-vue
 
 ### 环境要求
 
-- Node.js >= 14.0.0
+- Node.js >= 20.0.0
 - npm 或 pnpm 或 yarn
 
 ### 安装

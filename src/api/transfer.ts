@@ -5,7 +5,6 @@ import type {
   CheckUploadCmd,
   CheckUploadResultVO,
 } from '@/types/modules/transfer';
-import { UploadTaskStatus } from '@/types/modules/transfer';
 
 /**
  * 初始化上传
@@ -91,7 +90,3 @@ export function pauseUpload(taskId: string) {
 export function resumeUpload(taskId: string) {
   return request.post(`/apis/transfer/resume/${taskId}`);
 }
-
-// 导出类型
-export type { FileUploadTaskVO };
-export { UploadTaskStatus };

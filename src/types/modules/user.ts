@@ -70,6 +70,15 @@ export interface ChangeEmailParams {
 }
 
 /**
+ * 修改密码参数
+ */
+export interface ChangePasswordParams {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+/**
  * 安全日志
  */
 export interface SecurityLog {
@@ -81,4 +90,20 @@ export interface SecurityLog {
   os: string; // 操作系统
   browser: string; // 浏览器
   createdAt: string; // 操作时间
+}
+
+/**
+ * 安全日志查询参数
+ */
+export interface SecurityLogQueryParams {
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * 安全日志响应
+ */
+export interface SecurityLogResponse {
+  list: SecurityLog[];
+  total: number;
 }

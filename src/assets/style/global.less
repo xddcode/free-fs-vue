@@ -14,6 +14,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Aurora Blue Palette */
+:root {
+  /* Aurora Blue Palette - Override Arco Primary */
+  --color-primary-6: #2a6fe8;
+  --color-primary-5: #5b8ff9;
+  --color-primary-7: #1e56c9;
+  --color-primary-light-1: #e8f0ff;
+  --color-primary-light-2: #d1e2ff;
+  --color-primary-light-4: #a3c7ff;
+
+  /* Custom Variables */
+  --aurora-primary: var(--color-primary-6);
+  --aurora-bg-app: #f2f3f5; /* Default Light */
+
+  /* Radius Overrides */
+  --radius-item: 8px;
+  --radius-card: 12px;
+}
+
+/* Dark Mode Overrides */
+body[arco-theme='dark'] {
+  --aurora-bg-app: #17171a; /* Dark background */
+  --color-primary-light-1: rgba(42, 111, 232, 0.15);
+  --color-primary-light-2: rgba(42, 111, 232, 0.25);
+}
+
 .echarts-tooltip-diy {
   background: linear-gradient(
     304.17deg,
@@ -67,9 +93,22 @@ body {
   }
 }
 
-.general-card {
-  border-radius: 4px;
+/* 4. Card & Containers */
+.arco-card {
+  border-radius: var(--radius-card);
   border: none;
+  box-shadow: var(--shadow-card);
+
+  &.arco-card-bordered {
+    border: none;
+  }
+}
+
+.general-card {
+  border-radius: var(--radius-card);
+  border: none;
+  background: var(--color-bg-2);
+  box-shadow: var(--shadow-card);
 
   & > .arco-card-header {
     height: auto;
@@ -115,10 +154,30 @@ body {
   font-size: 16px !important;
 }
 
-// .arco-btn-size-large {
-//   border-radius: var(--border-radius-large) !important;
-// }
+/* 2. Buttons */
+.arco-btn {
+  border-radius: var(--radius-item);
+  transition: all 0.2s;
+}
 
-// .arco-btn-size-medium {
-//   border-radius: var(--border-radius-large) !important;
-// }
+/* 3. Inputs & Selects */
+.arco-input-wrapper,
+.arco-select-view-single,
+.arco-textarea-wrapper,
+.arco-input-tag-wrapper {
+  border-radius: var(--radius-item);
+}
+
+/* 5. Checkbox & Radio */
+.arco-checkbox-icon,
+.arco-radio-icon {
+  border-radius: 4px; /* Softer check */
+}
+
+/* 6. Dropdowns & Popovers */
+.arco-dropdown,
+.arco-popover-popup-content,
+.arco-select-popup {
+  border-radius: var(--radius-item) !important;
+  border: none !important;
+}

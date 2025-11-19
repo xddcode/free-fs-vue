@@ -94,7 +94,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref } from 'vue';
+  import { reactive } from 'vue';
   import { useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import {
@@ -139,12 +139,30 @@
 
         // 3. 跳转到目标页面
         const { redirect, ...othersQuery } = router.currentRoute.value.query;
-        router.push({
-          name: (redirect as string) || 'home',
-          query: {
-            ...othersQuery,
-          },
-        });
+
+        // 检查是否有保存的完整路由信息（包括 params）
+        const savedRoute = sessionStorage.getItem('redirect_route');
+        if (savedRoute) {
+          try {
+            const routeInfo = JSON.parse(savedRoute);
+            sessionStorage.removeItem('redirect_route');
+            router.push(routeInfo);
+            return;
+          } catch (e) {
+            // 解析失败，忽略错误继续正常流程
+          }
+        }
+
+        // 如果有 redirect 参数，跳转到指定页面
+        if (redirect && typeof redirect === 'string') {
+          router.push({
+            name: redirect,
+            query: othersQuery,
+          });
+        } else {
+          // 默认跳转到首页
+          router.push({ name: 'home' });
+        }
       } finally {
         setLoading(false);
       }

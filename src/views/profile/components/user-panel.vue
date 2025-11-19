@@ -1,5 +1,5 @@
 <template>
-  <a-card :bordered="false">
+  <a-card :bordered="false" class="user-panel-card">
     <a-space :size="54">
       <a-upload
         :custom-request="customRequest"
@@ -36,7 +36,7 @@
       >
         <template #label="{ label }">{{ label }} :</template>
         <template #value="{ value }">
-          <span>{{ value }}</span>
+          <a-typography-text class="desc-value">{{ value }}</a-typography-text>
         </template>
       </a-descriptions>
     </a-space>
@@ -148,10 +148,20 @@
 </script>
 
 <style scoped lang="less">
-  .arco-card {
-    padding: 14px 0 4px 4px;
+  .user-panel-card {
     border-radius: 4px;
+    background-color: var(--color-bg-2);
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.08);
+    :deep(.arco-card-body) {
+      padding: 20px;
+    }
   }
+
+  .desc-value {
+    color: rgb(var(--gray-10));
+    font-weight: 500;
+  }
+
   :deep(.arco-avatar-trigger-icon-button) {
     width: 32px;
     height: 32px;

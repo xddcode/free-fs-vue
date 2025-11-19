@@ -82,5 +82,6 @@
   .form {
     width: 540px;
     margin: 0 auto;
+    padding-top: 20px;
   }
 </style>

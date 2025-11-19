@@ -9,6 +9,44 @@
           <p class="loading-text">正在获取分享信息...</p>
         </div>
 
+        <div v-else-if="hasError" key="error" class="card-wrapper error-mode">
+          <div class="error-content">
+            <div class="error-icon">
+              <icon-close-circle :size="80" />
+            </div>
+            <h2 class="error-title">{{ errorMessage }}</h2>
+            <p class="error-desc">无法获取分享信息，请稍后重试</p>
+            <a-button type="primary" @click="fetchShare">
+              <icon-refresh />
+              重新加载
+            </a-button>
+          </div>
+        </div>
+
+        <div
+          v-else-if="shareData.isExpire"
+          key="expired"
+          class="card-wrapper expired-mode"
+        >
+          <div class="expired-content">
+            <div class="expired-icon">
+              <icon-clock-circle :size="80" />
+            </div>
+            <h2 class="expired-title">分享已过期</h2>
+            <p class="expired-desc">该分享链接已过期，无法访问</p>
+            <div class="expired-info">
+              <div class="info-item">
+                <icon-folder />
+                <span>{{ shareData.shareName }}</span>
+              </div>
+              <div v-if="shareData.expireTime" class="info-item">
+                <icon-clock-circle />
+                <span>过期时间：{{ shareData.expireTime }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div
           v-else-if="!isVerified"
           key="verify"
@@ -48,10 +86,13 @@
               </div>
               <div class="meta-text">
                 <div class="title">{{ shareData.shareName }}</div>
-                <div class="subtitle"
-                  >{{ shareData.expireTime }} 分享 -
-                  {{ shareData.fileCount ?? 1 }} 个文件</div
-                >
+                <div class="subtitle">
+                  <span>{{ shareData.fileCount ?? 1 }} 个文件</span>
+                  <span v-if="shareData.expireTime" class="expire-time">
+                    <icon-clock-circle :size="14" />
+                    {{ formatExpireTime(shareData.expireTime) }}
+                  </span>
+                </div>
               </div>
             </div>
             <div class="header-actions">
@@ -84,20 +125,22 @@
             >
               <file-list-view
                 v-if="viewMode === 'list'"
-                v-model:selected-keys="selectedKeys"
                 v-model:view-mode="viewMode"
-                :file-list="fileViewList"
+                :file-list="fileViewList || []"
                 @row-click="handleFileClick"
                 @refresh="fetchShareFile"
+                @preview="handlePreview"
+                @download="handleDownload"
               />
 
               <file-grid-view
                 v-else
-                v-model:selected-keys="selectedKeys"
                 v-model:view-mode="viewMode"
-                :file-list="fileViewList"
+                :file-list="fileViewList || []"
                 @file-click="handleFileClick"
                 @refresh="fetchShareFile"
+                @preview="handlePreview"
+                @download="handleDownload"
               />
             </a-spin>
           </div>
@@ -114,7 +157,14 @@
 <script setup lang="ts">
   import { ref, onMounted, watch, defineAsyncComponent } from 'vue';
   import { Message } from '@arco-design/web-vue';
-  import { IconUser, IconLock, IconFolder } from '@arco-design/web-vue/es/icon';
+  import {
+    IconUser,
+    IconLock,
+    IconFolder,
+    IconClockCircle,
+    IconCloseCircle,
+    IconRefresh,
+  } from '@arco-design/web-vue/es/icon';
   import {
     getShareDetail,
     getShareItemList,
@@ -125,10 +175,10 @@
   import { FileItem } from '@/types/modules/file';
 
   const FileListView = defineAsyncComponent(
-    () => import('@/views/files/components/file-list-view.vue')
+    () => import('./components/share-file-list-view.vue')
   );
   const FileGridView = defineAsyncComponent(
-    () => import('@/views/files/components/file-grid-view.vue')
+    () => import('./components/share-file-grid-view.vue')
   );
 
   const route = useRoute();
@@ -146,12 +196,16 @@
   const breadcrumbs = ref<{ name: string; id: string }[]>([]);
   const viewMode = ref<'list' | 'grid'>('list');
   const bodyLoading = ref(false);
+  /** 错误状态 */
+  const hasError = ref(false);
+  const errorMessage = ref('');
 
   const shareData = ref<ShareThin>({
     id: '',
     shareName: '',
     expireTime: '',
     hasCheckCode: false,
+    isExpire: false,
   });
 
   /** 验证提取码 */
@@ -185,10 +239,20 @@
   /** 获取分享情况 */
   const fetchShare = async () => {
     isLoading.value = true;
+    hasError.value = false;
+    errorMessage.value = '';
+
     try {
       const shareToken = route.params.shareToken as string;
       const res = await getShareDetail(shareToken);
       shareData.value = res.data;
+
+      // 优先检查是否过期，如果过期则不进行后续验证逻辑
+      if (res.data.isExpire) {
+        isLoading.value = false;
+        return;
+      }
+
       if (!res.data.hasCheckCode) {
         isVerified.value = true;
       } else {
@@ -202,13 +266,27 @@
           isVerified.value = true;
         }
       }
+    } catch (error: any) {
+      hasError.value = true;
+      // 判断错误类型
+      if (
+        error.message?.includes('Network Error') ||
+        error.code === 'ERR_NETWORK'
+      ) {
+        errorMessage.value = '网络连接失败，请检查网络';
+      } else if (error.response?.status === 404) {
+        errorMessage.value = '分享不存在或已被删除';
+      } else if (error.response?.status >= 500) {
+        errorMessage.value = '服务器错误，请稍后重试';
+      } else {
+        errorMessage.value = error.message || '获取分享信息失败';
+      }
     } finally {
       isLoading.value = false;
     }
   };
 
   const fileViewList = ref<FileItem[]>();
-  const selectedKeys = ref<string[]>([]);
   /** 获取分享文件内容 */
   const fetchShareFile = async () => {
     if (!isVerified.value) return;
@@ -276,6 +354,68 @@
       // 截断后面的面包屑
       breadcrumbs.value = breadcrumbs.value.slice(0, index + 1);
       router.push({ query: { ...route.query, parentId: target.id } });
+    }
+  };
+
+  /**
+   * 格式化到期时间
+   */
+  const formatExpireTime = (expireTime: string | null) => {
+    if (!expireTime) return '永久有效';
+
+    const expireDate = new Date(expireTime);
+    const now = new Date();
+    const diffTime = expireDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return '已过期';
+    }
+    if (diffDays === 0) {
+      return '今天到期';
+    }
+    if (diffDays === 1) {
+      return '明天到期';
+    }
+    if (diffDays <= 7) {
+      return `${diffDays}天后到期`;
+    }
+    // 格式化为 YYYY-MM-DD
+    const year = expireDate.getFullYear();
+    const month = String(expireDate.getMonth() + 1).padStart(2, '0');
+    const day = String(expireDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day} 到期`;
+  };
+
+  /**
+   * 处理预览
+   */
+  const handlePreview = (file: FileItem) => {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const previewUrl = `${apiBaseUrl}/preview/${file.id}`;
+    window.open(previewUrl, '_blank');
+  };
+
+  /**
+   * 处理下载
+   */
+  const handleDownload = async (file: FileItem) => {
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const downloadUrl = `${apiBaseUrl}/files/download/${file.id}`;
+
+      // 创建一个隐藏的 a 标签来触发下载
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = file.originalName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      Message.success('开始下载文件');
+    } catch (error) {
+      Message.error('下载失败');
     }
   };
 
@@ -368,6 +508,93 @@
     }
   }
 
+  .error-mode {
+    width: 500px;
+    padding: 60px 40px;
+    text-align: center;
+
+    .error-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .error-icon {
+      color: rgb(var(--danger-6));
+      opacity: 0.8;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-text-1);
+      margin: 0;
+    }
+
+    .error-desc {
+      font-size: 14px;
+      color: var(--color-text-3);
+      margin: 0;
+    }
+  }
+
+  .expired-mode {
+    width: 500px;
+    padding: 60px 40px;
+    text-align: center;
+
+    .expired-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .expired-icon {
+      color: var(--color-text-4);
+      opacity: 0.6;
+    }
+
+    .expired-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--color-text-1);
+      margin: 0;
+    }
+
+    .expired-desc {
+      font-size: 14px;
+      color: var(--color-text-3);
+      margin: 0;
+    }
+
+    .expired-info {
+      margin-top: 20px;
+      width: 100%;
+      padding: 20px;
+      background: var(--color-fill-1);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--color-text-2);
+        justify-content: center;
+
+        .arco-icon {
+          font-size: 16px;
+          color: var(--color-text-3);
+        }
+      }
+    }
+  }
+
   .explorer-mode {
     width: 1200px;
     max-width: 100%;
@@ -393,11 +620,24 @@
         font-size: 18px;
         font-weight: 600;
         color: var(--color-text-1);
-        margin-bottom: 4px;
+        margin-bottom: 12px;
       }
       .subtitle {
         font-size: 12px;
         color: var(--color-text-3);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .expire-time {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: var(--color-text-2);
+          padding: 2px 8px;
+          background: var(--color-fill-2);
+          border-radius: 4px;
+        }
       }
     }
   }
@@ -482,6 +722,19 @@
 
   /* 移动端适配 */
   @media (max-width: 768px) {
+    .verify-mode,
+    .error-mode,
+    .expired-mode {
+      width: 100%;
+      max-width: 400px;
+      padding: 32px 24px;
+    }
+
+    .error-mode,
+    .expired-mode {
+      padding: 40px 24px;
+    }
+
     .explorer-mode {
       width: 100%;
       height: 100vh;

@@ -79,15 +79,6 @@ export function downloadFiles(fileIds: string[]) {
 }
 
 /**
- * 预览文件
- */
-// export function previewFile(fileId: string) {
-//   return request.get(`/apis/file/preview/${fileId}`, {
-//     responseType: 'blob',
-//   });
-// }
-
-/**
  * 创建文件夹
  */
 export function createFolder(data: { folderName: string; parentId?: string }) {
@@ -174,6 +165,3 @@ export function unfavoriteFile(fileIds: string[]) {
 export function getFilePreviewUrl(fileId: string, expireSeconds = 180) {
   return request.get(`/apis/file/url/${fileId}`, { params: { expireSeconds } });
 }
-
-// 导出类型以便在组件中使用
-export type { FileListParams, FileItem };

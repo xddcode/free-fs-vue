@@ -44,7 +44,6 @@ export default function useFileOperations(refreshCallback: () => void) {
   const deletingFile = ref<FileItem | null>(null);
   const deletingFiles = ref<FileItem[]>([]);
 
-
   /**
    * 打开上传弹窗
    */

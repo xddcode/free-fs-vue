@@ -325,25 +325,34 @@
 
 <style scoped lang="less">
   :deep(.arco-list-item) {
-    border-bottom: none !important;
-    .arco-typography {
-      margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-neutral-3) !important;
+    padding: 16px 0;
+
+    &:last-child {
+      border-bottom: none !important;
     }
+
     .arco-list-item-meta-avatar {
       margin-bottom: 1px;
+      margin-right: 16px;
+      width: 120px; // 给标题固定宽度，使其左侧对齐
     }
+
     .arco-list-item-meta {
       padding: 0;
+      align-items: center;
     }
   }
+
   :deep(.arco-list-item-meta-content) {
     flex: 1;
-    border-bottom: 1px solid var(--color-neutral-3);
+    border-bottom: none;
 
     .arco-list-item-meta-description {
       display: flex;
       flex-flow: row;
       justify-content: space-between;
+      align-items: center;
 
       .tip {
         color: rgb(var(--gray-6));
@@ -352,5 +361,12 @@
         margin-right: 6px;
       }
     }
+  }
+
+  /* 调整标题样式，使其看起来不像普通段落 */
+  :deep(.arco-list-item-meta-avatar .arco-typography) {
+    margin-bottom: 0;
+    font-weight: 500;
+    color: var(--color-text-1);
   }
 </style>

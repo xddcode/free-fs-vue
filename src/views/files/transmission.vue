@@ -18,9 +18,9 @@
     pauseUpload,
     resumeUpload,
     cancelUpload,
-    UploadTaskStatus,
   } from '@/api/transfer';
-  import type { FileUploadTaskVO } from '@/api/transfer';
+  import type { FileUploadTaskVO } from '@/types/modules/transfer';
+  import { UploadTaskStatus } from '@/types/modules/transfer';
   import transferWebSocketService from '@/services/transfer-websocket.service';
 
   // 当前激活的标签页 1-上传 2-下载 3-已完成
@@ -892,6 +892,27 @@
 
     &.error {
       color: rgb(var(--danger-6));
+    }
+  }
+</style>
+
+<style lang="less">
+  /* Dark mode adaptation for transmission page */
+  body[arco-theme='dark'] {
+    .trans-manager {
+      .page-header {
+        background-color: var(--color-bg-2) !important;
+      }
+
+      .vip-banner {
+        background-color: rgba(42, 111, 232, 0.1) !important;
+        border-color: rgba(42, 111, 232, 0.2) !important;
+      }
+
+      .custom-empty-icon {
+        background-color: rgba(123, 97, 255, 0.15) !important;
+        color: var(--aurora-primary) !important;
+      }
     }
   }
 </style>

@@ -1,12 +1,15 @@
 import { request } from '@/api/interceptor';
-import {
+import type {
   LoginParams,
   LoginRes,
   UserInfo,
   UserRegisterParams,
   UpdateUserInfoParams,
   ChangeEmailParams,
-  SecurityLog,
+  ChangePasswordParams,
+  ForgotPasswordParams,
+  SecurityLogQueryParams,
+  SecurityLogResponse,
 } from '@/types/modules/user';
 
 /**
@@ -47,23 +50,14 @@ export function sendForgetPasswordCode(mail: string) {
 /**
  * 忘记密码-修改密码
  */
-export function updateForgetPassword(data: {
-  mail: string;
-  code: string;
-  newPassword: string;
-  confirmPassword: string;
-}) {
+export function updateForgetPassword(data: ForgotPasswordParams) {
   return request.put('/apis/user/forget-password', data);
 }
 
 /**
  * 修改密码
  */
-export function changePassword(data: {
-  oldPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}) {
+export function changePassword(data: ChangePasswordParams) {
   return request.put('/apis/user/password', data);
 }
 
@@ -91,9 +85,8 @@ export function changeEmail(data: ChangeEmailParams) {
 /**
  * 获取安全日志
  */
-export function getSecurityLogs(params?: { page?: number; pageSize?: number }) {
-  return request.get<{
-    list: SecurityLog[];
-    total: number;
-  }>('/apis/user/security-logs', { params });
+export function getSecurityLogs(params?: SecurityLogQueryParams) {
+  return request.get<SecurityLogResponse>('/apis/user/security-logs', {
+    params,
+  });
 }
