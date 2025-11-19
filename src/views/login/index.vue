@@ -19,7 +19,7 @@
 </template>
 
 <script lang="ts" setup>
-  import logoSvg from '@/assets/logo.svg?url';
+  import logoSvg from '@/assets/logo.png';
   import Footer from '@/components/footer/index.vue';
   import LoginBanner from './components/banner.vue';
   import LoginForm from './components/login-form.vue';

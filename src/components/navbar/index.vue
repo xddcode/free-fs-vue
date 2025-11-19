@@ -162,7 +162,7 @@
   import { IconStorage, IconSwap } from '@arco-design/web-vue/es/icon';
   import { useRouter } from 'vue-router';
   import useUser from '@/hooks/user';
-  import logoSvg from '@/assets/logo.svg?url';
+  import logoSvg from '@/assets/logo.png';
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',

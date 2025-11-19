@@ -9,7 +9,6 @@ import {
   createFolder,
   favoriteFile,
   unfavoriteFile,
-  getFilePreviewUrl,
 } from '@/api/file';
 import type { FileItem } from '@/types/modules/file';
 import { shareFiles } from '@/api/share';
@@ -45,9 +44,6 @@ export default function useFileOperations(refreshCallback: () => void) {
   const deletingFile = ref<FileItem | null>(null);
   const deletingFiles = ref<FileItem[]>([]);
 
-  // 预览相关
-  const previewModalVisible = ref(false);
-  const previewFile = ref({ fileName: '', fileUrl: '', fileSuffix: '' });
 
   /**
    * 打开上传弹窗
@@ -390,15 +386,12 @@ export default function useFileOperations(refreshCallback: () => void) {
 
   /**
    * 预览文件
+   * @param {FileItem} file - 文件对象
    */
-  const openPreview = async (file: FileItem) => {
-    const res = await getFilePreviewUrl(file.id);
-    previewModalVisible.value = true;
-    previewFile.value = {
-      fileName: file.originalName,
-      fileSuffix: file.suffix,
-      fileUrl: res.data,
-    };
+  const openPreview = (file: FileItem) => {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const previewUrl = `${apiBaseUrl}/preview/${file.id}`;
+    window.open(previewUrl, '_blank');
   };
 
   return {
@@ -451,8 +444,6 @@ export default function useFileOperations(refreshCallback: () => void) {
     handleFavorite,
 
     // 预览
-    previewModalVisible,
     openPreview,
-    previewFile,
   };
 }
