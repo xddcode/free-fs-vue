@@ -14,9 +14,8 @@
           </a-button>
           <!-- 批量删除 -->
           <a-button
-            type="outline"
-            status="danger"
             size="large"
+            status="danger"
             @click="handleBatchDelete"
           >
             <template #icon>
@@ -83,10 +82,6 @@
                     ? `已选 ${selectedIds.length} 个文件`
                     : `共 ${fileList.length} 个文件`
                 }}
-              </span>
-              <span class="recycle-tip">
-                <icon-info-circle />
-                回收站文件保存10天，到期后自动清理
               </span>
             </div>
             <div class="header-right">
@@ -171,29 +166,31 @@
                 <a-table-column title="操作" :width="200" align="center">
                   <template #cell="{ record }">
                     <div class="file-actions">
-                      <a-button
-                        size="small"
-                        type="text"
-                        @click="handleRestoreSingle(record.id)"
-                      >
-                        <template #icon>
-                          <icon-undo />
-                        </template>
-                        还原
-                      </a-button>
-                      <a-button
-                        size="small"
-                        type="text"
-                        status="danger"
-                        @click="
-                          handleDeleteSingle(record.id, record.displayName)
-                        "
-                      >
-                        <template #icon>
-                          <icon-delete />
-                        </template>
-                        删除
-                      </a-button>
+                      <a-tooltip content="还原">
+                        <a-button
+                          size="small"
+                          type="text"
+                          @click="handleRestoreSingle(record.id)"
+                        >
+                          <template #icon>
+                            <icon-undo />
+                          </template>
+                        </a-button>
+                      </a-tooltip>
+                      <a-tooltip content="删除">
+                        <a-button
+                          size="small"
+                          type="text"
+                          status="danger"
+                          @click="
+                            handleDeleteSingle(record.id, record.displayName)
+                          "
+                        >
+                          <template #icon>
+                            <icon-delete />
+                          </template>
+                        </a-button>
+                      </a-tooltip>
                     </div>
                   </template>
                 </a-table-column>

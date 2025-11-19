@@ -226,7 +226,6 @@
             shareCode: accessCode.value,
           },
         });
-        Message.success('验证通过');
       } else {
         Message.error('提取码错误');
       }
@@ -294,11 +293,8 @@
     fileViewList.value = [];
     try {
       const shareToken = route.params.shareToken as string;
-      const parentId = (route.query.parentId as string) || '';
-      const res = await getShareItemList({
-        shareId: shareToken,
-        parentId,
-      });
+      const parentId = (route.query.parentId as string) || undefined;
+      const res = await getShareItemList(shareToken, parentId);
       fileViewList.value = res.data;
     } finally {
       bodyLoading.value = false;

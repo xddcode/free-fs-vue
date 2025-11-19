@@ -57,7 +57,7 @@
           <a-checkbox
             :model-value="isSelected(file.id)"
             @click.stop
-            @change="handleCheckboxChange(file.id, $event)"
+            @change="(value, ev) => handleCheckboxChange(file.id, value)"
           />
         </div>
         <div class="grid-item-icon">
@@ -231,7 +231,11 @@
     return props.selectedKeys?.includes(fileId) || false;
   };
 
-  const handleCheckboxChange = (fileId: string, checked: boolean) => {
+  const handleCheckboxChange = (
+    fileId: string,
+    value: boolean | (string | number | boolean)[]
+  ) => {
+    const checked = typeof value === 'boolean' ? value : value.length > 0;
     const newSelectedKeys = [...(props.selectedKeys || [])];
     if (checked) {
       if (!newSelectedKeys.includes(fileId)) {
@@ -279,7 +283,11 @@
     return selectedCount > 0 && selectedCount < props.fileList.length;
   });
 
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (
+    value: boolean | (string | number | boolean)[],
+    ev?: Event
+  ) => {
+    const checked = typeof value === 'boolean' ? value : value.length > 0;
     if (checked) {
       // 全选
       const allKeys = props.fileList.map((file) => file.id);

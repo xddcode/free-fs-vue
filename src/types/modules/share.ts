@@ -51,9 +51,13 @@ export interface ShareThin {
 /**
  * 分享列表查询参数
  */
-export interface ShareListQuery extends PageQuery {
+export interface ShareListQuery {
   /** 分享名称关键词 */
   keyword?: string;
+  /** 排序字段 */
+  orderBy?: string;
+  /** 排序方向 ASC | DESC */
+  orderDirection?: 'ASC' | 'DESC';
 }
 
 /**
@@ -64,7 +68,7 @@ export interface ShareCreateParams {
   fileIds: string[];
   /** 分享名称（可选，默认取第一个文件名） */
   shareName?: string;
-  /** 有效期类型：1-1天 2-7天 3-30天 4-自定义 null-永久 */
+  /** 有效期类型：1-7天 2-30天 3-自定义 4-永久 */
   expireType?: number | null;
   /** 自定义有效期（可选） */
   expireTime?: string;
@@ -117,11 +121,22 @@ export interface ShareValidParams {
 }
 
 /**
- * 分享查询参数
+ * 分享访问记录
  */
-export interface ShareQryParams {
+export interface ShareAccessRecord {
+  /** 自增ID */
+  id: string;
   /** 分享ID */
   shareId: string;
-  /** 父级目录ID */
-  parentId: string;
+  /** 访问IP */
+  accessIp: string;
+  /** 访问地址 */
+  accessAddress: string;
+  /** 访问浏览器 */
+  browser: string;
+  /** 访问操作系统 */
+  os: string;
+  /** 访问时间 */
+  accessTime: string;
 }
+

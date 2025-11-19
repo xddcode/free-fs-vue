@@ -50,18 +50,18 @@
       <a-form :model="form" layout="vertical">
         <a-form-item label="有效期" field="expireType">
           <a-radio-group v-model="form.expireType" :disabled="!!shareLink">
-            <a-radio :value="2">7天</a-radio>
-            <a-radio :value="3">30天</a-radio>
-            <a-radio :value="4">自定义</a-radio>
-            <a-radio :value="null">永久</a-radio>
+            <a-radio :value="1">7天</a-radio>
+            <a-radio :value="2">30天</a-radio>
+            <a-radio :value="3">自定义</a-radio>
+            <a-radio :value="4">永久</a-radio>
           </a-radio-group>
           <a-date-picker
-            v-if="form.expireType === 4"
+            v-if="form.expireType === 3"
             v-model="form.customExpireTime"
             show-time
             format="YYYY-MM-DD HH:mm:ss"
             :disabled-date="disabledDate"
-            :disabled-time="disabledTime"
+            :disabled-time="disabledTime as any"
             :disabled="!!shareLink"
             placeholder="请选择过期时间"
             style="width: 100%; margin-top: 12px"
@@ -127,7 +127,14 @@
             class="link-input"
           />
         </div>
-        <div class="link-tip"> 分享链接将在 {{ getExpireText() }} 后失效 </div>
+        <div class="link-tip">
+          <template v-if="isPermanentShare()">
+            分享链接永久有效
+          </template>
+          <template v-else>
+            分享链接将在 {{ getExpireText() }} 后失效
+          </template>
+        </div>
       </div>
     </div>
   </a-modal>
@@ -158,8 +165,9 @@
   const shareLink = ref('');
   const shareCode = ref('');
   const shareExpireTime = ref('');
+  const isPermanent = ref(false);
   const form = reactive({
-    expireType: 2 as number | null,
+    expireType: 1,
     customExpireTime: '',
     needShareCode: false,
     maxViewCountType: 'unlimited' as 'unlimited' | 'custom',
@@ -188,7 +196,8 @@
     shareLink.value = '';
     shareCode.value = '';
     shareExpireTime.value = '';
-    form.expireType = 2;
+    isPermanent.value = false;
+    form.expireType = 1;
     form.customExpireTime = '';
     form.needShareCode = false;
     form.maxViewCountType = 'unlimited';
@@ -198,7 +207,8 @@
   };
 
   // 禁用过去的日期
-  const disabledDate = (current: Date) => {
+  const disabledDate = (current?: Date) => {
+    if (!current) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return current < today;
@@ -280,7 +290,7 @@
     }
 
     // 验证自定义时间
-    if (form.expireType === 4 && !form.customExpireTime) {
+    if (form.expireType === 3 && !form.customExpireTime) {
       Message.warning('请选择过期时间');
       return;
     }
@@ -304,7 +314,7 @@
       const params = {
         fileIds,
         expireType: form.expireType,
-        expireTime: form.expireType === 4 ? form.customExpireTime : undefined,
+        expireTime: form.expireType === 3 ? form.customExpireTime : undefined,
         needShareCode: form.needShareCode,
         maxViewCount:
           form.maxViewCountType === 'custom' ? form.maxViewCount : undefined,
@@ -316,9 +326,13 @@
 
       const { data } = await shareFiles(params);
 
-      shareLink.value = data.shareUrl;
+      // 前端根据 shareToken 拼接完整的分享链接
+      const shareToken = data.id;
+      const baseUrl = window.location.origin;
+      shareLink.value = `${baseUrl}/s/${shareToken}`;
       shareCode.value = data.shareCode || '';
       shareExpireTime.value = data.expireTime || '';
+      isPermanent.value = data.isPermanent;
 
       const successMsg =
         fileIds.length === 1
@@ -326,9 +340,7 @@
           : `成功生成 ${fileIds.length} 个文件的分享链接`;
       Message.success(successMsg);
       emit('success');
-    } catch (error) {
-      Message.error('生成分享链接失败');
-    } finally {
+    }finally {
       loading.value = false;
     }
   };
@@ -338,17 +350,27 @@
     emit('update:visible', false);
   };
 
+  const isPermanentShare = () => {
+    // 如果已经有分享链接，使用后端返回的 isPermanent 字段
+    if (shareLink.value) {
+      return isPermanent.value;
+    }
+    // 如果还没有生成链接，根据表单选择判断
+    return form.expireType === 4;
+  };
+
   const getExpireText = () => {
     if (shareExpireTime.value) {
       return shareExpireTime.value;
     }
-    if (form.expireType === null) return '永不';
-    if (form.expireType === 4 && form.customExpireTime) {
+    if (form.expireType === 4) return '永不';
+    if (form.expireType === 3 && form.customExpireTime) {
       return form.customExpireTime;
     }
+    if (form.expireType === null) return '未知';
     const expireMap: Record<number, string> = {
-      2: '7天',
-      3: '30天',
+      1: '7天',
+      2: '30天',
     };
     return expireMap[form.expireType] || '未知';
   };
