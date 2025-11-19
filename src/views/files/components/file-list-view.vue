@@ -116,7 +116,7 @@
             <template #cell="{ record }">
               <div v-if="!isRowSelected(record.id)" class="file-actions">
                 <a-button
-                  v-if="!record.isDir"
+                  v-if="!record.isDir && hasHandler('preview')"
                   size="small"
                   type="text"
                   @click.stop="$emit('preview', record)"
@@ -124,7 +124,7 @@
                   <icon-eye />
                 </a-button>
                 <a-button
-                  v-if="!record.isDir"
+                  v-if="!record.isDir && hasHandler('download')"
                   size="small"
                   type="text"
                   @click.stop="$emit('download', record)"
@@ -132,6 +132,7 @@
                   <icon-download />
                 </a-button>
                 <a-button
+                  v-if="hasHandler('share')"
                   size="small"
                   type="text"
                   @click.stop="$emit('share', record)"
@@ -139,6 +140,7 @@
                   <icon-share-alt />
                 </a-button>
                 <a-button
+                  v-if="hasHandler('favorite')"
                   size="small"
                   type="text"
                   :class="{ 'is-favorite': record.isFavorite }"
@@ -148,6 +150,7 @@
                   <icon-star v-else />
                 </a-button>
                 <a-button
+                  v-if="hasHandler('delete')"
                   size="small"
                   type="text"
                   status="danger"
@@ -155,16 +158,25 @@
                 >
                   <icon-delete />
                 </a-button>
-                <a-dropdown trigger="hover">
+                <a-dropdown
+                  v-if="hasHandler('rename') || hasHandler('move')"
+                  trigger="hover"
+                >
                   <a-button size="small" type="text" @click.stop>
                     <icon-more />
                   </a-button>
                   <template #content>
-                    <a-doption @click="$emit('rename', record)">
+                    <a-doption
+                      v-if="hasHandler('rename')"
+                      @click="$emit('rename', record)"
+                    >
                       <icon-edit />
                       重命名
                     </a-doption>
-                    <a-doption @click="$emit('move', record)">
+                    <a-doption
+                      v-if="hasHandler('move')"
+                      @click="$emit('move', record)"
+                    >
                       <icon-drag-arrow />
                       移动到
                     </a-doption>
@@ -180,7 +192,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref } from 'vue';
+  import { computed, getCurrentInstance, ref } from 'vue';
   import {
     IconDownload,
     IconDelete,
@@ -198,6 +210,8 @@
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
   import { formatFileSize, formatFileTime } from '../hooks/use-file-format';
+
+  const proxy = getCurrentInstance();
 
   interface Props {
     fileList: FileItem[];
@@ -322,6 +336,21 @@
       el.classList.remove('is-drop-target-row');
     });
     draggingItemIds.value = [];
+  };
+
+  /**
+   * 校验是否包含处理函数
+   * @param eventName
+   */
+  const hasHandler = (eventName: string) => {
+    const prop = proxy?.vnode?.props;
+    if (!prop) return false;
+    const handlerKey = `on${
+      eventName.charAt(0).toUpperCase() + eventName.slice(1)
+    }`;
+    return (
+      Object.prototype.hasOwnProperty.call(prop, handlerKey) || prop[handlerKey]
+    );
   };
 </script>
 

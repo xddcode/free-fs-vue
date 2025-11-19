@@ -30,6 +30,19 @@ export interface ShareItem {
   createdAt: string;
 }
 
+export interface ShareThin {
+  /** 分享ID（用于唯一标识） */
+  id: string;
+  /** 分享名称 */
+  shareName: string;
+  /** 过期时间 */
+  expireTime: string | null;
+  /** 文件数量 */
+  fileCount?: number;
+  /** 是否有验证码 */
+  hasCheckCode: boolean;
+}
+
 /**
  * 分享列表查询参数
  */

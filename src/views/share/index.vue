@@ -4,7 +4,16 @@
 
     <div class="main-container">
       <transition name="fade-slide" mode="out-in">
-        <div v-if="!isVerified" key="verify" class="card-wrapper verify-mode">
+        <div v-if="isLoading" key="loading" class="loading-mode">
+          <a-spin dot :size="24" />
+          <p class="loading-text">正在获取分享信息...</p>
+        </div>
+
+        <div
+          v-else-if="!isVerified"
+          key="verify"
+          class="card-wrapper verify-mode"
+        >
           <div class="verify-header">
             <a-avatar :size="64" class="user-avatar">
               <icon-user />
@@ -41,22 +50,22 @@
                 <div class="title">{{ shareData.shareName }}</div>
                 <div class="subtitle"
                   >{{ shareData.expireTime }} 分享 -
-                  {{ currentList.length }} 个文件</div
+                  {{ shareData.fileCount ?? 1 }} 个文件</div
                 >
               </div>
             </div>
             <div class="header-actions">
-              <a-button class="btn-download" type="primary">
-                <template #icon><icon-download /></template>
-                下载
-              </a-button>
+              <!--              <a-button class="btn-download" type="primary">-->
+              <!--                <template #icon><icon-download /></template>-->
+              <!--                下载-->
+              <!--              </a-button>-->
             </div>
           </div>
 
           <div class="app-nav">
             <a-breadcrumb>
               <a-breadcrumb-item @click="handleBreadcrumb(-1)">
-                <icon-home /> 根目录
+                <icon-folder /> 根目录
               </a-breadcrumb-item>
               <a-breadcrumb-item
                 v-for="(item, index) in breadcrumbs"
@@ -69,59 +78,28 @@
           </div>
 
           <div class="app-body">
-            <a-table
-              :data="currentList"
-              :pagination="false"
-              :bordered="false"
-              :hoverable="true"
-              row-key="id"
-              class="compact-table"
-              :scroll="{ y: 400 }"
+            <a-spin
+              :loading="bodyLoading"
+              style="width: 100%; min-height: 400px"
             >
-              <template #columns>
-                <a-table-column title="名称" data-index="name">
-                  <template #cell="{ record }">
-                    <div class="file-row" @click="handleRowClick(record)">
-                      <div class="icon-box">
-                        <icon-folder
-                          v-if="record.type === 'folder'"
-                          style="color: #ffb400; font-size: 22px"
-                        />
-                        <icon-file-pdf
-                          v-else-if="record.ext === 'pdf'"
-                          style="color: #f53f3f; font-size: 22px"
-                        />
-                        <icon-file-image
-                          v-else-if="['png', 'jpg'].includes(record.ext)"
-                          style="color: #b7eb8f; font-size: 22px"
-                        />
-                        <icon-file
-                          v-else
-                          style="color: #86909c; font-size: 22px"
-                        />
-                      </div>
-                      <span class="file-name">{{ record.name }}</span>
-                    </div>
-                  </template>
-                </a-table-column>
+              <file-list-view
+                v-if="viewMode === 'list'"
+                v-model:selected-keys="selectedKeys"
+                v-model:view-mode="viewMode"
+                :file-list="fileViewList"
+                @row-click="handleFileClick"
+                @refresh="fetchShareFile"
+              />
 
-                <a-table-column title="大小" :width="120" align="right">
-                  <template #cell="{ record }">
-                    <span class="size-text">{{
-                      record.type === 'folder' ? '-' : record.size
-                    }}</span>
-                  </template>
-                </a-table-column>
-
-                <a-table-column title="时间" :width="160" align="right">
-                  <template #cell="{ record }">
-                    <span class="time-text">{{
-                      record.updateTime.split(' ')[0]
-                    }}</span>
-                  </template>
-                </a-table-column>
-              </template>
-            </a-table>
+              <file-grid-view
+                v-else
+                v-model:selected-keys="selectedKeys"
+                v-model:view-mode="viewMode"
+                :file-list="fileViewList"
+                @file-click="handleFileClick"
+                @refresh="fetchShareFile"
+              />
+            </a-spin>
           </div>
 
           <div class="app-footer">
@@ -134,30 +112,30 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue';
+  import { ref, onMounted, watch, defineAsyncComponent } from 'vue';
   import { Message } from '@arco-design/web-vue';
+  import { IconUser, IconLock, IconFolder } from '@arco-design/web-vue/es/icon';
   import {
-    IconUser,
-    IconLock,
-    IconFolder,
-    IconFile,
-    IconFilePdf,
-    IconFileImage,
-    IconHome,
-    IconDownload,
-  } from '@arco-design/web-vue/es/icon';
-  import { useRoute } from 'vue-router';
+    getShareDetail,
+    getShareItemList,
+    validateShareCode,
+  } from '@/api/share';
+  import { useRoute, useRouter } from 'vue-router';
+  import { ShareThin } from '@/types/modules/share';
+  import { FileItem } from '@/types/modules/file';
+
+  const FileListView = defineAsyncComponent(
+    () => import('@/views/files/components/file-list-view.vue')
+  );
+  const FileGridView = defineAsyncComponent(
+    () => import('@/views/files/components/file-grid-view.vue')
+  );
 
   const route = useRoute();
+  const router = useRouter();
 
-  interface FileItem {
-    id: string;
-    name: string;
-    type: 'folder' | 'file';
-    ext?: string;
-    size?: string;
-    updateTime: string;
-  }
+  /** 页面加载状态 */
+  const isLoading = ref(true);
   /** 是否验证 */
   const isVerified = ref(false);
   /** 验证码 */
@@ -165,90 +143,131 @@
   /** 验证状态 */
   const verifying = ref(false);
   /** 面包屑 */
-  const breadcrumbs = reactive<{ name: string; id: string }[]>([]);
+  const breadcrumbs = ref<{ name: string; id: string }[]>([]);
+  const viewMode = ref<'list' | 'grid'>('list');
+  const bodyLoading = ref(false);
 
-  // Mock 数据
-  const rootData: FileItem[] = [
-    {
-      id: '1',
-      name: '后端接口文档',
-      type: 'folder',
-      updateTime: '2025-10-24 10:00',
-    },
-    {
-      id: '2',
-      name: '项目演示.mp4',
-      type: 'file',
-      ext: 'mp4',
-      size: '120 MB',
-      updateTime: '2025-10-23 14:20',
-    },
-    {
-      id: '3',
-      name: 'README.md',
-      type: 'file',
-      ext: 'md',
-      size: '2 KB',
-      updateTime: '2025-10-23 09:00',
-    },
-    {
-      id: '4',
-      name: '架构图.png',
-      type: 'file',
-      ext: 'png',
-      size: '2.4 MB',
-      updateTime: '2025-10-22 11:00',
-    },
-  ];
-  const currentList = ref(rootData);
-
-  const shareData = {
-    id: '01ka8y7js92cq8rf6tvmcyw4sf',
-    shareName: 'WebStorm-2025.2.3.exe',
-    expireTime: '2025-11-24 20:56:56',
+  const shareData = ref<ShareThin>({
+    id: '',
+    shareName: '',
+    expireTime: '',
     hasCheckCode: false,
-  };
+  });
 
   /** 获取分享情况 */
   const fetchShare = async () => {
-    const shareToken = route.params.shareToken as string;
-    setTimeout(() => {
-      isVerified.value = !shareData.hasCheckCode;
-    }, 500);
+    isLoading.value = true;
+    try {
+      const shareToken = route.params.shareToken as string;
+      const res = await getShareDetail(shareToken);
+      shareData.value = res.data;
+      isVerified.value = !res.data.hasCheckCode;
+    } finally {
+      isLoading.value = false;
+    }
   };
 
-  /** 获取分享文件内容 */
-  const fetchShareFile = async () => {};
-
   /** 验证提取码 */
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!accessCode.value) return Message.warning('请输入提取码');
     verifying.value = true;
-    setTimeout(() => {
+    try {
+      const res = await validateShareCode({
+        shareId: route.params.shareToken as string,
+        shareCode: accessCode.value,
+      });
+      if (res.data) {
+        isVerified.value = true;
+        Message.success('验证通过');
+      } else {
+        Message.error('提取码错误');
+      }
+    } finally {
       verifying.value = false;
-      if (accessCode.value === '1234') isVerified.value = true;
-      else Message.error('提取码错误');
-    }, 600);
+    }
     return true;
   };
 
-  const handleRowClick = (record: FileItem) => {
-    if (record.type === 'folder') {
-      breadcrumbs.push({ name: record.name, id: record.id });
-      currentList.value = []; // 模拟空文件夹或加载中
-    } else {
-      Message.success(`下载: ${record.name}`);
+  const fileViewList = ref<FileItem[]>();
+  const selectedKeys = ref<string[]>([]);
+  /** 获取分享文件内容 */
+  const fetchShareFile = async () => {
+    if (!isVerified.value) return;
+    bodyLoading.value = true;
+    fileViewList.value = [];
+    try {
+      const shareToken = route.params.shareToken as string;
+      const parentId = (route.query.parentId as string) || '';
+      const res = await getShareItemList({
+        shareId: shareToken,
+        parentId,
+      });
+      fileViewList.value = res.data;
+    } finally {
+      bodyLoading.value = false;
+    }
+  };
+
+  watch(
+    () => isVerified.value,
+    () => {
+      if (isVerified.value) {
+        // 验证码验证正确, 获取分享文件列表
+        fetchShareFile();
+      }
+    }
+  );
+
+  watch(
+    () => route.query.parentId,
+    (newId) => {
+      if (isVerified.value) {
+        fetchShareFile();
+        if (!newId) {
+          breadcrumbs.value = [];
+        }
+      }
+    }
+  );
+
+  /**
+   * 处理文件点击（进入文件夹）
+   */
+  const handleFileClick = (file: FileItem) => {
+    if (file.isDir) {
+      breadcrumbs.value.push({ name: file.originalName, id: file.id });
+      router.push({
+        query: {
+          ...route.query,
+          parentId: file.id,
+          viewMode: viewMode.value,
+        },
+      });
     }
   };
 
   const handleBreadcrumb = (index: number) => {
-    if (index === -1) breadcrumbs.splice(0);
-    else breadcrumbs.splice(index + 1);
-    currentList.value = rootData;
+    if (index === -1) {
+      // 回到根目录
+      breadcrumbs.value = [];
+      router.push({ query: { ...route.query, parentId: undefined } });
+    } else {
+      // 回到指定层级
+      const target = breadcrumbs.value[index];
+      // 截断后面的面包屑
+      breadcrumbs.value = breadcrumbs.value.slice(0, index + 1);
+      router.push({ query: { ...route.query, parentId: target.id } });
+    }
   };
 
   onMounted(() => {
+    if (route.query.viewMode) {
+      viewMode.value = route.query.viewMode as 'grid' | 'list';
+    }
+    // 第一次进入分享页触发
     fetchShare();
+    // 如果后续通过router再次进去分享页，应该是dir的场景，需要通过parentId查询目录下的文件
+    // 如果返回到页面最初的内容应该通过分享id获取文件列表
   });
 </script>
 
@@ -294,6 +313,21 @@
     transition: all 0.3s ease;
   }
 
+  .loading-mode {
+    width: 400px; /* 宽度与 verify-mode 保持一致 */
+    height: 300px; /* 高度大概一致，防止跳动 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .loading-text {
+      margin-top: 16px;
+      color: var(--color-text-3);
+      font-size: 14px;
+    }
+  }
+
   .verify-mode {
     width: 400px;
     padding: 40px 32px;
@@ -316,7 +350,7 @@
   }
 
   .explorer-mode {
-    width: 900px;
+    width: 1200px;
     max-width: 100%;
     display: flex;
     flex-direction: column;
@@ -324,7 +358,6 @@
     max-height: 85vh;
   }
 
-  /* A. 头部 */
   .app-header {
     padding: 24px 32px;
     display: flex;
@@ -350,7 +383,6 @@
     }
   }
 
-  /* B. 导航 */
   .app-nav {
     padding: 12px 32px;
     background: #fff;

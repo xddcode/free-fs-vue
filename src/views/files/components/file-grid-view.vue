@@ -123,34 +123,52 @@
               <icon-more :size="18" />
             </a-button>
             <template #content>
-              <a-doption v-if="!file.isDir" @click="$emit('preview', file)">
+              <a-doption
+                v-if="!file.isDir && hasHandler('preview')"
+                @click="$emit('preview', file)"
+              >
                 <icon-eye />
                 预览
               </a-doption>
-              <a-doption @click="$emit('share', file)">
+              <a-doption
+                v-if="hasHandler('share')"
+                @click="$emit('share', file)"
+              >
                 <icon-share-alt />
                 分享
               </a-doption>
-              <a-doption @click="$emit('favorite', file)">
+              <a-doption
+                v-if="hasHandler('favorite')"
+                @click="$emit('favorite', file)"
+              >
                 <icon-star-fill v-if="file.isFavorite" />
                 <icon-star v-else />
                 {{ file.isFavorite ? '取消收藏' : '收藏' }}
               </a-doption>
-              <a-doption @click="$emit('download', file)">
+              <a-doption
+                v-if="hasHandler('download')"
+                @click="$emit('download', file)"
+              >
                 <icon-download />
                 下载
               </a-doption>
               <a-divider style="margin: 4px 0" />
-              <a-doption @click="$emit('rename', file)">
+              <a-doption
+                v-if="hasHandler('rename')"
+                @click="$emit('rename', file)"
+              >
                 <icon-edit />
                 重命名
               </a-doption>
-              <a-doption @click="$emit('move', file)">
+              <a-doption v-if="hasHandler('move')" @click="$emit('move', file)">
                 <icon-drag-arrow />
                 移动到
               </a-doption>
               <a-divider style="margin: 4px 0" />
-              <a-doption @click="$emit('delete', file)">
+              <a-doption
+                v-if="hasHandler('delete')"
+                @click="$emit('delete', file)"
+              >
                 <icon-delete />
                 放入回收站
               </a-doption>
@@ -163,7 +181,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref } from 'vue';
+  import { computed, getCurrentInstance, ref } from 'vue';
   import {
     IconDownload,
     IconDelete,
@@ -182,6 +200,8 @@
   import { getFileIconPath } from '@/utils/file-icon';
   import { formatFileTime, formatFileSize } from '../hooks/use-file-format';
   import FileTooltip from './file-tooltip.vue';
+
+  const proxy = getCurrentInstance();
 
   interface Props {
     fileList: FileItem[];
@@ -347,6 +367,21 @@
     });
     // 清理拖拽状态
     draggingItemIds.value = [];
+  };
+
+  /**
+   * 校验是否包含处理函数
+   * @param eventName
+   */
+  const hasHandler = (eventName: string) => {
+    const prop = proxy?.vnode?.props;
+    if (!prop) return false;
+    const handlerKey = `on${
+      eventName.charAt(0).toUpperCase() + eventName.slice(1)
+    }`;
+    return (
+      Object.prototype.hasOwnProperty.call(prop, handlerKey) || prop[handlerKey]
+    );
   };
 </script>
 

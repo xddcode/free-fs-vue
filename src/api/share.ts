@@ -1,6 +1,7 @@
 import { request } from '@/api/interceptor';
 import type { PageResult } from '@/types/global';
-import type { ShareItem, ShareListQuery } from '@/types/modules/share';
+import { ShareItem, ShareListQuery, ShareThin } from '@/types/modules/share';
+import { FileItem } from '@/types/modules/file';
 
 /**
  * 分页获取我的分享列表
@@ -79,5 +80,28 @@ export function cancelShare(shareId: string) {
  * 查看分享详情
  */
 export function getShareDetail(shareId: string) {
-  return request.get<ShareItem>(`/apis/share/${shareId}`);
+  return request.get<ShareThin>(`/apis/share/${shareId}`);
+}
+
+export interface ShareValidParams {
+  shareId: string;
+  shareCode: string | null;
+}
+
+/**
+ *
+ * @param params
+ */
+export function validateShareCode(params: ShareValidParams) {
+  return request.post<boolean>('/apis/share/verify/code', params);
+}
+
+export interface ShareQryParams {
+  shareId: string;
+  parentId: string;
+}
+export function getShareItemList(params: ShareQryParams) {
+  return request.get<FileItem[]>(`/apis/share/items`, {
+    params
+  });
 }
