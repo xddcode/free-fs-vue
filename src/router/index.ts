@@ -25,7 +25,7 @@ const router = createRouter({
       component: () => import('@/views/share/index.vue'),
       meta: {
         requiresAuth: false,
-      }
+      },
     },
     ...appRoutes,
     REDIRECT_MAIN,

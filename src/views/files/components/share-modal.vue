@@ -37,9 +37,7 @@
               :alt="previewFile.displayName"
               class="preview-file-icon"
             />
-            <span class="preview-file-name">{{
-              previewFile.displayName
-            }}</span>
+            <span class="preview-file-name">{{ previewFile.displayName }}</span>
           </div>
         </div>
         <div class="files-count-tip">
@@ -302,7 +300,7 @@
 
     try {
       const fileIds = targetFiles.map((f) => f.id);
-      
+
       const params = {
         fileIds,
         expireType: form.expireType,

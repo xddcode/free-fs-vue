@@ -122,7 +122,7 @@ export function maskEmail(email: string | undefined | null): string {
   if (!email) return '';
   const [localPart, domain] = email.split('@');
   if (!localPart || !domain) return email;
-  
+
   // 如果前缀长度小于5，只保留前1位，其余用****替代
   if (localPart.length < 5) {
     if (localPart.length <= 1) {
@@ -131,7 +131,7 @@ export function maskEmail(email: string | undefined | null): string {
     const firstChar = localPart[0];
     return `${firstChar}****@${domain}`;
   }
-  
+
   // 前缀长度 >= 5，保留前3位和后2位
   const prefix = localPart.substring(0, 3);
   const suffix = localPart.substring(localPart.length - 2);

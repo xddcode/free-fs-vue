@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import svgLoader from 'vite-svg-loader';
-import monacoEditorEsmPlugin from 'vite-plugin-monaco-editor-esm'
+import monacoEditorEsmPlugin from 'vite-plugin-monaco-editor-esm';
 import configArcoStyleImportPlugin from './plugin/arcoStyleImport';
 
 export default defineConfig({
@@ -47,6 +47,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['monaco-editor']
+    exclude: ['monaco-editor'],
   },
 });
