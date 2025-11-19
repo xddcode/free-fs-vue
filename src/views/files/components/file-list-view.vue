@@ -58,7 +58,7 @@
             @dragover="handleDragOver(slotProps.record, $event)"
             @dragleave="handleDragLeave($event)"
             @drop="handleDrop(slotProps.record, $event)"
-            @dragend="handleDragEnd($event)"
+            @dragend="handleDragEnd"
           >
             <component
               :is="s"
@@ -193,6 +193,7 @@
     IconRefresh,
     IconApps,
     IconList,
+    IconEye,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -316,7 +317,7 @@
   /**
    * 拖拽结束
    */
-  const handleDragEnd = (event: DragEvent) => {
+  const handleDragEnd = () => {
     document.querySelectorAll('.is-drop-target-row').forEach((el) => {
       el.classList.remove('is-drop-target-row');
     });

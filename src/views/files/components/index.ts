@@ -18,4 +18,3 @@ export { default as DeleteConfirmModal } from './delete-confirm-modal.vue';
 export { default as RecycleBinView } from './recycle-bin-view.vue';
 export { default as MySharesView } from './my-shares-view.vue';
 export { default as UploadPanel } from './upload-panel.vue';
-export { default as FilePreviewer } from './file-previewer.vue';
