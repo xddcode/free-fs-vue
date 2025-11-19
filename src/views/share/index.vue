@@ -154,19 +154,6 @@
     hasCheckCode: false,
   });
 
-  /** 获取分享情况 */
-  const fetchShare = async () => {
-    isLoading.value = true;
-    try {
-      const shareToken = route.params.shareToken as string;
-      const res = await getShareDetail(shareToken);
-      shareData.value = res.data;
-      isVerified.value = !res.data.hasCheckCode;
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   /** 验证提取码 */
   const handleVerify = async () => {
     if (!accessCode.value) return Message.warning('请输入提取码');
@@ -178,6 +165,13 @@
       });
       if (res.data) {
         isVerified.value = true;
+        // 如果验证成功，将code放如route参数中
+        await router.replace({
+          query: {
+            ...route.query,
+            shareCode: accessCode.value,
+          },
+        });
         Message.success('验证通过');
       } else {
         Message.error('提取码错误');
@@ -186,6 +180,31 @@
       verifying.value = false;
     }
     return true;
+  };
+
+  /** 获取分享情况 */
+  const fetchShare = async () => {
+    isLoading.value = true;
+    try {
+      const shareToken = route.params.shareToken as string;
+      const res = await getShareDetail(shareToken);
+      shareData.value = res.data;
+      if (!res.data.hasCheckCode) {
+        isVerified.value = true;
+      } else {
+        const urlCode = route.query.shareCode as string;
+        if (urlCode) {
+          // 如果 URL 里有码，自动填充并尝试验证
+          accessCode.value = urlCode;
+          // 这里不加 await，让它静默执行，或者你可以加 loading 效果
+          // handleVerify();
+          // 或者不走验证接口直接修改变量即可
+          isVerified.value = true;
+        }
+      }
+    } finally {
+      isLoading.value = false;
+    }
   };
 
   const fileViewList = ref<FileItem[]>();
