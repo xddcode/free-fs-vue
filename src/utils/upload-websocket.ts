@@ -105,15 +105,18 @@ export class UploadWebSocket {
 
   private onCancelledCallback: CancelledCallback | null = null;
 
-  constructor(userId: string, baseUrl?: string) {
+  /**
+   * 构建websocket
+   * @param userId
+   */
+  constructor(userId: string) {
     this.userId = userId;
     // 从环境变量获取API地址
-    const apiBaseUrl = baseUrl || import.meta.env.VITE_API_BASE_URL || '';
-    // 将 http/https 替换为 ws/wss
-    const wsUrl = apiBaseUrl
-      .replace(/^https:\/\//, 'wss://')
-      .replace(/^http:\/\//, 'ws://');
-    this.url = `${wsUrl}/ws/upload?userId=${userId}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socketUrl = `${
+      protocol + window.location.host + import.meta.env.VITE_API_BASE_URL
+    }/ws/upload`;
+    this.url = `${socketUrl}?userId=${userId}`;
   }
 
   /**
