@@ -239,8 +239,8 @@
 <style lang="less" scoped>
   .container {
     padding: 20px;
-    background: var(--color-bg-2);
-    min-height: calc(100vh - 120px);
+    background: transparent;
+    min-height: 100%;
 
     // 页面头部
     .page-header {

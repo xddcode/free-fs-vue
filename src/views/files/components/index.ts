@@ -14,7 +14,6 @@ export { default as CreateFolderModal } from './create-folder-modal.vue';
 export { default as RenameModal } from './rename-modal.vue';
 export { default as MoveModal } from './move-modal.vue';
 export { default as ShareModal } from './share-modal.vue';
-export { default as DeleteConfirmModal } from './delete-confirm-modal.vue';
 export { default as RecycleBinView } from './recycle-bin-view.vue';
 export { default as MySharesView } from './my-shares-view.vue';
 export { default as UploadPanel } from './upload-panel.vue';

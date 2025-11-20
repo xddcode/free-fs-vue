@@ -36,6 +36,7 @@
 <style scoped lang="less">
   .container {
     padding: 0 20px 20px 20px;
+    background-color: transparent;
   }
 
   .wrapper {
@@ -43,6 +44,7 @@
     min-height: 580px;
     background-color: var(--color-bg-2);
     border-radius: 4px;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.08);
   }
 
   :deep(.section-title) {

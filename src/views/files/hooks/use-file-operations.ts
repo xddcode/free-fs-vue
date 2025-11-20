@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { Message } from '@arco-design/web-vue';
+import { Message, Modal } from '@arco-design/web-vue';
 import {
   uploadFile,
   downloadFiles,
@@ -38,11 +38,6 @@ export default function useFileOperations(refreshCallback: () => void) {
   const shareModalVisible = ref(false);
   const sharingFile = ref<FileItem | null>(null);
   const sharingFiles = ref<FileItem[]>([]);
-
-  // 删除确认相关
-  const deleteConfirmVisible = ref(false);
-  const deletingFile = ref<FileItem | null>(null);
-  const deletingFiles = ref<FileItem[]>([]);
 
   /**
    * 打开上传弹窗
@@ -239,24 +234,6 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 打开删除确认弹窗（单个文件）
-   */
-  const openDeleteConfirm = (file: FileItem) => {
-    deletingFile.value = file;
-    deletingFiles.value = [file];
-    deleteConfirmVisible.value = true;
-  };
-
-  /**
-   * 打开批量删除确认弹窗
-   */
-  const openBatchDeleteConfirm = (files: FileItem[]) => {
-    deletingFile.value = null;
-    deletingFiles.value = files;
-    deleteConfirmVisible.value = true;
-  };
-
-  /**
    * 删除文件（支持单个和批量）
    */
   const handleDelete = async (fileIds: string | string[]) => {
@@ -268,10 +245,43 @@ export default function useFileOperations(refreshCallback: () => void) {
           ? '已移到回收站'
           : `已将 ${ids.length} 个文件移到回收站`;
       Message.success(successMsg);
-      deleteConfirmVisible.value = false;
-      deletingFile.value = null;
-      deletingFiles.value = [];
       refreshCallback();
+    });
+  };
+
+  /**
+   * 打开删除确认弹窗（单个文件）
+   */
+  const openDeleteConfirm = (file: FileItem) => {
+    Modal.confirm({
+      title: '确认放入回收站',
+      content: `确定要将文件 "${file.displayName}" 放入回收站吗？`,
+      okText: '确定',
+      cancelText: '取消',
+      okButtonProps: {
+        status: 'danger',
+      },
+      onOk: () => handleDelete(file.id),
+    });
+  };
+
+  /**
+   * 打开批量删除确认弹窗
+   */
+  const openBatchDeleteConfirm = (files: FileItem[]) => {
+    if (files.length === 0) return;
+    Modal.confirm({
+      title: '确认批量放入回收站',
+      content: `确定要将选中的 ${files.length} 个文件放入回收站吗？`,
+      okText: '确定',
+      cancelText: '取消',
+      okButtonProps: {
+        status: 'danger',
+      },
+      onOk: () => {
+        const ids = files.map((f) => f.id);
+        handleDelete(ids);
+      },
     });
   };
 
@@ -429,9 +439,6 @@ export default function useFileOperations(refreshCallback: () => void) {
     handleShare,
 
     // 删除相关
-    deleteConfirmVisible,
-    deletingFile,
-    deletingFiles,
     openDeleteConfirm,
     openBatchDeleteConfirm,
     handleDelete,

@@ -276,50 +276,91 @@
       </a-spin>
     </a-modal>
 
-    <!-- 访问记录抽屉 -->
-    <a-drawer
+    <!-- 访问记录弹窗 -->
+    <a-modal
       v-model:visible="accessRecordsVisible"
       :title="`访问记录 - ${currentShareForRecords?.shareName || ''}`"
-      :width="700"
+      width="1000px"
       :footer="false"
+      :mask-closable="true"
+      draggable
     >
-      <a-spin :loading="accessRecordsLoading" style="width: 100%">
-        <div v-if="accessRecords.length === 0 && !accessRecordsLoading" class="empty-records">
+      <a-spin
+        :loading="accessRecordsLoading"
+        style="width: 100%; min-height: 150px"
+      >
+        <div
+          v-if="accessRecords.length === 0 && !accessRecordsLoading"
+          class="empty-records"
+        >
           <a-empty description="暂无访问记录" />
         </div>
-        <a-table
-          v-else
-          :data="accessRecords"
-          :pagination="false"
-          :bordered="false"
-          size="small"
-        >
-          <template #columns>
-            <a-table-column title="访问IP" data-index="accessIp" :width="120" />
-            <a-table-column title="访问地址" data-index="accessAddress" :width="180">
-              <template #cell="{ record }">
-                <span class="access-address">{{ record.accessAddress || '-' }}</span>
-              </template>
-            </a-table-column>
-            <a-table-column title="浏览器" data-index="browser" :width="120">
-              <template #cell="{ record }">
-                <span>{{ record.browser || '-' }}</span>
-              </template>
-            </a-table-column>
-            <a-table-column title="操作系统" data-index="os" :width="120">
-              <template #cell="{ record }">
-                <span>{{ record.os || '-' }}</span>
-              </template>
-            </a-table-column>
-            <a-table-column title="访问时间" data-index="accessTime" :width="150">
-              <template #cell="{ record }">
-                <span>{{ formatDateTime(record.accessTime) }}</span>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
+        <div v-else style="max-height: 60vh; overflow-y: auto">
+          <a-table
+            :data="accessRecords"
+            :pagination="false"
+            :bordered="{ cell: true }"
+            size="medium"
+            :scrollbar="true"
+            :sticky-header="false"
+          >
+            <template #columns>
+              <a-table-column title="访问IP" data-index="accessIp" :width="140" />
+              <a-table-column
+                title="访问地址"
+                data-index="accessAddress"
+                :width="260"
+                ellipsis
+                tooltip
+              >
+                <template #cell="{ record }">
+                  <span class="access-address">{{
+                    record.accessAddress || '-'
+                  }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column
+                title="浏览器"
+                data-index="browser"
+                :width="160"
+                ellipsis
+                tooltip
+              >
+                <template #cell="{ record }">
+                  <a-tag size="small" color="arcoblue">{{
+                    record.browser || '-'
+                  }}</a-tag>
+                </template>
+              </a-table-column>
+              <a-table-column
+                title="操作系统"
+                data-index="os"
+                :width="180"
+                ellipsis
+                tooltip
+              >
+                <template #cell="{ record }">
+                  <a-tag size="small" color="gray">{{
+                    record.os || '-'
+                  }}</a-tag>
+                </template>
+              </a-table-column>
+              <a-table-column
+                title="访问时间"
+                data-index="accessTime"
+                :width="180"
+              >
+                <template #cell="{ record }">
+                  <span class="time-text">{{
+                    formatDateTime(record.accessTime)
+                  }}</span>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </div>
       </a-spin>
-    </a-drawer>
+    </a-modal>
   </div>
 </template>
 

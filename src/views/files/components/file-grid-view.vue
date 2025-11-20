@@ -432,18 +432,17 @@
 
   .file-grid-view {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    padding: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 16px;
+    padding: 16px;
 
     .grid-item {
       background: transparent;
       border-radius: 8px;
-      padding: 16px 12px;
+      padding: 12px 8px;
       text-align: center;
       transition: all 0.2s;
       position: relative;
-      min-height: 160px;
       cursor: pointer;
 
       &.is-folder {
@@ -485,8 +484,8 @@
 
     .grid-item-checkbox {
       position: absolute;
-      top: 12px;
-      left: 12px;
+      top: 6px;
+      left: 6px;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 2;
@@ -507,21 +506,26 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 90px;
-      padding-top: 8px;
+      height: 64px;
+      padding-top: 4px;
 
       .file-icon-img {
-        width: 72px;
-        height: 72px;
+        width: 56px;
+        height: 56px;
         object-fit: contain;
+        transition: transform 0.2s;
       }
     }
 
+    .grid-item:hover .file-icon-img {
+      transform: scale(1.05);
+    }
+
     .grid-item-name {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 400;
-      color: var(--color-text-2);
-      margin-bottom: 6px;
+      color: var(--color-text-1);
+      margin-bottom: 4px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -531,20 +535,22 @@
 
     .grid-item-info {
       font-size: 12px;
-      color: var(--color-text-3);
+      font-weight: normal;
+      color: var(--color-text-4);
+      transform: scale(0.9);
     }
 
     .grid-item-actions {
       position: absolute;
-      top: 8px;
-      right: 8px;
+      top: 6px;
+      right: 6px;
       opacity: 0;
       transition: opacity 0.2s;
 
       :deep(.arco-btn) {
-        width: 32px;
-        height: 32px;
-        padding: 6px;
+        width: 24px;
+        height: 24px;
+        padding: 4px;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border-radius: 6px;
@@ -557,7 +563,7 @@
         }
 
         .arco-icon {
-          font-size: 18px;
+          font-size: 14px;
         }
       }
     }

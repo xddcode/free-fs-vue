@@ -189,14 +189,6 @@
       :files="operations.sharingFiles.value"
       @success="clearSelection"
     />
-
-    <!-- 删除确认弹窗 -->
-    <delete-confirm-modal
-      v-model:visible="operations.deleteConfirmVisible.value"
-      :file="operations.deletingFile.value"
-      :files="operations.deletingFiles.value"
-      @confirm="handleDelete"
-    />
   </div>
 </template>
 
@@ -236,7 +228,6 @@
     RenameModal,
     MoveModal,
     ShareModal,
-    DeleteConfirmModal,
     RecycleBinView,
     MySharesView,
     UploadPanel,

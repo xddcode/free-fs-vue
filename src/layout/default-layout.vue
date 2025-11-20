@@ -367,7 +367,7 @@
     // 主内容区域
     .main-content {
       flex: 1;
-      background-color: transparent;
+      background-color: #fafbfc;
       padding: 0;
       overflow: hidden;
     }
@@ -378,6 +378,10 @@
   /* Dark mode adaptation - 使用全局样式确保优先级 */
   body[arco-theme='dark'] {
     .default-layout .main-sider {
+      background-color: var(--color-bg-1) !important;
+    }
+
+    .default-layout .main-content {
       background-color: var(--color-bg-1) !important;
     }
 
