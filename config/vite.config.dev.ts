@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => {
           ws: true,
           rewrite: (path) => path.replace(new RegExp(`^${apiPrefix}`), '')
         },
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+        },
       },
     },
     plugins: [
