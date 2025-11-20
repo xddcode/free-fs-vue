@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
 
   const apiPrefix = env.VITE_API_BASE_URL;
+  const previewPrefix = env.VITE_API_VIEW_URL;
 
   const currentConfig = {
     mode: 'development', // 注意：如果是 build 模式，Vite 会自动覆盖这个值，这里写死也没事，但建议删掉让 Vite 自动推断
@@ -23,9 +24,10 @@ export default defineConfig(({ mode }) => {
           ws: true,
           rewrite: (path) => path.replace(new RegExp(`^${apiPrefix}`), '')
         },
-        '/api': {
+        [previewPrefix]: {
           target: 'http://localhost:8080',
           changeOrigin: true,
+          rewrite: (path) => path.replace(new RegExp(`^${previewPrefix}`), '')
         },
       },
     },

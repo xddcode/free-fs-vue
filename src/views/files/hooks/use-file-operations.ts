@@ -398,7 +398,7 @@ export default function useFileOperations(refreshCallback: () => void) {
    * @param {FileItem} file - 文件对象
    */
   const openPreview = (file: FileItem) => {
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const apiBaseUrl = import.meta.env.VITE_API_VIEW_URL || '';
     const previewUrl = `${apiBaseUrl}/preview/${file.id}`;
     window.open(previewUrl, '_blank');
   };
