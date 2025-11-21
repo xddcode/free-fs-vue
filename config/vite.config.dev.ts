@@ -1,13 +1,8 @@
-import { mergeConfig, loadEnv, defineConfig } from 'vite'; // 引入 loadEnv 和 defineConfig
+import { mergeConfig, defineConfig } from 'vite';
 import eslint from 'vite-plugin-eslint';
 import baseConfig from './vite.config.base';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd());
-
-  const apiPrefix = env.VITE_API_BASE_URL;
-  const previewPrefix = env.VITE_API_VIEW_URL;
-
+export default defineConfig(() => {
   const currentConfig = {
     mode: 'development', // 注意：如果是 build 模式，Vite 会自动覆盖这个值，这里写死也没事，但建议删掉让 Vite 自动推断
     server: {
@@ -15,20 +10,6 @@ export default defineConfig(({ mode }) => {
       open: true,
       fs: {
         strict: true,
-      },
-      // 3. 动态代理配置
-      proxy: {
-        [apiPrefix]: {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-          ws: true,
-          rewrite: (path) => path.replace(new RegExp(`^${apiPrefix}`), '')
-        },
-        [previewPrefix]: {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(new RegExp(`^${previewPrefix}`), '')
-        },
       },
     },
     plugins: [
