@@ -111,11 +111,13 @@ export class UploadWebSocket {
    */
   constructor(userId: string) {
     this.userId = userId;
-    // 从环境变量获取API地址
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const socketUrl = `${
-      protocol + window.location.host + import.meta.env.VITE_API_BASE_URL
-    }/ws/upload`;
+    // 从环境变量获取API地址，直接使用服务端地址
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    // 将 http/https 转换为 ws/wss
+    const wsUrl = apiBaseUrl.replace(/^https?:\/\//, (match) => {
+      return match === 'https://' ? 'wss://' : 'ws://';
+    });
+    const socketUrl = `${wsUrl}/ws/upload`;
     this.url = `${socketUrl}?userId=${userId}`;
   }
 
