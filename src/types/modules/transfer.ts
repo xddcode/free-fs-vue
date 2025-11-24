@@ -61,13 +61,18 @@ export interface CheckUploadResultVO {
 }
 
 /**
- * 文件上传任务VO
+ * 文件传输任务VO
  */
-export interface FileUploadTaskVO {
+export interface FileTransferTaskVO {
   /**
    * 任务ID
    */
   taskId: string;
+
+  /**
+   * 任务类型
+   */
+  taskType: 'upload' | 'download',
 
   /**
    * 用户ID

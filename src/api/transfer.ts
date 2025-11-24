@@ -1,6 +1,6 @@
 import { request } from '@/api/interceptor';
 import type {
-  FileUploadTaskVO,
+  FileTransferTaskVO,
   InitUploadCmd,
   CheckUploadCmd,
   CheckUploadResultVO,
@@ -74,7 +74,7 @@ export function cancelUpload(taskId: string) {
  * 用于传输列表页面展示
  */
 export function getTransferFiles() {
-  return request.get<FileUploadTaskVO[]>('/apis/transfer/files');
+  return request.get<FileTransferTaskVO[]>('/apis/transfer/files');
 }
 
 /**

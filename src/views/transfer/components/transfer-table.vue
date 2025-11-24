@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import {
     UploadTaskStatus,
-    type FileUploadTaskVO,
+    type FileTransferTaskVO,
   } from '@/types/modules/transfer';
   import {
     formatFileSize,
@@ -15,7 +15,7 @@
   } from '@arco-design/web-vue/es/icon';
 
   const props = defineProps<{
-    tasks: FileUploadTaskVO[];
+    tasks: FileTransferTaskVO[];
     loading: boolean;
     showActions?: boolean; // 是否显示操作列（已完成列表不需要显示暂停）
     showCompleteTime?: boolean; // 是否显示完成时间

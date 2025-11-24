@@ -9,18 +9,17 @@ import {
 import transferWebSocketService from '@/services/transfer-websocket.service';
 import {
   UploadTaskStatus,
-  type FileUploadTaskVO,
+  type FileTransferTaskVO,
 } from '@/types/modules/transfer';
 
 export function useTransferManager() {
   const loading = ref(false);
-  const transferList = ref<FileUploadTaskVO[]>([]);
+  const transferList = ref<FileTransferTaskVO[]>([]);
   const subscribedTasks = new Set<string>();
   let refreshTimer: number | null = null;
 
   async function fetchTransferList() {
     try {
-      loading.value = true;
       const response = await getTransferFiles();
 
       // 去重：如果后端返回了重复的任务，只保留已上传分片数最多的那个
@@ -42,56 +41,62 @@ export function useTransferManager() {
       const oldTransferList = transferList.value;
 
       transferList.value = Array.from(taskMap.values()).map((item) => {
-        // 查找之前是否已存在该任务
         const existingTask = oldTransferList.find(
           (t) => t.taskId === item.taskId
         );
 
-        // 计算进度百分比
-        const progress =
+        // 接口返回的“理论进度”
+        const apiProgress =
           item.totalChunks > 0
             ? Math.round((item.uploadedChunks / item.totalChunks) * 100)
             : 0;
 
-        // 如果任务状态是暂停，且之前存在该任务且也是暂停状态，保留之前的进度值
-        // 这样可以避免后端返回不准确的 uploadedChunks 导致进度跳动
-        let finalProgress = progress;
-        if (
-          item.status === UploadTaskStatus.PAUSED &&
-          existingTask &&
-          existingTask.progress !== undefined
-        ) {
-          // 暂停状态下，保留之前的进度值（无论之前是什么状态）
-          finalProgress = existingTask.progress;
-        }
-
-        // 如果本地状态是取消中，但后端还没有更新，保留取消中状态
-        // 如果后端已经返回 CANCELLING 或 CANCELED，则使用后端状态
+        let finalProgress = apiProgress;
+        let finalUploadedChunks = item.uploadedChunks;
+        let finalUploadedSize = item.uploadedSize;
         let finalStatus = item.status;
-        if (
-          existingTask &&
-          existingTask.status === UploadTaskStatus.CANCELLING &&
-          item.status !== UploadTaskStatus.CANCELLING &&
-          item.status !== UploadTaskStatus.CANCELED
-        ) {
-          // 保留取消中状态，直到后端确认已取消
-          finalStatus = UploadTaskStatus.CANCELLING;
-          // 同时保留进度值，避免进度条继续显示
-          if (existingTask.progress !== undefined) {
+
+        if (existingTask) {
+          if (
+            item.status === UploadTaskStatus.UPLOADING &&
+            existingTask.status === UploadTaskStatus.UPLOADING
+          ) {
+            if (apiProgress < (existingTask.progress || 0)) {
+              finalProgress = existingTask.progress || 0;
+              finalUploadedChunks = existingTask.uploadedChunks;
+              finalUploadedSize = existingTask.uploadedSize;
+            }
+          }
+
+          else if (
+            item.status === UploadTaskStatus.PAUSED &&
+            existingTask.progress !== undefined
+          ) {
             finalProgress = existingTask.progress;
+            // 暂停时也最好保留 chunks，否则文件大小显示可能会跳变
+            finalUploadedChunks = existingTask.uploadedChunks || item.uploadedChunks;
+            finalUploadedSize = existingTask.uploadedSize || item.uploadedSize;
+          }
+
+          else if (
+            existingTask.status === UploadTaskStatus.CANCELLING &&
+            item.status !== UploadTaskStatus.CANCELLING &&
+            item.status !== UploadTaskStatus.CANCELED
+          ) {
+            finalStatus = UploadTaskStatus.CANCELLING;
+            finalProgress = existingTask.progress || 0;
           }
         }
-
         return {
           ...item,
           status: finalStatus,
           progress: finalProgress,
+          uploadedChunks: finalUploadedChunks,
+          uploadedSize: finalUploadedSize,
         };
       });
     } catch (error) {
       Message.error('获取传输列表失败');
-    } finally {
-      loading.value = false;
     }
   }
 
@@ -139,7 +144,7 @@ export function useTransferManager() {
             );
             if (targetTask) {
               targetTask.uploadedChunks = data.uploadedChunks;
-              // 更新总分片数（如果后端修正了的话）
+              // 更新总分片数
               if (data.totalChunks) {
                 targetTask.totalChunks = data.totalChunks;
               }
@@ -226,17 +231,17 @@ export function useTransferManager() {
 
   // 动作处理
   const actions = {
-    pause: async (task: FileUploadTaskVO) => {
+    pause: async (task: FileTransferTaskVO) => {
       await pauseUpload(task.taskId);
       Message.success('已暂停');
       await fetchTransferList();
     },
-    resume: async (task: FileUploadTaskVO) => {
+    resume: async (task: FileTransferTaskVO) => {
       await resumeUpload(task.taskId);
       Message.success('已恢复');
       await fetchTransferList();
     },
-    cancel: (task: FileUploadTaskVO) => {
+    cancel: (task: FileTransferTaskVO) => {
       Modal.confirm({
         title: '确认取消',
         content: '确定要取消此任务吗？',
@@ -256,28 +261,34 @@ export function useTransferManager() {
   // 生命周期管理
   function startAutoRefresh() {
     // 立即获取一次
-    fetchTransferList().then(() => {
-      subscribeActiveTasksUpdates();
-    });
+    loading.value = true;
+    fetchTransferList()
+      .then(() => {
+        subscribeActiveTasksUpdates();
+      })
+      .finally(() => {
+        loading.value = false;
+        // 定时检查新任务
+        refreshTimer = window.setInterval(async () => {
+          // 只有在有活动任务时才轮询
+          const hasActiveTasks = uploadingTasks.value.length > 0;
 
-    // 定时检查新任务
-    refreshTimer = window.setInterval(async () => {
-      // 只有在有活动任务时才轮询
-      const hasActiveTasks = uploadingTasks.value.length > 0;
+          if (hasActiveTasks) {
+            const currentTaskIds = new Set(
+              transferList.value.map((t) => t.taskId)
+            );
+            await fetchTransferList();
 
-      if (hasActiveTasks) {
-        const currentTaskIds = new Set(transferList.value.map((t) => t.taskId));
-        await fetchTransferList();
-
-        // 检查是否有新任务，如果有则重新订阅
-        const hasNewTasks = transferList.value.some(
-          (t) => !currentTaskIds.has(t.taskId)
-        );
-        if (hasNewTasks) {
-          subscribeActiveTasksUpdates();
-        }
-      }
-    }, 3000); // 每3秒检查一次
+            // 检查是否有新任务，如果有则重新订阅
+            const hasNewTasks = transferList.value.some(
+              (t) => !currentTaskIds.has(t.taskId)
+            );
+            if (hasNewTasks) {
+              subscribeActiveTasksUpdates();
+            }
+          }
+        }, 3000); // 每3秒检查一次
+      });
   }
   function stopAutoRefresh() {
     if (refreshTimer) {
