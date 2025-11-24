@@ -193,7 +193,7 @@
       </a-table-column>
 
       <a-table-column
-        v-if="activeTab === 1"
+        v-if="showActions"
         title="操作"
         :width="150"
         align="center"
@@ -244,7 +244,7 @@
         </template>
       </a-table-column>
 
-      <a-table-column v-if="activeTab === 3" title="完成时间" :width="180">
+      <a-table-column v-if="showCompleteTime" title="完成时间" :width="180">
         <template #cell="{ record }">
           <span>{{
             record.completeTime
