@@ -1,404 +1,20 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
-  import { Message, Modal } from '@arco-design/web-vue';
-  import {
-    IconRefresh,
-    IconSearch,
-    IconPlayArrow,
-    IconPause,
-    IconDelete,
-  } from '@arco-design/web-vue/es/icon';
-  import {
-    formatFileSize,
-    formatSpeed,
-    formatRemainingTime,
-  } from '@/utils/format';
-  import {
-    getTransferFiles,
-    pauseUpload,
-    resumeUpload,
-    cancelUpload,
-  } from '@/api/transfer';
-  import type { FileUploadTaskVO } from '@/types/modules/transfer';
-  import { UploadTaskStatus } from '@/types/modules/transfer';
-  import transferWebSocketService from '@/services/transfer-websocket.service';
+  import { computed, ref } from 'vue';
+  import { IconRefresh } from '@arco-design/web-vue/es/icon';
+
+  import { useTransferManager } from './hooks/use-transfer-manager';
+  import TransferTable from './components/transfer-table.vue';
 
   // 当前激活的标签页 1-上传 2-下载 3-已完成
   const activeTab = ref(1);
 
-  // 传输任务列表
-  const transferList = ref<FileUploadTaskVO[]>([]);
+  const { loading, uploadingTasks, completedTasks, actions } =
+    useTransferManager();
 
-  // 加载状态
-  const loading = ref(false);
-
-  /**
-   * 获取传输列表
-   */
-  async function fetchTransferList() {
-    try {
-      loading.value = true;
-      const response = await getTransferFiles();
-
-      // 去重：如果后端返回了重复的任务，只保留已上传分片数最多的那个
-      const taskMap = new Map<string, any>();
-      response.data.forEach((item) => {
-        const existing = taskMap.get(item.taskId);
-        if (
-          !existing ||
-          item.uploadedChunks > existing.uploadedChunks ||
-          // 如果已上传分片数相同，保留状态更靠前的（uploading > paused > completed）
-          (item.uploadedChunks === existing.uploadedChunks &&
-            item.status === UploadTaskStatus.UPLOADING)
-        ) {
-          taskMap.set(item.taskId, item);
-        }
-      });
-
-      // 保存旧的任务列表，用于状态转换时保留进度
-      const oldTransferList = transferList.value;
-
-      transferList.value = Array.from(taskMap.values()).map((item) => {
-        // 查找之前是否已存在该任务
-        const existingTask = oldTransferList.find(
-          (t) => t.taskId === item.taskId
-        );
-
-        // 计算进度百分比
-        const progress =
-          item.totalChunks > 0
-            ? Math.round((item.uploadedChunks / item.totalChunks) * 100)
-            : 0;
-
-        // 如果任务状态是暂停，且之前存在该任务且也是暂停状态，保留之前的进度值
-        // 这样可以避免后端返回不准确的 uploadedChunks 导致进度跳动
-        let finalProgress = progress;
-        if (
-          item.status === UploadTaskStatus.PAUSED &&
-          existingTask &&
-          existingTask.progress !== undefined
-        ) {
-          // 暂停状态下，保留之前的进度值（无论之前是什么状态）
-          finalProgress = existingTask.progress;
-        }
-
-        // 如果本地状态是取消中，但后端还没有更新，保留取消中状态
-        // 如果后端已经返回 CANCELLING 或 CANCELED，则使用后端状态
-        let finalStatus = item.status;
-        if (
-          existingTask &&
-          existingTask.status === UploadTaskStatus.CANCELLING &&
-          item.status !== UploadTaskStatus.CANCELLING &&
-          item.status !== UploadTaskStatus.CANCELED
-        ) {
-          // 保留取消中状态，直到后端确认已取消
-          finalStatus = UploadTaskStatus.CANCELLING;
-          // 同时保留进度值，避免进度条继续显示
-          if (existingTask.progress !== undefined) {
-            finalProgress = existingTask.progress;
-          }
-        }
-
-        return {
-          ...item,
-          status: finalStatus,
-          progress: finalProgress,
-        };
-      });
-    } catch (error) {
-      Message.error('获取传输列表失败');
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  // 已订阅的任务集合（避免重复订阅）
-  const subscribedTasks = new Set<string>();
-
-  /**
-   * 订阅WebSocket更新
-   */
-  function subscribeActiveTasksUpdates() {
-    // 确保WebSocket已连接
-    if (!transferWebSocketService.isConnected()) {
-      transferWebSocketService.connect();
-    }
-
-    // 为所有活动任务订阅WebSocket进度更新
-    transferList.value.forEach((task) => {
-      if (
-        task.status === UploadTaskStatus.INITIALIZED ||
-        task.status === UploadTaskStatus.CHECKING ||
-        task.status === UploadTaskStatus.UPLOADING ||
-        task.status === UploadTaskStatus.PAUSED ||
-        task.status === UploadTaskStatus.MERGING ||
-        task.status === UploadTaskStatus.CANCELLING
-      ) {
-        // 避免重复订阅
-        if (subscribedTasks.has(task.taskId)) {
-          return;
-        }
-        subscribedTasks.add(task.taskId);
-
-        transferWebSocketService.subscribe(task.taskId, {
-          onInitialized: () => {
-            // 初始化状态
-          },
-          onChecking: () => {
-            // 校验中状态
-          },
-          onQuickUpload: async () => {
-            subscribedTasks.delete(task.taskId);
-            await fetchTransferList();
-            subscribeActiveTasksUpdates();
-          },
-          onReadyToUpload: () => {
-            // 准备上传
-          },
-          onProgress: (data) => {
-            // 实时更新任务进度
-            const targetTask = transferList.value.find(
-              (t) => t.taskId === task.taskId
-            );
-            if (targetTask) {
-              targetTask.uploadedChunks = data.uploadedChunks;
-              // 更新总分片数（如果后端修正了的话）
-              if (data.totalChunks) {
-                targetTask.totalChunks = data.totalChunks;
-              }
-              // 确保进度不超过100%
-              targetTask.progress = Math.min(100, Math.round(data.progress));
-              if (data.speed !== undefined) {
-                targetTask.speed = data.speed;
-              }
-              if (data.remainTime !== undefined) {
-                targetTask.remainTime = data.remainTime;
-              }
-              if (data.uploadedSize !== undefined) {
-                targetTask.uploadedSize = data.uploadedSize;
-              }
-            }
-          },
-          onPaused: async () => {
-            await fetchTransferList();
-          },
-          onResumed: async () => {
-            await fetchTransferList();
-          },
-          onMerging: () => {
-            // 合并中状态
-          },
-          onCancelling: async () => {
-            // 更新任务状态为取消中
-            const targetTask = transferList.value.find(
-              (t) => t.taskId === task.taskId
-            );
-            if (targetTask) {
-              targetTask.status = UploadTaskStatus.CANCELLING;
-            }
-            // 不立即刷新列表，避免后端状态还没更新时覆盖取消中状态
-            // 等待后端推送 cancelled 消息时再刷新
-          },
-          onComplete: async () => {
-            subscribedTasks.delete(task.taskId);
-            await fetchTransferList();
-            subscribeActiveTasksUpdates();
-          },
-          onError: async (errorMsg) => {
-            subscribedTasks.delete(task.taskId);
-            // 更新任务状态为失败，并显示错误信息
-            const targetTask = transferList.value.find(
-              (t) => t.taskId === task.taskId
-            );
-            if (targetTask) {
-              targetTask.status = UploadTaskStatus.FAILED;
-              targetTask.errorMsg = errorMsg;
-            }
-            await fetchTransferList();
-            subscribeActiveTasksUpdates();
-          },
-          onCancelled: async () => {
-            subscribedTasks.delete(task.taskId);
-            await fetchTransferList();
-            subscribeActiveTasksUpdates();
-          },
-        });
-      }
-    });
-  }
-
-  /**
-   * 上传中的任务（包括初始化、校验中、上传中、暂停、合并中、取消中）
-   */
-  const uploadingTasks = computed(() =>
-    transferList.value.filter(
-      (task) =>
-        task.status === UploadTaskStatus.INITIALIZED ||
-        task.status === UploadTaskStatus.CHECKING ||
-        task.status === UploadTaskStatus.UPLOADING ||
-        task.status === UploadTaskStatus.PAUSED ||
-        task.status === UploadTaskStatus.MERGING ||
-        task.status === UploadTaskStatus.CANCELLING
-    )
-  );
-
-  /**
-   * 下载中的任务（暂时为空，后续支持）
-   */
-  const downloadingTasks = computed(() => []);
-
-  /**
-   * 已完成的任务
-   */
-  const completedTasks = computed(() =>
-    transferList.value.filter(
-      (task) =>
-        task.status === UploadTaskStatus.COMPLETED ||
-        task.status === UploadTaskStatus.FAILED ||
-        task.status === UploadTaskStatus.CANCELED
-    )
-  );
-
-  /**
-   * 当前显示的任务列表
-   */
-  const currentTasks = computed(() => {
+  const currentDisplayTasks = computed(() => {
     if (activeTab.value === 1) return uploadingTasks.value;
-    if (activeTab.value === 2) return downloadingTasks.value;
+    if (activeTab.value === 2) return []; // 下载暂空
     return completedTasks.value;
-  });
-
-  /**
-   * 暂停上传
-   */
-  const handlePause = async (task: FileUploadTaskVO) => {
-    try {
-      await pauseUpload(task.taskId);
-      Message.success('已暂停');
-      await fetchTransferList();
-    } catch (error) {
-      Message.error('暂停失败');
-    }
-  };
-
-  /**
-   * 恢复上传
-   */
-  const handleResume = async (task: FileUploadTaskVO) => {
-    try {
-      await resumeUpload(task.taskId);
-      Message.success('已恢复');
-      await fetchTransferList();
-    } catch (error) {
-      Message.error('恢复失败');
-    }
-  };
-
-  /**
-   * 取消/删除任务
-   */
-  const handleCancel = async (task: FileUploadTaskVO) => {
-    Modal.confirm({
-      title: '确认取消',
-      content: `确定要取消此任务吗？`,
-      okText: '确认取消',
-      cancelText: '继续保留',
-      onOk: async () => {
-        await cancelUpload(task.taskId);
-        Message.success('已取消');
-        await fetchTransferList();
-      },
-    });
-  };
-
-  /**
-   * 获取状态文本
-   */
-  const getStatusText = (status: UploadTaskStatus) => {
-    const statusMap = {
-      [UploadTaskStatus.INITIALIZED]: '准备中',
-      [UploadTaskStatus.CHECKING]: '校验中',
-      [UploadTaskStatus.UPLOADING]: '上传中',
-      [UploadTaskStatus.PAUSED]: '已暂停',
-      [UploadTaskStatus.MERGING]: '处理中',
-      [UploadTaskStatus.COMPLETED]: '已完成',
-      [UploadTaskStatus.FAILED]: '失败',
-      [UploadTaskStatus.CANCELLING]: '取消中',
-      [UploadTaskStatus.CANCELED]: '已取消',
-    };
-    return statusMap[status] || '未知';
-  };
-
-  /**
-   * 获取状态颜色
-   */
-  const getStatusColor = (status: UploadTaskStatus) => {
-    const colorMap = {
-      [UploadTaskStatus.INITIALIZED]: 'cyan',
-      [UploadTaskStatus.CHECKING]: 'arcoblue',
-      [UploadTaskStatus.UPLOADING]: 'blue',
-      [UploadTaskStatus.PAUSED]: 'orange',
-      [UploadTaskStatus.MERGING]: 'purple',
-      [UploadTaskStatus.COMPLETED]: 'green',
-      [UploadTaskStatus.FAILED]: 'red',
-      [UploadTaskStatus.CANCELLING]: 'orange',
-      [UploadTaskStatus.CANCELED]: 'gray',
-    };
-    return colorMap[status] || 'gray';
-  };
-
-  /**
-   * 手动刷新列表
-   */
-  const handleRefresh = async () => {
-    await fetchTransferList();
-    subscribeActiveTasksUpdates();
-  };
-
-  // 定时检查新任务（仅在有活动任务时轮询）
-  let refreshTimer: number | null = null;
-
-  const startAutoRefresh = () => {
-    // 立即获取一次
-    fetchTransferList().then(() => {
-      subscribeActiveTasksUpdates();
-    });
-
-    // 定时检查新任务
-    refreshTimer = window.setInterval(async () => {
-      // 只有在有活动任务时才轮询
-      const hasActiveTasks = uploadingTasks.value.length > 0;
-
-      if (hasActiveTasks) {
-        const currentTaskIds = new Set(transferList.value.map((t) => t.taskId));
-        await fetchTransferList();
-
-        // 检查是否有新任务，如果有则重新订阅
-        const hasNewTasks = transferList.value.some(
-          (t) => !currentTaskIds.has(t.taskId)
-        );
-        if (hasNewTasks) {
-          subscribeActiveTasksUpdates();
-        }
-      }
-    }, 3000); // 每3秒检查一次
-  };
-
-  const stopAutoRefresh = () => {
-    if (refreshTimer) {
-      clearInterval(refreshTimer);
-      refreshTimer = null;
-    }
-  };
-
-  onMounted(() => {
-    // 页面加载时开始自动刷新
-    startAutoRefresh();
-  });
-
-  // 组件卸载时停止刷新
-  onUnmounted(() => {
-    stopAutoRefresh();
   });
 </script>
 
@@ -406,27 +22,17 @@
   <div class="trans-manager">
     <a-layout class="page-layout">
       <a-layout-header class="page-header">
-        <div class="header-left">
-          <span class="title">传输列表</span>
-        </div>
-
+        <div class="header-left"><span class="title">传输列表</span></div>
         <div class="header-center">
-          <a-tabs
-            v-model:active-key="activeTab"
-            type="text"
-            :header-padding="false"
-          >
+          <a-tabs v-model:active-key="activeTab" type="text">
             <a-tab-pane :key="1" :title="`上传 ${uploadingTasks.length}`" />
-            <a-tab-pane :key="2" :title="`下载 ${downloadingTasks.length}`" />
+            <a-tab-pane :key="2" title="下载 0" />
             <a-tab-pane :key="3" title="已完成" />
           </a-tabs>
         </div>
-
         <div class="header-right">
-          <a-button type="text" @click="handleRefresh">
-            <template #icon>
-              <icon-refresh />
-            </template>
+          <a-button type="text" @click="actions.refresh">
+            <template #icon><icon-refresh /></template>
             刷新
           </a-button>
         </div>
@@ -463,7 +69,10 @@
         </a-alert>
 
         <!-- 空状态 -->
-        <div v-if="currentTasks.length === 0" class="empty-state-container">
+        <div
+          v-if="currentDisplayTasks.length === 0"
+          class="empty-state-container"
+        >
           <a-empty>
             <template #image>
               <div class="custom-empty-icon">
@@ -476,213 +85,16 @@
           </a-empty>
         </div>
 
-        <!-- 任务列表 -->
         <div v-else class="file-list">
-          <a-table :data="currentTasks" :loading="loading" :pagination="false">
-            <template #columns>
-              <a-table-column title="文件名称" :width="300">
-                <template #cell="{ record }">
-                  <div class="file-name-cell">
-                    <span class="file-name">{{ record.fileName }}</span>
-                    <span v-if="record.suffix" class="file-suffix">{{
-                      record.suffix
-                    }}</span>
-                  </div>
-                </template>
-              </a-table-column>
-
-              <a-table-column title="文件大小" :width="160">
-                <template #cell="{ record }">
-                  <span
-                    v-if="
-                      record.status === UploadTaskStatus.UPLOADING ||
-                      record.status === UploadTaskStatus.PAUSED
-                    "
-                    class="file-size-text"
-                  >
-                    <span class="uploaded-size">
-                      {{
-                        formatFileSize(
-                          record.uploadedSize ||
-                            Math.round(
-                              (record.uploadedChunks / record.totalChunks) *
-                                record.fileSize
-                            )
-                        )
-                      }}
-                    </span>
-                    <span class="size-separator">/</span>
-                    <span class="total-size">
-                      {{ formatFileSize(record.fileSize) }}
-                    </span>
-                  </span>
-                  <span v-else>{{ formatFileSize(record.fileSize) }}</span>
-                </template>
-              </a-table-column>
-
-              <a-table-column title="状态" :width="100">
-                <template #cell="{ record }">
-                  <a-tag :color="getStatusColor(record.status)">
-                    {{ getStatusText(record.status) }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-
-              <a-table-column title="进度" :width="260">
-                <template #cell="{ record }">
-                  <!-- 初始化状态 -->
-                  <div
-                    v-if="record.status === UploadTaskStatus.INITIALIZED"
-                    class="progress-container"
-                  >
-                    <a-spin :size="16" />
-                    <span class="progress-text" style="margin-left: 8px">
-                      准备中...
-                    </span>
-                  </div>
-                  <!-- 校验中状态 -->
-                  <div
-                    v-else-if="record.status === UploadTaskStatus.CHECKING"
-                    class="progress-container"
-                  >
-                    <a-spin :size="16" />
-                    <span class="progress-text" style="margin-left: 8px">
-                      校验文件...
-                    </span>
-                  </div>
-                  <!-- 上传中状态 -->
-                  <div
-                    v-else-if="record.status === UploadTaskStatus.UPLOADING"
-                    class="progress-container"
-                  >
-                    <a-progress
-                      :percent="record.progress / 100"
-                      size="medium"
-                      :style="{ width: '120px' }"
-                    />
-                    <div class="speed-info">
-                      <span class="speed-text">
-                        {{ formatSpeed(record.speed || 0) }}
-                      </span>
-                      <span v-if="record.remainTime" class="time-text">
-                        剩余 {{ formatRemainingTime(record.remainTime) }}
-                      </span>
-                    </div>
-                  </div>
-                  <!-- 暂停状态 -->
-                  <div v-else-if="record.status === UploadTaskStatus.PAUSED">
-                    <a-progress
-                      :percent="record.progress / 100"
-                      size="medium"
-                      status="warning"
-                      :style="{ width: '160px' }"
-                    />
-                    <span class="progress-text">已暂停</span>
-                  </div>
-                  <!-- 合并中状态 -->
-                  <div
-                    v-else-if="record.status === UploadTaskStatus.MERGING"
-                    class="progress-container"
-                  >
-                    <a-spin :size="16" />
-                    <span class="progress-text" style="margin-left: 8px">
-                      正在处理文件...
-                    </span>
-                  </div>
-                  <!-- 取消中状态 -->
-                  <div
-                    v-else-if="record.status === UploadTaskStatus.CANCELLING"
-                    class="progress-container"
-                  >
-                    <a-spin :size="16" />
-                    <span class="progress-text" style="margin-left: 8px">
-                      正在取消...
-                    </span>
-                  </div>
-                  <!-- 完成状态 -->
-                  <div v-else-if="record.status === UploadTaskStatus.COMPLETED">
-                    <span class="status-text success">100%</span>
-                  </div>
-                  <!-- 失败状态 -->
-                  <div v-else-if="record.status === UploadTaskStatus.FAILED">
-                    <span class="status-text error">{{
-                      record.errorMsg || '上传失败'
-                    }}</span>
-                  </div>
-                  <!-- 其他状态 -->
-                  <div v-else>
-                    <span class="status-text">-</span>
-                  </div>
-                </template>
-              </a-table-column>
-
-              <a-table-column
-                v-if="activeTab === 1"
-                title="操作"
-                :width="150"
-                align="center"
-              >
-                <template #cell="{ record }">
-                  <a-space>
-                    <!-- 暂停按钮 -->
-                    <a-button
-                      v-if="record.status === UploadTaskStatus.UPLOADING"
-                      type="text"
-                      size="small"
-                      @click="handlePause(record)"
-                    >
-                      <template #icon>
-                        <icon-pause />
-                      </template>
-                      暂停
-                    </a-button>
-
-                    <!-- 开始按钮 -->
-                    <a-button
-                      v-else-if="record.status === UploadTaskStatus.PAUSED"
-                      type="text"
-                      size="small"
-                      status="success"
-                      @click="handleResume(record)"
-                    >
-                      <template #icon>
-                        <icon-play-arrow />
-                      </template>
-                      开始
-                    </a-button>
-
-                    <!-- 删除按钮（取消中状态不显示） -->
-                    <a-button
-                      v-if="record.status !== UploadTaskStatus.CANCELLING"
-                      type="text"
-                      size="small"
-                      status="danger"
-                      @click="handleCancel(record)"
-                    >
-                      <template #icon>
-                        <icon-delete />
-                      </template>
-                      取消
-                    </a-button>
-                  </a-space>
-                </template>
-              </a-table-column>
-
-              <a-table-column
-                v-if="activeTab === 3"
-                title="完成时间"
-                :width="180"
-              >
-                <template #cell="{ record }">
-                  <span>{{
-                    record.completeTime
-                      ? new Date(record.completeTime).toLocaleString('zh-CN')
-                      : '-'
-                  }}</span>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+          <transfer-table
+            :tasks="currentDisplayTasks"
+            :loading="loading"
+            :show-actions="activeTab === 1"
+            :show-complete-time="activeTab === 3"
+            @pause="actions.pause"
+            @resume="actions.resume"
+            @cancel="actions.cancel"
+          />
         </div>
       </a-layout-content>
     </a-layout>
@@ -740,7 +152,6 @@
     }
   }
 
-  /* 2. 内容区域样式 */
   .page-content {
     padding: 24px;
     display: flex;
