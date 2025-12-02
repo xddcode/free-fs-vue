@@ -66,19 +66,6 @@ export function uploadFile(
 }
 
 /**
- * 下载文件（支持单个和批量）
- */
-export function downloadFiles(fileIds: string[]) {
-  return request.post(
-    '/apis/file/download',
-    { fileIds },
-    {
-      responseType: 'blob',
-    }
-  );
-}
-
-/**
  * 创建文件夹
  */
 export function createFolder(data: { folderName: string; parentId?: string }) {

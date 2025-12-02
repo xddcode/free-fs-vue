@@ -2,7 +2,6 @@ import { ref } from 'vue';
 import { Message, Modal } from '@arco-design/web-vue';
 import {
   uploadFile,
-  downloadFiles,
   deleteFiles,
   renameFile,
   moveFiles,
@@ -304,66 +303,66 @@ export default function useFileOperations(refreshCallback: () => void) {
    * 下载文件（支持单个和批量）
    */
   const handleDownload = async (files: FileItem | FileItem[]) => {
-    const fileArray = Array.isArray(files) ? files : [files];
-    const fileIds = fileArray.map((f) => f.id);
+    // const fileArray = Array.isArray(files) ? files : [files];
+    // const fileIds = fileArray.map((f) => f.id);
 
-    await downloadFiles(fileIds).then(async (response) => {
-      const blob = new Blob([response.data]);
+    // await downloadFiles(fileIds).then(async (response) => {
+    //   const blob = new Blob([response.data]);
 
-      // 单个文件使用原文件名，多个文件打包为zip
-      const fileName =
-        fileIds.length === 1
-          ? fileArray[0].displayName
-          : `批量下载_${Date.now()}.zip`;
+    //   // 单个文件使用原文件名，多个文件打包为zip
+    //   const fileName =
+    //     fileIds.length === 1
+    //       ? fileArray[0].displayName
+    //       : `批量下载_${Date.now()}.zip`;
 
-      // 检查浏览器是否支持 File System Access API
-      if ('showSaveFilePicker' in window) {
-        try {
-          const fileTypes =
-            fileIds.length === 1 && fileArray[0].suffix
-              ? [
-                  {
-                    description: '文件',
-                    accept: {
-                      '*/*': [`.${fileArray[0].suffix}`],
-                    },
-                  },
-                ]
-              : [
-                  {
-                    description: 'ZIP 文件',
-                    accept: {
-                      'application/zip': ['.zip'],
-                    },
-                  },
-                ];
+    //   // 检查浏览器是否支持 File System Access API
+    //   if ('showSaveFilePicker' in window) {
+    //     try {
+    //       const fileTypes =
+    //         fileIds.length === 1 && fileArray[0].suffix
+    //           ? [
+    //               {
+    //                 description: '文件',
+    //                 accept: {
+    //                   '*/*': [`.${fileArray[0].suffix}`],
+    //                 },
+    //               },
+    //             ]
+    //           : [
+    //               {
+    //                 description: 'ZIP 文件',
+    //                 accept: {
+    //                   'application/zip': ['.zip'],
+    //                 },
+    //               },
+    //             ];
 
-          const handle = await (window as any).showSaveFilePicker({
-            suggestedName: fileName,
-            types: fileTypes,
-          });
+    //       const handle = await (window as any).showSaveFilePicker({
+    //         suggestedName: fileName,
+    //         types: fileTypes,
+    //       });
 
-          const writable = await handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
+    //       const writable = await handle.createWritable();
+    //       await writable.write(blob);
+    //       await writable.close();
 
-          const successMsg =
-            fileIds.length === 1
-              ? '下载成功'
-              : `成功下载 ${fileIds.length} 个文件`;
-          Message.success(successMsg);
-        } catch (error: any) {
-          if (error.name === 'AbortError') {
-            Message.info('已取消下载');
-            return;
-          }
-          Message.warning('保存失败，使用默认下载方式');
-          fallbackDownload(blob, fileName);
-        }
-      } else {
-        fallbackDownload(blob, fileName);
-      }
-    });
+    //       const successMsg =
+    //         fileIds.length === 1
+    //           ? '下载成功'
+    //           : `成功下载 ${fileIds.length} 个文件`;
+    //       Message.success(successMsg);
+    //     } catch (error: any) {
+    //       if (error.name === 'AbortError') {
+    //         Message.info('已取消下载');
+    //         return;
+    //       }
+    //       Message.warning('保存失败，使用默认下载方式');
+    //       fallbackDownload(blob, fileName);
+    //     }
+    //   } else {
+    //     fallbackDownload(blob, fileName);
+    //   }
+    // });
   };
 
   /**
