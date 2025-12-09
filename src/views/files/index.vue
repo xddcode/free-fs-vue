@@ -93,58 +93,81 @@
           />
 
           <!-- 文件内容区域 -->
-          <div class="file-content">
-            <a-spin
-              :loading="fileList.loading.value"
-              style="width: 100%; min-height: 400px"
-            >
-              <!-- 空状态 -->
-              <a-empty
-                v-if="
-                  !fileList.loading.value &&
-                  fileList.fileList.value.length === 0
-                "
-                :description="isFavoritesView ? '暂无收藏文件' : '暂无文件'"
-              />
+          <a-dropdown
+            trigger="contextMenu"
+            align-point
+            :style="{ display: 'block' }"
+            :popup-container="'body'"
+          >
+            <div class="file-content" @contextmenu.stop>
+              <a-spin
+                :loading="fileList.loading.value"
+                style="width: 100%; min-height: 400px"
+              >
+                <!-- 空状态 -->
+                <a-empty
+                  v-if="
+                    !fileList.loading.value &&
+                    fileList.fileList.value.length === 0
+                  "
+                  :description="isFavoritesView ? '暂无收藏文件' : '暂无文件'"
+                />
 
-              <!-- 列表视图 -->
-              <file-list-view
-                v-else-if="viewMode === 'list'"
-                v-model:selected-keys="selectedKeys"
-                v-model:view-mode="viewMode"
-                :file-list="fileList.fileList.value"
-                @row-click="handleFileClick"
-                @sort-change="fileList.handleSortChange"
-                @download="operations.handleDownload"
-                @share="operations.openShareModal"
-                @delete="operations.openDeleteConfirm"
-                @rename="operations.openRenameModal"
-                @move="operations.openMoveModal"
-                @favorite="handleFavorite"
-                @refresh="fileList.refresh"
-                @preview="operations.openPreview"
-                @move-items="operations.handleMove"
-              />
+                <!-- 列表视图 -->
+                <file-list-view
+                  v-else-if="viewMode === 'list'"
+                  v-model:selected-keys="selectedKeys"
+                  v-model:view-mode="viewMode"
+                  :file-list="fileList.fileList.value"
+                  @row-click="handleFileClick"
+                  @sort-change="fileList.handleSortChange"
+                  @download="operations.handleDownload"
+                  @share="operations.openShareModal"
+                  @delete="operations.openDeleteConfirm"
+                  @rename="operations.openRenameModal"
+                  @move="operations.openMoveModal"
+                  @favorite="handleFavorite"
+                  @refresh="fileList.refresh"
+                  @preview="operations.openPreview"
+                  @move-items="operations.handleMove"
+                />
 
-              <!-- 网格视图 -->
-              <file-grid-view
-                v-else
-                v-model:selected-keys="selectedKeys"
-                v-model:view-mode="viewMode"
-                :file-list="fileList.fileList.value"
-                @file-click="handleFileClick"
-                @download="operations.handleDownload"
-                @share="operations.openShareModal"
-                @delete="operations.openDeleteConfirm"
-                @rename="operations.openRenameModal"
-                @move="operations.openMoveModal"
-                @favorite="handleFavorite"
-                @refresh="fileList.refresh"
-                @preview="operations.openPreview"
-                @move-items="operations.handleMove"
-              />
-            </a-spin>
-          </div>
+                <!-- 网格视图 -->
+                <file-grid-view
+                  v-else
+                  v-model:selected-keys="selectedKeys"
+                  v-model:view-mode="viewMode"
+                  :file-list="fileList.fileList.value"
+                  @file-click="handleFileClick"
+                  @download="operations.handleDownload"
+                  @share="operations.openShareModal"
+                  @delete="operations.openDeleteConfirm"
+                  @rename="operations.openRenameModal"
+                  @move="operations.openMoveModal"
+                  @favorite="handleFavorite"
+                  @refresh="fileList.refresh"
+                  @preview="operations.openPreview"
+                  @move-items="operations.handleMove"
+                />
+              </a-spin>
+            </div>
+            <template #content>
+              <a-doption @click="operations.openCreateFolderModal">
+                <icon-folder-add />
+                新建文件夹
+              </a-doption>
+              <a-divider style="margin: 4px 0" />
+              <a-doption @click="triggerFileSelect">
+                <icon-upload />
+                上传
+              </a-doption>
+              <a-divider style="margin: 4px 0" />
+              <a-doption @click="fileList.refresh">
+                <icon-refresh />
+                刷新
+              </a-doption>
+            </template>
+          </a-dropdown>
         </template>
       </a-layout-content>
     </a-layout>

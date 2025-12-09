@@ -158,14 +158,41 @@
                 >
                   <icon-delete />
                 </a-button>
-                <a-dropdown
-                  v-if="hasHandler('rename') || hasHandler('move')"
-                  trigger="hover"
-                >
+                <a-dropdown trigger="hover">
                   <a-button size="small" type="text" @click.stop>
                     <icon-more />
                   </a-button>
                   <template #content>
+                    <a-doption
+                      v-if="!record.isDir && hasHandler('preview')"
+                      @click="$emit('preview', record)"
+                    >
+                      <icon-eye />
+                      预览
+                    </a-doption>
+                    <a-doption
+                      v-if="hasHandler('share')"
+                      @click="$emit('share', record)"
+                    >
+                      <icon-share-alt />
+                      分享
+                    </a-doption>
+                    <a-doption
+                      v-if="hasHandler('favorite')"
+                      @click="$emit('favorite', record)"
+                    >
+                      <icon-star-fill v-if="record.isFavorite" />
+                      <icon-star v-else />
+                      {{ record.isFavorite ? '取消收藏' : '收藏' }}
+                    </a-doption>
+                    <a-doption
+                      v-if="!record.isDir && hasHandler('download')"
+                      @click="$emit('download', record)"
+                    >
+                      <icon-download />
+                      下载
+                    </a-doption>
+                    <a-divider style="margin: 4px 0" />
                     <a-doption
                       v-if="hasHandler('rename')"
                       @click="$emit('rename', record)"
@@ -179,6 +206,14 @@
                     >
                       <icon-drag-arrow />
                       移动到
+                    </a-doption>
+                    <a-divider style="margin: 4px 0" />
+                    <a-doption
+                      v-if="hasHandler('delete')"
+                      @click="$emit('delete', record)"
+                    >
+                      <icon-delete />
+                      放入回收站
                     </a-doption>
                   </template>
                 </a-dropdown>

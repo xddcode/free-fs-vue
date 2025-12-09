@@ -57,7 +57,7 @@
           <a-checkbox
             :model-value="isSelected(file.id)"
             @click.stop
-            @change="(value, ev) => handleCheckboxChange(file.id, value)"
+            @change="(value: boolean | (string | number | boolean)[]) => handleCheckboxChange(file.id, value)"
           />
         </div>
         <div class="grid-item-icon">
@@ -118,7 +118,7 @@
           </template>
         </file-tooltip>
         <div v-if="!isSelected(file.id)" class="grid-item-actions">
-          <a-dropdown trigger="click" position="bl" :popup-max-height="false">
+          <a-dropdown trigger="click" position="bl">
             <a-button size="small" type="text" @click.stop>
               <icon-more :size="18" />
             </a-button>
@@ -146,7 +146,7 @@
                 {{ file.isFavorite ? '取消收藏' : '收藏' }}
               </a-doption>
               <a-doption
-                v-if="hasHandler('download')"
+                v-if="!file.isDir && hasHandler('download')"
                 @click="$emit('download', file)"
               >
                 <icon-download />
