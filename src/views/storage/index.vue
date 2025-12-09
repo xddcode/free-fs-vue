@@ -83,46 +83,50 @@
             </div>
           </template>
 
-          <!-- 加载状态 -->
-          <div v-if="loading" class="loading-wrap">
-            <a-spin :size="40" tip="加载中..." />
-          </div>
-
           <!-- 卡片列表 -->
-          <div v-else>
-            <!-- 空状态提示 -->
-            <a-alert
-              v-if="userSettings.length === 0"
-              type="info"
-              closable
-              class="empty-tip"
-            >
-              <template #icon>
-                <icon-info-circle />
-              </template>
-              您还没有配置任何存储平台，点击下方卡片开始添加您的第一个存储配置
-            </a-alert>
-
-            <a-row :gutter="[16, 16]" class="list-row">
-              <!-- 添加配置卡片 -->
-              <a-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" class="list-col">
-                <AddConfigCard @click="handleAddConfig" />
-              </a-col>
-              <!-- 用户已配置的存储平台卡片 -->
-              <a-col
-                v-for="setting in userSettings"
-                :key="setting.id"
-                :xs="24"
-                :sm="12"
-                :md="8"
-                :lg="6"
-                :xl="4"
-                class="list-col"
+          <LoadingSpinner :loading="loading" :size="120" tip="加载中...">
+            <div>
+              <!-- 空状态提示 -->
+              <a-alert
+                v-if="userSettings.length === 0"
+                type="info"
+                closable
+                class="empty-tip"
               >
-                <StorageSettingCard :setting="setting" @refresh="fetchData" />
-              </a-col>
-            </a-row>
-          </div>
+                <template #icon>
+                  <icon-info-circle />
+                </template>
+                您还没有配置任何存储平台，点击下方卡片开始添加您的第一个存储配置
+              </a-alert>
+
+              <a-row :gutter="[16, 16]" class="list-row">
+                <!-- 添加配置卡片 -->
+                <a-col
+                  :xs="24"
+                  :sm="12"
+                  :md="8"
+                  :lg="6"
+                  :xl="4"
+                  class="list-col"
+                >
+                  <AddConfigCard @click="handleAddConfig" />
+                </a-col>
+                <!-- 用户已配置的存储平台卡片 -->
+                <a-col
+                  v-for="setting in userSettings"
+                  :key="setting.id"
+                  :xs="24"
+                  :sm="12"
+                  :md="8"
+                  :lg="6"
+                  :xl="4"
+                  class="list-col"
+                >
+                  <StorageSettingCard :setting="setting" @refresh="fetchData" />
+                </a-col>
+              </a-row>
+            </div>
+          </LoadingSpinner>
         </a-card>
 
         <!-- 帮助信息 -->
@@ -165,6 +169,7 @@
 
 <script lang="ts" setup>
   import { ref, computed } from 'vue';
+  import { LoadingSpinner } from '@/components';
   import {
     IconRefresh,
     IconStorage,
@@ -173,11 +178,8 @@
     IconQuestionCircle,
     IconCheckCircle,
   } from '@arco-design/web-vue/es/icon';
-  import {
-    getUserStorageSettings,
-    getStoragePlatforms,
-    type StorageSetting,
-  } from '@/api/storage';
+  import { getUserStorageSettings, getStoragePlatforms } from '@/api/storage';
+  import type { StorageSetting } from '@/types/modules/storage';
   import StorageSettingCard from './components/storage-setting-card.vue';
   import AddStorageConfigModal from './components/add-storage-config-modal.vue';
   import AddConfigCard from './components/add-config-card.vue';

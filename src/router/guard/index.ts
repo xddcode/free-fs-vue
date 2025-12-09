@@ -5,6 +5,8 @@ import setupPermissionGuard from './permission';
 
 function setupPageGuard(router: Router) {
   router.beforeEach(async (to) => {
+    // 路由切换时不显示全局loading，只在F5刷新时显示HTML loading
+
     // emit route change
     setRouteEmitter(to);
     // 修改网页标题

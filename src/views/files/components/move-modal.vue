@@ -68,7 +68,7 @@
 
       <!-- 目录列表 -->
       <div class="folder-list">
-        <a-spin :loading="loading" style="width: 100%">
+        <LoadingSpinner :loading="loading" :size="100">
           <div
             v-if="currentDirs.length === 0 && !isCreatingFolder"
             class="empty-folder"
@@ -128,7 +128,7 @@
               </div>
             </div>
           </div>
-        </a-spin>
+        </LoadingSpinner>
       </div>
 
       <a-alert type="info" style="margin-top: 16px">
@@ -141,6 +141,7 @@
 <script lang="ts" setup>
   import { ref, watch, computed, nextTick } from 'vue';
   import { Message } from '@arco-design/web-vue';
+  import { LoadingSpinner } from '@/components';
   import {
     IconFolder,
     IconFolderAdd,

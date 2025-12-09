@@ -7,6 +7,7 @@ const useAppStore = defineStore('app', {
     theme: defaultSettings.theme,
     colorWeak: defaultSettings.colorWeak,
     device: defaultSettings.device,
+    loading: false,
   }),
 
   getters: {
@@ -38,6 +39,21 @@ const useAppStore = defineStore('app', {
 
     toggleDevice(device: string) {
       this.device = device;
+    },
+
+    // Show loading
+    showLoading() {
+      this.loading = true;
+    },
+
+    // Hide loading
+    hideLoading() {
+      this.loading = false;
+    },
+
+    // Set loading state
+    setLoading(loading: boolean) {
+      this.loading = loading;
     },
   },
 });

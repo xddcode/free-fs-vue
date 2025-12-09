@@ -104,6 +104,7 @@
             :width="180"
             :sortable="{
               sortDirections: ['ascend', 'descend'],
+              sorter: true,
             }"
           >
             <template #cell="{ record }">

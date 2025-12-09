@@ -13,11 +13,7 @@
             还原
           </a-button>
           <!-- 批量删除 -->
-          <a-button
-            size="large"
-            status="danger"
-            @click="handleBatchDelete"
-          >
+          <a-button size="large" status="danger" @click="handleBatchDelete">
             <template #icon>
               <icon-delete />
             </template>
@@ -60,7 +56,7 @@
 
     <!-- 文件列表 -->
     <div class="recycle-content">
-      <a-spin :loading="loading" style="width: 100%; min-height: 400px">
+      <LoadingSpinner :loading="loading" :size="150" full-height>
         <!-- 空状态 -->
         <a-empty
           v-if="!loading && fileList.length === 0"
@@ -198,7 +194,7 @@
             </a-table>
           </div>
         </div>
-      </a-spin>
+      </LoadingSpinner>
     </div>
   </div>
 </template>
@@ -206,6 +202,7 @@
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { Message, Modal } from '@arco-design/web-vue';
+  import { LoadingSpinner } from '@/components';
   import {
     IconDelete,
     IconUndo,
@@ -444,6 +441,7 @@
   .recycle-content {
     flex: 1;
     overflow-y: auto;
+    position: relative;
   }
 
   .file-list-container {

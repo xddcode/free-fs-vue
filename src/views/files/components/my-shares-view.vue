@@ -46,7 +46,7 @@
 
     <!-- 表格 -->
     <div class="shares-content">
-      <a-spin :loading="loading" style="width: 100%; min-height: 400px">
+      <LoadingSpinner :loading="loading" :size="150" full-height>
         <a-empty
           v-if="!loading && shareList.length === 0"
           description="暂无分享"
@@ -64,8 +64,6 @@
             showCheckedAll: true,
           }"
           :row-class="() => 'share-row'"
-          :default-sorter="{ field: 'createdAt', direction: 'descend' }"
-          @change="handleTableChange"
         >
           <template #columns>
             <!-- 名称列 -->
@@ -142,9 +140,6 @@
               title="创建时间"
               data-index="createdAt"
               :width="180"
-              :sortable="{
-                sortDirections: ['ascend', 'descend'],
-              }"
             >
               <template #cell="{ record }">
                 <span class="time-text">
@@ -202,7 +197,7 @@
             </a-table-column>
           </template>
         </a-table>
-      </a-spin>
+      </LoadingSpinner>
     </div>
 
     <!-- 查看分享弹窗 -->
@@ -212,68 +207,73 @@
       :footer="false"
       width="600px"
     >
-      <a-spin :loading="shareDetailLoading" style="width: 100%; min-height: 200px">
+      <LoadingSpinner :loading="shareDetailLoading" :size="120">
         <div v-if="currentShare" class="share-detail">
           <a-descriptions :column="1" bordered>
-          <a-descriptions-item label="分享名称">
-            {{ currentShare.shareName }}
-          </a-descriptions-item>
-          <a-descriptions-item v-if="getShareUrl(currentShare)" label="分享链接">
-            <div class="detail-item">
-              <span class="detail-text">{{ getShareUrl(currentShare) }}</span>
-              <a-button
-                type="text"
-                size="small"
-                @click="handleCopyLink(getShareUrl(currentShare)!)"
-              >
-                <template #icon>
-                  <icon-copy />
-                </template>
-                复制
-              </a-button>
-            </div>
-          </a-descriptions-item>
-          <a-descriptions-item label="提取码">
-            <div class="detail-item">
-              <span class="detail-code">{{
-                currentShare.shareCode || '-'
+            <a-descriptions-item label="分享名称">
+              {{ currentShare.shareName }}
+            </a-descriptions-item>
+            <a-descriptions-item
+              v-if="getShareUrl(currentShare)"
+              label="分享链接"
+            >
+              <div class="detail-item">
+                <span class="detail-text">{{ getShareUrl(currentShare) }}</span>
+                <a-button
+                  type="text"
+                  size="small"
+                  @click="handleCopyLink(getShareUrl(currentShare)!)"
+                >
+                  <template #icon>
+                    <icon-copy />
+                  </template>
+                  复制
+                </a-button>
+              </div>
+            </a-descriptions-item>
+            <a-descriptions-item label="提取码">
+              <div class="detail-item">
+                <span class="detail-code">{{
+                  currentShare.shareCode || '-'
+                }}</span>
+                <a-button
+                  v-if="currentShare.shareCode"
+                  type="text"
+                  size="small"
+                  @click="handleCopyCode(currentShare.shareCode)"
+                >
+                  <template #icon>
+                    <icon-copy />
+                  </template>
+                  复制
+                </a-button>
+              </div>
+            </a-descriptions-item>
+            <a-descriptions-item label="有效期">
+              <span v-if="currentShare.isPermanent === true">永久有效</span>
+              <span v-else-if="!currentShare.expireTime">-</span>
+              <span v-else>{{
+                formatExpireTime(currentShare.expireTime)
               }}</span>
-              <a-button
-                v-if="currentShare.shareCode"
-                type="text"
-                size="small"
-                @click="handleCopyCode(currentShare.shareCode)"
-              >
-                <template #icon>
-                  <icon-copy />
-                </template>
-                复制
-              </a-button>
-            </div>
-          </a-descriptions-item>
-          <a-descriptions-item label="有效期">
-            <span v-if="currentShare.isPermanent === true">永久有效</span>
-            <span v-else-if="!currentShare.expireTime">-</span>
-            <span v-else>{{ formatExpireTime(currentShare.expireTime) }}</span>
-          </a-descriptions-item>
-          <a-descriptions-item label="查看次数">
-            {{ currentShare.viewCount }}
-            <span v-if="currentShare.maxViewCount > 0">
-              / {{ currentShare.maxViewCount }}
-            </span>
-          </a-descriptions-item>
-          <a-descriptions-item label="下载次数">
-            {{ currentShare.downloadCount }}
-            <span v-if="currentShare.maxDownloadCount > 0">
-              / {{ currentShare.maxDownloadCount }}
-            </span>
-          </a-descriptions-item>
-          <a-descriptions-item label="创建时间">
-            {{ formatDateTime(currentShare.createdAt) }}
-          </a-descriptions-item>
-        </a-descriptions>
+            </a-descriptions-item>
+            <a-descriptions-item label="查看次数">
+              {{ currentShare.viewCount }}
+              <span v-if="currentShare.maxViewCount > 0">
+                / {{ currentShare.maxViewCount }}
+              </span>
+            </a-descriptions-item>
+            <a-descriptions-item label="下载次数">
+              {{ currentShare.downloadCount }}
+              <span v-if="currentShare.maxDownloadCount > 0">
+                / {{ currentShare.maxDownloadCount }}
+              </span>
+            </a-descriptions-item>
+            <a-descriptions-item label="创建时间">
+              {{ formatDateTime(currentShare.createdAt) }}
+            </a-descriptions-item>
+          </a-descriptions>
         </div>
-      </a-spin>
+      </LoadingSpinner>
     </a-modal>
 
     <!-- 访问记录弹窗 -->
@@ -285,10 +285,7 @@
       :mask-closable="true"
       draggable
     >
-      <a-spin
-        :loading="accessRecordsLoading"
-        style="width: 100%; min-height: 150px"
-      >
+      <LoadingSpinner :loading="accessRecordsLoading" :size="100">
         <div
           v-if="accessRecords.length === 0 && !accessRecordsLoading"
           class="empty-records"
@@ -305,7 +302,11 @@
             :sticky-header="false"
           >
             <template #columns>
-              <a-table-column title="访问IP" data-index="accessIp" :width="140" />
+              <a-table-column
+                title="访问IP"
+                data-index="accessIp"
+                :width="140"
+              />
               <a-table-column
                 title="访问地址"
                 data-index="accessAddress"
@@ -359,7 +360,7 @@
             </template>
           </a-table>
         </div>
-      </a-spin>
+      </LoadingSpinner>
     </a-modal>
   </div>
 </template>
@@ -367,6 +368,7 @@
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { Message, Modal } from '@arco-design/web-vue';
+  import { LoadingSpinner } from '@/components';
   import {
     IconRefresh,
     IconLink,
@@ -399,12 +401,6 @@
   // 选中的分享ID列表
   const selectedKeys = ref<string[]>([]);
 
-  // 排序配置
-  const sortConfig = ref({
-    orderBy: 'createdAt',
-    orderDirection: 'DESC' as 'ASC' | 'DESC',
-  });
-
   // 当前查看的分享
   const currentShare = ref<ShareItem | null>(null);
   const shareDetailVisible = ref(false);
@@ -417,32 +413,6 @@
   const currentShareForRecords = ref<ShareItem | null>(null);
 
   /**
-   * 对列表进行排序
-   */
-  const sortList = (list: ShareItem[]) => {
-    const { orderBy, orderDirection } = sortConfig.value;
-    return [...list].sort((a, b) => {
-      let aValue: any = a[orderBy as keyof ShareItem];
-      let bValue: any = b[orderBy as keyof ShareItem];
-
-      // 处理日期类型
-      if (orderBy === 'createdAt') {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
-      }
-
-      if (orderDirection === 'ASC') {
-        if (aValue > bValue) return 1;
-        if (aValue < bValue) return -1;
-        return 0;
-      }
-      if (aValue < bValue) return 1;
-      if (aValue > bValue) return -1;
-      return 0;
-    });
-  };
-
-  /**
    * 获取分享列表
    */
   const fetchShareList = async () => {
@@ -450,8 +420,6 @@
     try {
       const res = await getMyShareList({
         keyword: searchKeyword.value || undefined,
-        orderBy: sortConfig.value.orderBy,
-        orderDirection: sortConfig.value.orderDirection,
       });
       shareList.value = res.data;
     } finally {
@@ -471,26 +439,6 @@
    */
   const handleRefresh = () => {
     fetchShareList();
-  };
-
-  /**
-   * 处理表格变化（排序）
-   */
-  const handleTableChange = (_data: any, extra: any) => {
-    if (extra.type === 'sorter' && extra.sorter) {
-      const { field, direction } = extra.sorter;
-      if (direction) {
-        sortConfig.value.orderBy = field;
-        sortConfig.value.orderDirection =
-          direction === 'ascend' ? 'ASC' : 'DESC';
-      } else {
-        // 取消排序，恢复默认排序
-        sortConfig.value.orderBy = 'createdAt';
-        sortConfig.value.orderDirection = 'DESC';
-      }
-      // 重新调用接口获取排序后的数据
-      fetchShareList();
-    }
   };
 
   /**
@@ -749,6 +697,7 @@
       flex: 1;
       padding: 16px 24px;
       overflow: auto;
+      position: relative;
 
       :deep(.arco-table) {
         .arco-table-th {

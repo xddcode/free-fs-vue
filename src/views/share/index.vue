@@ -5,7 +5,7 @@
     <div class="main-container">
       <transition name="fade-slide" mode="out-in">
         <div v-if="isLoading" key="loading" class="loading-mode">
-          <a-spin dot :size="24" />
+          <LoadingSpinner :loading="true" :size="150" inline />
           <p class="loading-text">正在获取分享信息...</p>
         </div>
 
@@ -119,10 +119,7 @@
           </div>
 
           <div class="app-body">
-            <a-spin
-              :loading="bodyLoading"
-              style="width: 100%; min-height: 400px"
-            >
+            <LoadingSpinner :loading="bodyLoading" :size="150" full-height>
               <file-list-view
                 v-if="viewMode === 'list'"
                 v-model:view-mode="viewMode"
@@ -142,7 +139,7 @@
                 @preview="handlePreview"
                 @download="handleDownload"
               />
-            </a-spin>
+            </LoadingSpinner>
           </div>
 
           <div class="app-footer">
@@ -173,6 +170,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { ShareThin } from '@/types/modules/share';
   import { FileItem } from '@/types/modules/file';
+  import { LoadingSpinner } from '@/components';
 
   const FileListView = defineAsyncComponent(
     () => import('./components/share-file-list-view.vue')
@@ -652,6 +650,7 @@
     flex: 1;
     padding: 8px 16px;
     overflow: hidden;
+    position: relative;
   }
 
   .compact-table {

@@ -117,7 +117,7 @@
         <h3>最近使用</h3>
         <a-link @click="goToFiles">查看全部 <icon-right /></a-link>
       </div>
-      <a-spin :loading="loading" style="width: 100%">
+      <LoadingSpinner :loading="loading" :size="150">
         <div v-if="recentFiles.length > 0" class="recent-files">
           <div
             v-for="file in recentFiles"
@@ -140,7 +140,7 @@
         <a-empty v-else description="暂无最近使用的文件">
           <a-button type="primary" @click="goToFiles">开始使用</a-button>
         </a-empty>
-      </a-spin>
+      </LoadingSpinner>
     </div>
 
     <!-- 功能特性 -->
@@ -198,6 +198,7 @@
     IconImage,
     IconMusic,
   } from '@arco-design/web-vue/es/icon';
+  import { LoadingSpinner } from '@/components';
 
   const router = useRouter();
   const loading = ref(false);

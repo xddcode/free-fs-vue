@@ -50,6 +50,7 @@
     "vue": "^3.2.40",
     "vue-echarts": "^6.2.3",
     "vue-router": "^4.0.14",
+    "vue3-lottie": "^3.3.1",
     "xgplayer": "^3.0.23",
     "xgplayer-music": "^3.0.23"
   },

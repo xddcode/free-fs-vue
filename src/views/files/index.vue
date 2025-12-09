@@ -105,9 +105,10 @@
               @contextmenu.stop
               @click="handleContentClick"
             >
-              <a-spin
+              <LoadingSpinner
                 :loading="fileList.loading.value"
-                style="width: 100%; min-height: 400px"
+                :size="150"
+                full-height
               >
                 <!-- 空状态 -->
                 <a-empty
@@ -156,7 +157,7 @@
                   @move-items="operations.handleMove"
                   @dropdown-open="handleDropdownOpen"
                 />
-              </a-spin>
+              </LoadingSpinner>
             </div>
             <template #content>
               <a-doption @click="operations.openCreateFolderModal">
@@ -248,6 +249,7 @@
   import type { FileItem } from '@/types/modules/file';
   import { uploadService } from '@/services/upload.service';
   import { useUploadTaskStore } from '@/store';
+  import { LoadingSpinner } from '@/components';
   import { useFileList, useFileOperations } from './hooks';
   import {
     Toolbar,
