@@ -94,12 +94,17 @@
 
           <!-- 文件内容区域 -->
           <a-dropdown
+            v-model:popup-visible="contextMenuVisible"
             trigger="contextMenu"
             align-point
             :style="{ display: 'block' }"
             :popup-container="'body'"
           >
-            <div class="file-content" @contextmenu.stop>
+            <div
+              class="file-content"
+              @contextmenu.stop
+              @click="handleContentClick"
+            >
               <a-spin
                 :loading="fileList.loading.value"
                 style="width: 100%; min-height: 400px"
@@ -130,6 +135,7 @@
                   @refresh="fileList.refresh"
                   @preview="operations.openPreview"
                   @move-items="operations.handleMove"
+                  @dropdown-open="handleDropdownOpen"
                 />
 
                 <!-- 网格视图 -->
@@ -148,6 +154,7 @@
                   @refresh="fileList.refresh"
                   @preview="operations.openPreview"
                   @move-items="operations.handleMove"
+                  @dropdown-open="handleDropdownOpen"
                 />
               </a-spin>
             </div>
@@ -338,6 +345,9 @@
 
   // 选中的文件
   const selectedKeys = ref<string[]>([]);
+
+  // 右键菜单显示状态
+  const contextMenuVisible = ref(false);
 
   /**
    * 清空选中
@@ -575,6 +585,22 @@
     if (event.key === 'Escape') {
       clearSelection();
     }
+  };
+
+  /**
+   * 处理内容区域点击事件
+   */
+  const handleContentClick = () => {
+    // 点击内容区域时关闭右键菜单
+    contextMenuVisible.value = false;
+  };
+
+  /**
+   * 处理文件项下拉菜单打开事件
+   */
+  const handleDropdownOpen = () => {
+    // 文件项菜单打开时关闭右键菜单
+    contextMenuVisible.value = false;
   };
 
   onMounted(() => {

@@ -160,6 +160,22 @@ export function getFileIconName(suffix: string): string {
   return 'file';
 }
 
+// 使用 import.meta.glob 批量导入所有图标文件
+// 这样 Vite 在打包时会正确处理路径并生成正确的 URL
+const iconModules = import.meta.glob<{ default: string }>(
+  '../assets/images/fti/*.png',
+  { eager: true }
+);
+
+// 创建图标路径映射
+const iconPathMap: Record<string, string> = {};
+Object.keys(iconModules).forEach((path) => {
+  const iconName = path.match(/\/([^/]+)\.png$/)?.[1];
+  if (iconName) {
+    iconPathMap[iconName] = iconModules[path].default;
+  }
+});
+
 /**
  * 根据文件后缀获取图标路径
  * @param suffix 文件后缀（如 'pdf', 'dir', 'js' 等）
@@ -167,5 +183,6 @@ export function getFileIconName(suffix: string): string {
  */
 export function getFileIconPath(suffix: string): string {
   const iconName = getFileIconName(suffix);
-  return `/src/assets/images/fti/${iconName}.png`;
+  // 从映射中获取图标路径，如果不存在则使用默认的 file 图标
+  return iconPathMap[iconName] || iconPathMap.file || '';
 }

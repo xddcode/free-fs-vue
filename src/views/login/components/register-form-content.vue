@@ -35,13 +35,7 @@
       :rules="[
         { required: true, message: '确认密码不能为空' },
         {
-          validator: (value: string, cb: (error?: string) => void) => {
-            if (value !== registerInfo.password) {
-              cb('两次密码不一致');
-            } else {
-              cb();
-            }
-          },
+          validator: validateConfirmPassword,
         },
       ]"
       :validate-trigger="['change', 'blur']"
@@ -114,6 +108,17 @@
     avatar: DEFAULT_AVATAR,
   });
   const emit = defineEmits(['switchForm']);
+
+  const validateConfirmPassword = (
+    value: string,
+    cb: (error?: string) => void
+  ) => {
+    if (value !== registerInfo.password) {
+      cb('两次密码不一致');
+    } else {
+      cb();
+    }
+  };
 
   const handleRegister = async ({
     errors,

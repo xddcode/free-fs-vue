@@ -10,7 +10,7 @@
   >
     <div class="create-folder-content">
       <div class="folder-icon">
-        <img src="/src/assets/images/fti/dir.png" alt="文件夹" />
+        <img :src="dirIcon" alt="文件夹" />
       </div>
       <a-form ref="formRef" :model="form" @submit="handleOk">
         <a-form-item
@@ -38,6 +38,8 @@
 <script lang="ts" setup>
   import { ref, reactive, watch } from 'vue';
   import type { FormInstance } from '@arco-design/web-vue';
+  // 使用 import 导入静态资源，Vite 会正确处理路径
+  import dirIcon from '@/assets/images/fti/dir.png';
 
   interface Props {
     visible: boolean;

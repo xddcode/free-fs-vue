@@ -54,6 +54,7 @@
               },
             ]"
             draggable="true"
+            @contextmenu.stop
             @dragstart="handleDragStart(slotProps.record, $event)"
             @dragover="handleDragOver(slotProps.record, $event)"
             @dragleave="handleDragLeave($event)"
@@ -158,41 +159,14 @@
                 >
                   <icon-delete />
                 </a-button>
-                <a-dropdown trigger="hover">
+                <a-dropdown
+                  trigger="hover"
+                  @popup-visible-change="handleDropdownVisibleChange"
+                >
                   <a-button size="small" type="text" @click.stop>
                     <icon-more />
                   </a-button>
                   <template #content>
-                    <a-doption
-                      v-if="!record.isDir && hasHandler('preview')"
-                      @click="$emit('preview', record)"
-                    >
-                      <icon-eye />
-                      预览
-                    </a-doption>
-                    <a-doption
-                      v-if="hasHandler('share')"
-                      @click="$emit('share', record)"
-                    >
-                      <icon-share-alt />
-                      分享
-                    </a-doption>
-                    <a-doption
-                      v-if="hasHandler('favorite')"
-                      @click="$emit('favorite', record)"
-                    >
-                      <icon-star-fill v-if="record.isFavorite" />
-                      <icon-star v-else />
-                      {{ record.isFavorite ? '取消收藏' : '收藏' }}
-                    </a-doption>
-                    <a-doption
-                      v-if="!record.isDir && hasHandler('download')"
-                      @click="$emit('download', record)"
-                    >
-                      <icon-download />
-                      下载
-                    </a-doption>
-                    <a-divider style="margin: 4px 0" />
                     <a-doption
                       v-if="hasHandler('rename')"
                       @click="$emit('rename', record)"
@@ -206,14 +180,6 @@
                     >
                       <icon-drag-arrow />
                       移动到
-                    </a-doption>
-                    <a-divider style="margin: 4px 0" />
-                    <a-doption
-                      v-if="hasHandler('delete')"
-                      @click="$emit('delete', record)"
-                    >
-                      <icon-delete />
-                      放入回收站
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -275,6 +241,8 @@
     (e: 'preview', file: FileItem): void;
     // 拖拽事件
     (e: 'moveItems', itemIds: string[], targetDirId: string): void;
+    // 菜单事件
+    (e: 'dropdownOpen'): void;
   }>();
 
   // 双向绑定选中的 keys
@@ -386,6 +354,15 @@
     return (
       Object.prototype.hasOwnProperty.call(prop, handlerKey) || prop[handlerKey]
     );
+  };
+
+  /**
+   * 处理下拉菜单显示状态变化
+   */
+  const handleDropdownVisibleChange = (visible: boolean) => {
+    if (visible) {
+      emit('dropdownOpen');
+    }
   };
 </script>
 
