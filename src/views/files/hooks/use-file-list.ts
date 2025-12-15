@@ -61,8 +61,9 @@ export default function useFileList() {
 
     loading.value = true;
     try {
-      // 判断是否是收藏视图
+      // 判断视图类型
       const isFavoritesView = route.query.view === 'favorites';
+      const isRecentsView = route.query.view === 'recents';
 
       const response = await getFileList({
         orderBy: orderBy.value,
@@ -71,6 +72,7 @@ export default function useFileList() {
         keyword: searchKeyword.value || undefined,
         fileType: route.query.type as FileType | undefined,
         isFavorite: isFavoritesView ? true : undefined,
+        isRecents: isRecentsView ? true : undefined,
       });
 
       const result = response.data;
@@ -80,8 +82,8 @@ export default function useFileList() {
         total.value = result.length || 0;
       }
 
-      // 收藏视图不需要面包屑，普通视图需要更新面包屑路径
-      if (isFavoritesView) {
+      // 收藏/最近视图不需要面包屑，普通视图需要更新面包屑路径
+      if (isFavoritesView || isRecentsView) {
         breadcrumbPath.value = [];
       } else {
         await updateBreadcrumbPath();
@@ -184,7 +186,7 @@ export default function useFileList() {
    * 监听路由变化，同步状态并重新加载数据
    */
   watch(
-    () => [route.query.type, route.query.parentId],
+    () => [route.query.type, route.query.parentId, route.query.view],
     () => {
       syncParentIdFromRoute();
       fetchFileList();

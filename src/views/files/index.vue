@@ -51,7 +51,13 @@
               <icon-share-alt :size="18" />
               <span>我的分享</span>
             </div>
-            <div class="category-item">
+            <div
+              :class="[
+                'category-item',
+                { active: activeCategory === 'recents' },
+              ]"
+              @click="handleRecentsClick"
+            >
               <icon-history :size="18" />
               <span>最近使用</span>
             </div>
@@ -72,7 +78,7 @@
           <!-- 工具栏 -->
           <toolbar
             v-model:search-keyword="searchKeyword"
-            :hide-actions="isFavoritesView"
+            :hide-actions="isFavoritesView || isRecentsView"
             :selected-count="selectedKeys.length"
             :selected-files="selectedFiles"
             @upload="triggerFileSelect"
@@ -88,7 +94,13 @@
           <!-- 面包屑导航 -->
           <file-breadcrumb
             :breadcrumb-path="fileList.breadcrumbPath.value"
-            :custom-title="isFavoritesView ? '我的收藏' : undefined"
+            :custom-title="
+              isFavoritesView
+                ? '我的收藏'
+                : isRecentsView
+                ? '最近使用'
+                : undefined
+            "
             @navigate="fileList.navigateToFolder"
           />
 
@@ -116,7 +128,13 @@
                     !fileList.loading.value &&
                     fileList.fileList.value.length === 0
                   "
-                  :description="isFavoritesView ? '暂无收藏文件' : '暂无文件'"
+                  :description="
+                    isFavoritesView
+                      ? '暂无收藏文件'
+                      : isRecentsView
+                      ? '暂无最近使用文件'
+                      : '暂无文件'
+                  "
                 />
 
                 <!-- 列表视图 -->
@@ -329,6 +347,7 @@
     if (route.query.view === 'recycle') return 'recycle';
     if (route.query.view === 'favorites') return 'favorites';
     if (route.query.view === 'shares') return 'shares';
+    if (route.query.view === 'recents') return 'recents';
     if (!route.query.type) return 'all';
     return route.query.type as string;
   });
@@ -341,6 +360,9 @@
 
   // 是否是分享视图
   const isSharesView = computed(() => route.query.view === 'shares');
+
+  // 是否是最近使用视图
+  const isRecentsView = computed(() => route.query.view === 'recents');
 
   // 视图模式
   const viewMode = ref<'list' | 'grid'>('grid');
@@ -413,8 +435,8 @@
    */
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      // 如果在收藏视图下，跳转到全部文件页面并进入该文件夹
-      if (isFavoritesView.value) {
+      // 如果在收藏/最近视图下，跳转到全部文件页面并进入该文件夹
+      if (isFavoritesView.value || isRecentsView.value) {
         router.push({
           path: '/files',
           query: {
@@ -447,15 +469,6 @@
    */
   const handleMove = async (fileIds: string[], targetDirId: string) => {
     await operations.handleMove(fileIds, targetDirId);
-    clearSelection();
-  };
-
-  /**
-   * 处理删除
-   */
-  const handleDelete = async (fileIds: string | string[]) => {
-    await operations.handleDelete(fileIds);
-    // 删除成功后清空选中
     clearSelection();
   };
 
@@ -532,6 +545,13 @@
    */
   const handleFavoritesClick = () => {
     router.push('/files?view=favorites');
+  };
+
+  /**
+   * 处理最近使用点击
+   */
+  const handleRecentsClick = () => {
+    router.push('/files?view=recents');
   };
 
   /**

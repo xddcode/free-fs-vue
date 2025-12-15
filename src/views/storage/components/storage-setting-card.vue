@@ -111,6 +111,14 @@
             启用
           </a-button>
 
+          <!-- 查看配置按钮 -->
+          <a-button size="small" type="outline" @click="handleViewConfig">
+            <template #icon>
+              <icon-eye />
+            </template>
+            查看
+          </a-button>
+
           <!-- 编辑配置按钮 -->
           <a-button size="small" type="outline" @click="handleEditConfig">
             <template #icon>
@@ -134,6 +142,30 @@
         </div>
       </template>
     </a-card>
+
+    <!-- 查看配置弹窗 -->
+    <a-modal
+      v-model:visible="viewModalVisible"
+      :mask-closable="true"
+      :width="600"
+      ok-text="复制配置"
+      title-align="start"
+      @cancel="handleViewCancel"
+      @ok="handleCopyConfig"
+    >
+      <template #title>
+        <div class="modal-title">
+          <icon-eye style="margin-right: 8px" />
+          <span>{{ setting.storagePlatform.name }} - 查看配置</span>
+        </div>
+      </template>
+      <a-descriptions
+        :column="1"
+        layout="vertical"
+        :data="viewConfigDescriptions"
+        size="large"
+      />
+    </a-modal>
 
     <!-- 编辑配置弹窗 -->
     <a-modal
@@ -194,7 +226,7 @@
 
 <script lang="ts" setup>
   import { Icon, Message, Modal } from '@arco-design/web-vue';
-  import { PropType, reactive, ref } from 'vue';
+  import { PropType, reactive, ref, computed } from 'vue';
   import {
     IconPoweroff,
     IconCheck,
@@ -203,21 +235,19 @@
     IconTags,
     IconExclamationCircle,
     IconInfoCircle,
+    IconEye,
   } from '@arco-design/web-vue/es/icon';
   import {
     updateStorageSetting,
     deleteStorageSetting,
     toggleStorageSetting,
-    type StorageSetting,
   } from '@/api/storage';
+  import type { StorageSetting } from '@/types/modules/storage';
   import { useStorageStore } from '@/store';
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',
   });
-
-  const editModalVisible = ref(false);
-  const btnLoading = ref(false);
 
   interface ConfigScheme {
     identifier: string;
@@ -227,6 +257,11 @@
       required: boolean;
     };
   }
+
+  const editModalVisible = ref(false);
+  const viewModalVisible = ref(false);
+  const btnLoading = ref(false);
+  const viewConfigSchemes = ref<ConfigScheme[]>([]);
 
   const formRef = ref();
   const rules = reactive<any>({});
@@ -271,6 +306,138 @@
       required: true,
     },
   });
+
+  // 获取查看配置的值（带脱敏处理）
+  const getViewConfigValue = (identifier: string): string => {
+    const { configData } = props.setting;
+    if (!configData) return '未配置';
+
+    try {
+      const parsedConfigData = JSON.parse(configData);
+      const value = parsedConfigData[identifier] || '';
+
+      // 对 Secret-key 相关字段进行脱敏处理（Access-Key 不脱敏）
+      const lowerIdentifier = identifier.toLowerCase();
+      const isAccessKey =
+        lowerIdentifier.includes('access') && lowerIdentifier.includes('key');
+      const isSecretKey =
+        (lowerIdentifier.includes('secret') &&
+          lowerIdentifier.includes('key')) ||
+        lowerIdentifier.includes('password') ||
+        lowerIdentifier.includes('token');
+
+      if (isSecretKey && !isAccessKey) {
+        if (value && value.length > 0) {
+          // 显示前4位和后4位，中间用*代替
+          if (value.length > 8) {
+            return `${value.substring(0, 4)}${'*'.repeat(
+              Math.min(value.length - 8, 20)
+            )}${value.substring(value.length - 4)}`;
+          }
+          return '****';
+        }
+        return '未配置';
+      }
+
+      return value || '未配置';
+    } catch (error) {
+      return '未配置';
+    }
+  };
+
+  // 获取原始配置值（用于复制）
+  const getOriginalConfigValue = (identifier: string): string => {
+    const { configData } = props.setting;
+    if (!configData) return '';
+
+    try {
+      const parsedConfigData = JSON.parse(configData);
+      return parsedConfigData[identifier] || '';
+    } catch (error) {
+      return '';
+    }
+  };
+
+  // 生成 Descriptions 组件的数据
+  const viewConfigDescriptions = computed(() => {
+    const { remark } = props.setting;
+    const descriptions: Array<{ label: string; value: string }> = [];
+
+    // 添加配置项
+    viewConfigSchemes.value.forEach((field) => {
+      descriptions.push({
+        label: field.label,
+        value: getViewConfigValue(field.identifier),
+      });
+    });
+
+    // 添加备注
+    descriptions.push({
+      label: '配置备注',
+      value: remark && remark.trim() ? remark : '未设置备注',
+    });
+
+    return descriptions;
+  });
+
+  const handleViewConfig = async () => {
+    const { storagePlatform } = props.setting;
+    try {
+      viewConfigSchemes.value = JSON.parse(storagePlatform.configScheme);
+      viewModalVisible.value = true;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('获取配置信息失败:', error);
+      Message.error('获取配置信息失败');
+    }
+  };
+
+  const handleViewCancel = () => {
+    viewModalVisible.value = false;
+  };
+
+  const handleCopyConfig = async () => {
+    const { storagePlatform, remark } = props.setting;
+    const configText: string[] = [];
+
+    // 添加标题
+    configText.push(`${storagePlatform.name} 配置信息`);
+    configText.push('='.repeat(30));
+
+    // 添加配置项
+    viewConfigSchemes.value.forEach((field) => {
+      const value = getOriginalConfigValue(field.identifier);
+      configText.push(`${field.label}: ${value || '未配置'}`);
+    });
+
+    // 添加备注
+    configText.push(`配置备注: ${remark || '未设置备注'}`);
+
+    // 复制到剪贴板
+    const textToCopy = configText.join('\n');
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      Message.success('配置信息已复制到剪贴板');
+      viewModalVisible.value = false;
+    } catch (error) {
+      // 降级方案：使用传统方法
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        Message.success('配置信息已复制到剪贴板');
+        viewModalVisible.value = false;
+      } catch (err) {
+        Message.error('复制失败，请手动复制');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+  };
 
   const handleEditConfig = async () => {
     const { storagePlatform, configData, remark } = props.setting;
@@ -353,6 +520,9 @@
       content: `删除后，"${storagePlatform.name}" 的配置信息将无法恢复。确定要继续吗？`,
       okText: '确认删除',
       cancelText: '取消',
+      okButtonProps: {
+        status: 'danger',
+      },
       onOk: async () => {
         btnLoading.value = true;
         try {
@@ -564,6 +734,162 @@
         flex: 1;
         height: 30px;
         font-size: 12px;
+      }
+    }
+
+    .view-modal-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+
+      .title-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+
+        .title-info {
+          .title-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-1);
+            line-height: 1.5;
+          }
+
+          .title-desc {
+            font-size: 12px;
+            color: var(--color-text-3);
+            line-height: 1.5;
+          }
+        }
+      }
+    }
+
+    .view-config-content {
+      padding: 4px 0;
+      max-height: 70vh;
+      overflow-y: auto;
+
+      .info-card {
+        margin-bottom: 16px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .card-section-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--color-text-1);
+
+          .arco-icon {
+            font-size: 16px;
+            color: rgb(var(--primary-6));
+          }
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px 24px;
+
+          .info-item {
+            .info-label {
+              font-size: 12px;
+              color: var(--color-text-3);
+              margin-bottom: 8px;
+              font-weight: 500;
+            }
+
+            .info-value {
+              font-size: 14px;
+              color: var(--color-text-1);
+              word-break: break-all;
+
+              &.code-text {
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                background: var(--color-fill-2);
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+              }
+            }
+
+            .empty-text {
+              color: var(--color-text-4);
+              font-style: italic;
+            }
+          }
+        }
+
+        .config-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+
+          .config-item {
+            padding: 12px;
+            background: var(--color-fill-1);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-2);
+            transition: all 0.2s;
+
+            &:hover {
+              background: var(--color-fill-2);
+              border-color: rgb(var(--primary-6));
+            }
+
+            .config-label {
+              display: flex;
+              align-items: center;
+              font-size: 12px;
+              color: var(--color-text-3);
+              margin-bottom: 8px;
+              font-weight: 500;
+            }
+
+            .config-value {
+              .config-text {
+                margin: 0;
+                font-size: 13px;
+                color: var(--color-text-1);
+                word-break: break-all;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+
+                :deep(.arco-typography) {
+                  margin: 0;
+                }
+              }
+            }
+          }
+
+          .empty-config {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 40px 20px;
+            color: var(--color-text-3);
+            font-size: 14px;
+
+            .arco-icon {
+              font-size: 16px;
+            }
+          }
+        }
+
+        .platform-desc {
+          font-size: 13px;
+          color: var(--color-text-2);
+          line-height: 1.8;
+          padding: 8px 0;
+        }
       }
     }
 

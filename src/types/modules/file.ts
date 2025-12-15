@@ -79,4 +79,6 @@ export interface FileListParams {
   fileType?: FileType;
   /** 是否收藏 */
   isFavorite?: boolean;
+  /** 是否最近使用 */
+  isRecents?: boolean;
 }

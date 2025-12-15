@@ -1,9 +1,9 @@
 {
-  "name": "arco-design-pro-vue",
-  "description": "Arco Design Pro for Vue",
+  "name": "free-fs-vue",
+  "description": "free-fs 前端项目",
   "version": "1.0.0",
   "private": true,
-  "author": "ArcoDesign Team",
+  "author": "xddcode",
   "license": "MIT",
   "scripts": {
     "dev": "vite --config ./config/vite.config.dev.ts",
