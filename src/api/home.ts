@@ -13,4 +13,3 @@ export interface HomeInfo {
 export function getHomeInfo() {
   return request.get<HomeInfo>('/apis/home/info');
 }
-
