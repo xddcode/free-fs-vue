@@ -26,6 +26,8 @@ export interface FileItem {
   uploadTime: string;
   /** 修改时间 */
   updateTime: string;
+  /** 最近访问时间 */
+  lastAccessTime?: string;
   /** 是否已收藏 */
   isFavorite?: boolean;
 }

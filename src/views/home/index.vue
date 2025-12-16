@@ -45,15 +45,11 @@
           </div>
           <div class="storage-details">
             <div class="storage-used">
-              <span class="value">{{
-                formatSize(userStats?.storageUsed || 0)
-              }}</span>
+              <span class="value">{{ formatSize(usedStorage) }}</span>
               <span class="label">已使用</span>
             </div>
             <div class="storage-total">
-              <span class="value">{{
-                formatSize(userStats?.storageTotal || 100)
-              }}</span>
+              <span class="value">{{ formatSize(MAX_STORAGE) }}</span>
               <span class="label">总容量</span>
             </div>
           </div>
@@ -65,46 +61,46 @@
     <div class="quick-stats">
       <a-row :gutter="16">
         <a-col :span="6">
-          <a-card class="stat-item" :bordered="false">
+          <a-card class="stat-item" :bordered="false" @click="goToFiles">
             <div class="stat-icon files">
               <icon-file />
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ userStats?.totalFiles || 0 }}</div>
+              <div class="stat-value">{{ fileCount }}</div>
               <div class="stat-label">文件数量</div>
             </div>
           </a-card>
         </a-col>
         <a-col :span="6">
-          <a-card class="stat-item" :bordered="false">
+          <a-card class="stat-item" :bordered="false" @click="goToFiles">
             <div class="stat-icon folders">
               <icon-folder />
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ userStats?.totalFolders || 0 }}</div>
+              <div class="stat-value">{{ directoryCount }}</div>
               <div class="stat-label">文件夹</div>
             </div>
           </a-card>
         </a-col>
         <a-col :span="6">
-          <a-card class="stat-item" :bordered="false">
+          <a-card class="stat-item" :bordered="false" @click="goToShares">
             <div class="stat-icon shared">
               <icon-share-alt />
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ userStats?.sharedFiles || 0 }}</div>
+              <div class="stat-value">{{ shareCount }}</div>
               <div class="stat-label">已分享</div>
             </div>
           </a-card>
         </a-col>
         <a-col :span="6">
-          <a-card class="stat-item" :bordered="false">
+          <a-card class="stat-item" :bordered="false" @click="goToFavorites">
             <div class="stat-icon recent">
-              <icon-clock-circle />
+              <icon-star />
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ recentFiles.length }}</div>
-              <div class="stat-label">最近文件</div>
+              <div class="stat-value">{{ favoriteCount }}</div>
+              <div class="stat-label">已收藏</div>
             </div>
           </a-card>
         </a-col>
@@ -123,16 +119,20 @@
             v-for="file in recentFiles"
             :key="file.id"
             class="file-card"
-            @click="handleFileClick(file)"
+            @dblclick="handleFileDoubleClick(file)"
           >
             <div class="file-icon">
-              <component :is="getFileIcon(file)" :size="32" />
+              <img
+                :src="getFileIconPath(file.isDir ? 'dir' : file.suffix || '')"
+                :alt="file.displayName"
+                class="file-icon-img"
+              />
             </div>
             <div class="file-info">
               <div class="file-name">{{ file.displayName }}</div>
               <div class="file-meta">
                 {{ formatSize(file.size) }} ·
-                {{ formatTime(file.updateTime) }}
+                {{ formatTime(file.lastAccessTime || file.updateTime) }}
               </div>
             </div>
           </div>
@@ -182,86 +182,68 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import {
-    IconFolder,
     IconUpload,
     IconFile,
+    IconFolder,
     IconShareAlt,
-    IconClockCircle,
+    IconStar,
     IconRight,
     IconSafe,
     IconCloud,
     IconThunderbolt,
-    IconImage,
-    IconMusic,
   } from '@arco-design/web-vue/es/icon';
   import { LoadingSpinner } from '@/components';
+  import type { FileItem } from '@/types/modules/file';
+  import { getHomeInfo, type HomeInfo } from '@/api/home';
+  import { getFileIconPath } from '@/utils/file-icon';
 
   const router = useRouter();
   const loading = ref(false);
 
-  // 静态数据
-  const userStats = ref({
-    storageUsed: 5368709120, // 5GB
-    storageTotal: 107374182400, // 100GB
-    totalFiles: 128,
-    totalFolders: 24,
-    sharedFiles: 12,
+  // 最大存储容量：100GB
+  const MAX_STORAGE = 107374182400; // 100GB in bytes
+
+  const homeInfo = ref<HomeInfo | null>(null);
+  const recentFiles = ref<FileItem[]>([]);
+
+  // 已使用存储容量（如果超过100GB则显示为100GB）
+  const usedStorage = computed(() => {
+    const used = homeInfo.value?.usedStorage;
+    if (used === null || used === undefined) {
+      return 0;
+    }
+    
+    // 转换为数字（处理字符串类型的情况），后端返回的是字节数
+    const usedBytes = typeof used === 'string' ? parseFloat(used) : Number(used);
+    
+    // 确保返回的是有效数字
+    if (Number.isNaN(usedBytes) || usedBytes < 0) {
+      return 0;
+    }
+    
+    // 如果值已经超过MAX_STORAGE，限制为MAX_STORAGE
+    return usedBytes > MAX_STORAGE ? MAX_STORAGE : usedBytes;
   });
 
-  const recentFiles = ref([
-    {
-      id: '1',
-      displayName: '项目文档.docx',
-      isDir: false,
-      mimeType: 'application/msword',
-      size: 2048576,
-      updateTime: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      displayName: '设计稿.png',
-      isDir: false,
-      mimeType: 'image/png',
-      size: 5242880,
-      updateTime: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: '3',
-      displayName: '会议录音.mp3',
-      isDir: false,
-      mimeType: 'audio/mpeg',
-      size: 10485760,
-      updateTime: new Date(Date.now() - 172800000).toISOString(),
-    },
-    {
-      id: '4',
-      displayName: '工作资料',
-      isDir: true,
-      mimeType: '',
-      size: 0,
-      updateTime: new Date(Date.now() - 259200000).toISOString(),
-    },
-  ]);
-
-  // 存储使用百分比
+  // 存储使用百分比（确保不超过100%）
   const storagePercent = computed(() => {
-    if (!userStats.value) return 0;
-    const used = userStats.value.storageUsed || 0;
-    const total = userStats.value.storageTotal || 100;
-    return Math.round((used / total) * 100);
+    const used = usedStorage.value;
+    if (used <= 0 || MAX_STORAGE <= 0) {
+      return 0;
+    }
+    const percent = used / MAX_STORAGE;
+    // 确保百分比在 0-1 之间
+    return Math.min(1, Math.max(0, Number(percent.toFixed(4))));
   });
 
-  // 获取文件图标
-  const getFileIcon = (file: any) => {
-    if (file.isDir) return IconFolder;
-    if (file.mimeType?.startsWith('image/')) return IconImage;
-    if (file.mimeType?.startsWith('audio/')) return IconMusic;
-    return IconFile;
-  };
+  const fileCount = computed(() => homeInfo.value?.fileCount ?? 0);
+  const directoryCount = computed(() => homeInfo.value?.directoryCount ?? 0);
+  const shareCount = computed(() => homeInfo.value?.shareCount ?? 0);
+  const favoriteCount = computed(() => homeInfo.value?.favoriteCount ?? 0);
 
   // 格式化文件大小
   const formatSize = (bytes: number) => {
@@ -294,17 +276,57 @@
     router.push('/storage');
   };
 
+  const goToShares = () => {
+    router.push('/files?view=shares');
+  };
+
+  const goToFavorites = () => {
+    router.push('/files?view=favorites');
+  };
+
   const handleUpload = () => {
     Message.info('上传功能开发中...');
   };
 
-  const handleFileClick = (file: any) => {
+  /**
+   * 预览文件
+   */
+  const openPreview = (file: FileItem) => {
+    const apiBaseUrl = import.meta.env.VITE_API_VIEW_URL || '';
+    const previewUrl = `${apiBaseUrl}/preview/${file.id}`;
+    window.open(previewUrl, '_blank');
+  };
+
+  /**
+   * 处理文件双击事件
+   */
+  const handleFileDoubleClick = (file: FileItem) => {
     if (file.isDir) {
+      // 如果是文件夹，跳转到文件列表
       goToFiles();
     } else {
-      Message.info(`打开文件: ${file.displayName}`);
+      // 如果是文件，打开预览
+      openPreview(file);
     }
   };
+
+  // 获取首页数据
+  const fetchHomeInfo = async () => {
+    loading.value = true;
+    try {
+      const { data } = await getHomeInfo();
+      if (data) {
+        homeInfo.value = data;
+        recentFiles.value = data.recentFiles || [];
+      }
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  onMounted(() => {
+    fetchHomeInfo();
+  });
 </script>
 
 <style lang="less" scoped>
@@ -569,6 +591,12 @@
         justify-content: center;
         color: var(--color-text-2);
         flex-shrink: 0;
+
+        .file-icon-img {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
+        }
       }
 
       .file-info {
