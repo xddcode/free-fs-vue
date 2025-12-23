@@ -246,7 +246,7 @@
   import { useStorageStore } from '@/store';
 
   const IconFont = Icon.addFromIconFontCn({
-    src: 'https://at.alicdn.com/t/c/font_4759634_ieftb3g6nn.js',
+    src: 'https://at.alicdn.com/t/c/font_4759634_2elqr2s9who.js',
   });
 
   interface ConfigScheme {

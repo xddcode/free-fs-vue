@@ -195,7 +195,7 @@
   });
 
   const fetchData = async () => {
-    loading.value = true;
+      loading.value = true;
     try {
       const { data } = await getUserStorageSettings();
       userSettings.value = data;
