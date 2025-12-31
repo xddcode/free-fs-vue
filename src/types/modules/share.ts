@@ -28,6 +28,8 @@ export interface ShareItem {
   fileCount?: number;
   /** 创建时间 */
   createdAt: string;
+  /** 分享权限（preview,download 逗号拼接） */
+  scope?: string;
 }
 
 /**
@@ -46,6 +48,8 @@ export interface ShareThin {
   hasCheckCode: boolean;
   /** 是否已过期 */
   isExpire: boolean;
+  /** 分享权限（preview,download 逗号拼接） */
+  scope?: string;
 }
 
 /**
@@ -78,6 +82,8 @@ export interface ShareCreateParams {
   maxViewCount?: number;
   /** 最大下载次数（可选） */
   maxDownloadCount?: number;
+  /** 分享权限（preview,download 逗号拼接） */
+  scope?: string;
 }
 
 /**

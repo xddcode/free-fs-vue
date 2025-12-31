@@ -124,6 +124,7 @@
                 v-if="viewMode === 'list'"
                 v-model:view-mode="viewMode"
                 :file-list="fileViewList || []"
+                :scope="shareData.scope"
                 @row-click="handleFileClick"
                 @refresh="fetchShareFile"
                 @preview="handlePreview"
@@ -134,6 +135,7 @@
                 v-else
                 v-model:view-mode="viewMode"
                 :file-list="fileViewList || []"
+                :scope="shareData.scope"
                 @file-click="handleFileClick"
                 @refresh="fetchShareFile"
                 @preview="handlePreview"
@@ -391,14 +393,17 @@
   };
 
   /**
-   * 处理下载
+   * 处理下载 - 直接使用链接下载（支持大文件流式下载）
    */
-  const handleDownload = async (file: FileItem) => {
+  const handleDownload = (file: FileItem) => {
     try {
+      const shareToken = route.params.shareToken as string;
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      const downloadUrl = `${apiBaseUrl}/files/download/${file.id}`;
-
-      // 创建一个隐藏的 a 标签来触发下载
+      
+      // 构建下载链接
+      const downloadUrl = `${apiBaseUrl}/apis/share/${shareToken}/download/${file.id}`;
+      
+      // 创建隐藏的 a 标签触发下载（浏览器直接流式下载，不占用内存）
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = file.originalName;
@@ -406,10 +411,10 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
+      
       Message.success('开始下载文件');
-    } catch (error) {
-      Message.error('下载失败');
+    } catch (err: any) {
+      Message.error(err.message || '下载失败，请稍后重试');
     }
   };
 

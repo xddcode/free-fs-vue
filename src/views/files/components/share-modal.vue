@@ -75,6 +75,13 @@
           </a-radio-group>
         </a-form-item>
 
+        <a-form-item label="分享权限" field="scope">
+          <a-checkbox-group v-model="form.scopeList" :disabled="!!shareLink">
+            <a-checkbox value="preview">预览</a-checkbox>
+            <a-checkbox value="download">下载</a-checkbox>
+          </a-checkbox-group>
+        </a-form-item>
+
         <a-form-item label="最大查看次数" field="maxViewCount">
           <div class="form-item-with-input">
             <a-radio-group
@@ -174,6 +181,7 @@
     maxViewCount: undefined as number | undefined,
     maxDownloadCountType: 'unlimited' as 'unlimited' | 'custom',
     maxDownloadCount: undefined as number | undefined,
+    scopeList: ['preview'] as string[],
   });
 
   // 是否是批量分享
@@ -204,6 +212,7 @@
     form.maxViewCount = undefined;
     form.maxDownloadCountType = 'unlimited';
     form.maxDownloadCount = undefined;
+    form.scopeList = ['preview'];
   };
 
   // 禁用过去的日期
@@ -311,6 +320,9 @@
     try {
       const fileIds = targetFiles.map((f) => f.id);
 
+      // 构建 scope 字符串：将选中的权限用逗号拼接
+      const scope = form.scopeList.join(',');
+
       const params = {
         fileIds,
         expireType: form.expireType,
@@ -322,6 +334,7 @@
           form.maxDownloadCountType === 'custom'
             ? form.maxDownloadCount
             : undefined,
+        scope,
       };
 
       const { data } = await shareFiles(params);

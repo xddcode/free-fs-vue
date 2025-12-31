@@ -93,9 +93,23 @@
               <icon-more :size="18" />
             </a-button>
             <template #content>
-              <a-doption v-if="!file.isDir" @click="$emit('preview', file)">
-                <icon-eye />
+              <a-doption
+                v-if="!file.isDir && hasPreviewPermission()"
+                @click="$emit('preview', file)"
+              >
+                <template #icon>
+                  <icon-eye />
+                </template>
                 预览
+              </a-doption>
+              <a-doption
+                v-if="!file.isDir && hasDownloadPermission()"
+                @click="$emit('download', file)"
+              >
+                <template #icon>
+                  <icon-download />
+                </template>
+                下载
               </a-doption>
             </template>
           </a-dropdown>
@@ -112,6 +126,7 @@
     IconApps,
     IconList,
     IconEye,
+    IconDownload,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -124,9 +139,20 @@
   interface Props {
     fileList: FileItem[];
     viewMode?: 'list' | 'grid';
+    scope?: string;
   }
 
-  defineProps<Props>();
+  const props = defineProps<Props>();
+
+  // 检查是否有预览权限
+  const hasPreviewPermission = () => {
+    return props.scope?.includes('preview') ?? true;
+  };
+
+  // 检查是否有下载权限
+  const hasDownloadPermission = () => {
+    return props.scope?.includes('download') ?? true;
+  };
 
   const emit = defineEmits<{
     (e: 'fileClick', file: FileItem): void;

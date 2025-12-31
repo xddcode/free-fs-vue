@@ -1,4 +1,5 @@
 import { request } from '@/api/interceptor';
+import service from '@/api/interceptor';
 import type {
   ShareItem,
   ShareListQuery,
@@ -72,4 +73,17 @@ export function getShareAccessRecords(shareId: string) {
   return request.get<ShareAccessRecord[]>(
     `/apis/share/${shareId}/access/records`
   );
+}
+
+/**
+ * 下载分享文件
+ * @param shareId 分享ID
+ * @param fileId 文件ID
+ * @returns Blob
+ */
+export function downloadShareFile(shareId: string, fileId: string) {
+  // 使用 service 实例直接返回 blob 响应
+  return service.get(`/apis/share/${shareId}/download/${fileId}`, {
+    responseType: 'blob',
+  });
 }

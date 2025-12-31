@@ -68,6 +68,11 @@ service.interceptors.response.use(
   (response: AxiosResponse<HttpResponse>) => {
     const { data: res, config } = response;
 
+    // 如果是 blob 类型的响应，直接返回
+    if (config.responseType === 'blob') {
+      return response;
+    }
+
     if (res.code === 200) {
       return response;
     }

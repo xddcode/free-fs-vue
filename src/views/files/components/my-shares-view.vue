@@ -67,7 +67,7 @@
         >
           <template #columns>
             <!-- 名称列 -->
-            <a-table-column title="名称" data-index="shareName" :width="300">
+            <a-table-column title="名称" data-index="shareName" :width="260">
               <template #cell="{ record }">
                 <div class="share-name-cell">
                   <icon-link :size="18" class="share-icon" />
@@ -77,7 +77,7 @@
             </a-table-column>
 
             <!-- 有效期列 -->
-            <a-table-column title="有效期" data-index="expireTime" :width="180">
+            <a-table-column title="有效期" data-index="expireTime" :width="150">
               <template #cell="{ record }">
                 <span
                   v-if="record.isPermanent === true"
@@ -105,7 +105,7 @@
             <a-table-column
               title="查看次数"
               data-index="viewCount"
-              :width="120"
+              :width="110"
               align="center"
             >
               <template #cell="{ record }">
@@ -122,7 +122,7 @@
             <a-table-column
               title="下载次数"
               data-index="downloadCount"
-              :width="120"
+              :width="110"
               align="center"
             >
               <template #cell="{ record }">
@@ -135,11 +135,38 @@
               </template>
             </a-table-column>
 
+            <!-- 分享权限列 -->
+            <a-table-column
+              title="分享权限"
+              data-index="scope"
+              :width="140"
+              align="center"
+            >
+              <template #cell="{ record }">
+                <div class="scope-tags">
+                  <a-tag
+                    v-if="!record.scope || record.scope.includes('preview')"
+                    size="small"
+                    color="arcoblue"
+                  >
+                    预览
+                  </a-tag>
+                  <a-tag
+                    v-if="!record.scope || record.scope.includes('download')"
+                    size="small"
+                    color="green"
+                  >
+                    下载
+                  </a-tag>
+                </div>
+              </template>
+            </a-table-column>
+
             <!-- 创建时间列 -->
             <a-table-column
               title="创建时间"
               data-index="createdAt"
-              :width="180"
+              :width="170"
             >
               <template #cell="{ record }">
                 <span class="time-text">
@@ -149,7 +176,7 @@
             </a-table-column>
 
             <!-- 操作列 -->
-            <a-table-column title="操作" :width="250" align="center">
+            <a-table-column title="操作" :width="200" align="center">
               <template #cell="{ record }">
                 <div class="share-actions">
                   <a-tooltip content="快捷复制">
@@ -255,6 +282,9 @@
               <span v-else>{{
                 formatExpireTime(currentShare.expireTime)
               }}</span>
+            </a-descriptions-item>
+            <a-descriptions-item label="分享权限">
+              {{ formatScopeText(currentShare.scope) }}
             </a-descriptions-item>
             <a-descriptions-item label="查看次数">
               {{ currentShare.viewCount }}
@@ -553,6 +583,23 @@
   };
 
   /**
+   * 格式化权限文本
+   */
+  const formatScopeText = (scope?: string) => {
+    if (!scope) return '预览 + 下载';
+    
+    const permissions: string[] = [];
+    if (scope.includes('preview')) {
+      permissions.push('预览');
+    }
+    if (scope.includes('download')) {
+      permissions.push('下载');
+    }
+    
+    return permissions.length > 0 ? permissions.join(' + ') : '-';
+  };
+
+  /**
    * 处理快捷复制
    * 格式：
    * 文件名
@@ -776,6 +823,14 @@
         align-items: center;
         justify-content: center;
         gap: 4px;
+      }
+
+      .scope-tags {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        flex-wrap: wrap;
       }
     }
 

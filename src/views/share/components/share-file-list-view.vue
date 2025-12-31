@@ -68,17 +68,27 @@
             </template>
           </a-table-column>
 
-          <a-table-column title="操作" :width="100" align="center">
+          <a-table-column title="操作" :width="150" align="center">
             <template #cell="{ record }">
               <div class="file-actions">
-                <a-button
-                  v-if="!record.isDir"
-                  size="small"
-                  type="text"
-                  @click.stop="$emit('preview', record)"
-                >
-                  <icon-eye />
-                </a-button>
+                <a-tooltip v-if="!record.isDir && hasPreviewPermission()" content="预览">
+                  <a-button
+                    size="small"
+                    type="text"
+                    @click.stop="$emit('preview', record)"
+                  >
+                    <icon-eye />
+                  </a-button>
+                </a-tooltip>
+                <a-tooltip v-if="!record.isDir && hasDownloadPermission()" content="下载">
+                  <a-button
+                    size="small"
+                    type="text"
+                    @click.stop="$emit('download', record)"
+                  >
+                    <icon-download />
+                  </a-button>
+                </a-tooltip>
               </div>
             </template>
           </a-table-column>
@@ -94,6 +104,7 @@
     IconApps,
     IconList,
     IconEye,
+    IconDownload,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { getFileIconPath } from '@/utils/file-icon';
@@ -105,9 +116,20 @@
   interface Props {
     fileList: FileItem[];
     viewMode?: 'list' | 'grid';
+    scope?: string;
   }
 
-  defineProps<Props>();
+  const props = defineProps<Props>();
+
+  // 检查是否有预览权限
+  const hasPreviewPermission = () => {
+    return props.scope?.includes('preview') ?? true;
+  };
+
+  // 检查是否有下载权限
+  const hasDownloadPermission = () => {
+    return props.scope?.includes('download') ?? true;
+  };
 
   const emit = defineEmits<{
     (e: 'rowClick', record: FileItem): void;
