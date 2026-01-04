@@ -41,6 +41,7 @@
           showCheckedAll: true,
         }"
         @change="handleTableChange"
+        @row-click="handleRowClick"
       >
         <template #tr="slotProps">
           <tr
@@ -268,6 +269,28 @@
       const { field, direction } = extra.sorter;
       emit('sortChange', field, direction);
     }
+  };
+
+  /**
+   * 处理行点击选中逻辑
+   */
+  const handleRowClick = (record: FileItem, event: MouseEvent) => {
+    const isMultiSelect = event.ctrlKey || event.metaKey;
+    const newSelectedKeys = [...(props.selectedKeys || [])];
+    const isCurrentlySelected = isRowSelected(record.id);
+
+    if (isMultiSelect) {
+      if (isCurrentlySelected) {
+        const index = newSelectedKeys.indexOf(record.id);
+        if (index > -1) newSelectedKeys.splice(index, 1);
+      } else {
+        newSelectedKeys.push(record.id);
+      }
+    } else {
+      newSelectedKeys.splice(0, newSelectedKeys.length, record.id);
+    }
+
+    emit('update:selectedKeys', newSelectedKeys);
   };
 
   // 拖拽相关

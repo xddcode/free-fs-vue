@@ -73,6 +73,10 @@ export default function useFileList() {
         fileType: route.query.type as FileType | undefined,
         isFavorite: isFavoritesView ? true : undefined,
         isRecents: isRecentsView ? true : undefined,
+        isDir:
+          route.query.isDir !== undefined
+            ? route.query.isDir === 'true'
+            : undefined,
       });
 
       const result = response.data;
@@ -186,7 +190,12 @@ export default function useFileList() {
    * 监听路由变化，同步状态并重新加载数据
    */
   watch(
-    () => [route.query.type, route.query.parentId, route.query.view],
+    () => [
+      route.query.type,
+      route.query.parentId,
+      route.query.view,
+      route.query.isDir,
+    ],
     () => {
       syncParentIdFromRoute();
       fetchFileList();

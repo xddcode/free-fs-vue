@@ -145,4 +145,3 @@ export interface ShareAccessRecord {
   /** 访问时间 */
   accessTime: string;
 }
-

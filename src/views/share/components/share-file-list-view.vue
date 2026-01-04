@@ -71,7 +71,10 @@
           <a-table-column title="操作" :width="150" align="center">
             <template #cell="{ record }">
               <div class="file-actions">
-                <a-tooltip v-if="!record.isDir && hasPreviewPermission()" content="预览">
+                <a-tooltip
+                  v-if="!record.isDir && hasPreviewPermission()"
+                  content="预览"
+                >
                   <a-button
                     size="small"
                     type="text"
@@ -80,7 +83,10 @@
                     <icon-eye />
                   </a-button>
                 </a-tooltip>
-                <a-tooltip v-if="!record.isDir && hasDownloadPermission()" content="下载">
+                <a-tooltip
+                  v-if="!record.isDir && hasDownloadPermission()"
+                  content="下载"
+                >
                   <a-button
                     size="small"
                     type="text"

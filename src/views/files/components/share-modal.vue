@@ -135,9 +135,7 @@
           />
         </div>
         <div class="link-tip">
-          <template v-if="isPermanentShare()">
-            分享链接永久有效
-          </template>
+          <template v-if="isPermanentShare()"> 分享链接永久有效 </template>
           <template v-else>
             分享链接将在 {{ getExpireText() }} 后失效
           </template>
@@ -353,7 +351,7 @@
           : `成功生成 ${fileIds.length} 个文件的分享链接`;
       Message.success(successMsg);
       emit('success');
-    }finally {
+    } finally {
       loading.value = false;
     }
   };

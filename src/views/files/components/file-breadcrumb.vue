@@ -5,6 +5,8 @@
       <a-breadcrumb-item v-if="customTitle">
         <span class="breadcrumb-link is-current">
           <icon-star v-if="customTitle === '我的收藏'" />
+          <icon-share-alt v-else-if="customTitle === '我的分享'" />
+          <icon-delete v-else-if="customTitle === '回收站'" />
           <icon-folder v-else />
           {{ customTitle }}
         </span>
@@ -42,11 +44,16 @@
 </template>
 
 <script lang="ts" setup>
-  import { IconFolder, IconStar } from '@arco-design/web-vue/es/icon';
+  import {
+    IconFolder,
+    IconStar,
+    IconShareAlt,
+    IconDelete,
+  } from '@arco-design/web-vue/es/icon';
   import type { BreadcrumbItem } from '../hooks';
 
   interface Props {
-    breadcrumbPath: BreadcrumbItem[];
+    breadcrumbPath?: BreadcrumbItem[];
     customTitle?: string;
   }
 
@@ -54,7 +61,9 @@
     (e: 'navigate', folderId?: string): void;
   }
 
-  defineProps<Props>();
+  withDefaults(defineProps<Props>(), {
+    breadcrumbPath: () => [],
+  });
   const emit = defineEmits<Emits>();
 
   /**

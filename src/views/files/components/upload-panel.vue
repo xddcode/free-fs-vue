@@ -49,7 +49,7 @@
               <div class="file-name">{{ task.file.name }}</div>
               <a-progress
                 v-if="task.status === 'uploading'"
-                :percent="task.progress / 100"
+                :percent="task.progress"
                 size="small"
                 :style="{ width: '160px' }"
               />

@@ -66,19 +66,16 @@ export function useTransferManager() {
               finalUploadedChunks = existingTask.uploadedChunks;
               finalUploadedSize = existingTask.uploadedSize;
             }
-          }
-
-          else if (
+          } else if (
             item.status === UploadTaskStatus.PAUSED &&
             existingTask.progress !== undefined
           ) {
             finalProgress = existingTask.progress;
             // 暂停时也最好保留 chunks，否则文件大小显示可能会跳变
-            finalUploadedChunks = existingTask.uploadedChunks || item.uploadedChunks;
+            finalUploadedChunks =
+              existingTask.uploadedChunks || item.uploadedChunks;
             finalUploadedSize = existingTask.uploadedSize || item.uploadedSize;
-          }
-
-          else if (
+          } else if (
             existingTask.status === UploadTaskStatus.CANCELLING &&
             item.status !== UploadTaskStatus.CANCELLING &&
             item.status !== UploadTaskStatus.CANCELED

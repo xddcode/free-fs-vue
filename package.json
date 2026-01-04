@@ -1,10 +1,10 @@
 {
   "name": "free-fs-vue",
   "description": "free-fs 前端项目",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "author": "xddcode",
-  "license": "MIT",
+  "license": "Apache License 2.0",
   "scripts": {
     "dev": "vite --config ./config/vite.config.dev.ts",
     "build": "vite build --config ./config/vite.config.prod.ts",
@@ -102,7 +102,7 @@
     "vue-tsc": "^1.0.14"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "resolutions": {
     "bin-wrapper": "npm:bin-wrapper-china",

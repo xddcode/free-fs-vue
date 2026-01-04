@@ -72,7 +72,7 @@ export interface FileTransferTaskVO {
   /**
    * 任务类型
    */
-  taskType: 'upload' | 'download',
+  taskType: 'upload' | 'download';
 
   /**
    * 用户ID

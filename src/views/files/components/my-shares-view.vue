@@ -1,47 +1,28 @@
 <template>
   <div class="my-shares-view">
     <!-- 工具栏 -->
-    <div class="shares-toolbar">
-      <div class="toolbar-left">
-        <a-button
-          v-if="selectedKeys.length > 0"
-          size="large"
-          status="danger"
-          @click="handleBatchCancel"
-        >
-          <template #icon>
-            <icon-delete />
-          </template>
-          取消分享
-        </a-button>
-      </div>
-      <div class="toolbar-right">
-        <a-input-search
-          v-model="searchKeyword"
-          allow-clear
-          placeholder="搜索分享名称"
-          size="large"
-          style="width: 320px"
-          @clear="handleSearch"
-          @search="handleSearch"
-        />
-        <a-button size="large" @click="handleRefresh">
-          <icon-refresh />
-        </a-button>
-      </div>
-    </div>
+    <toolbar
+      v-model:search-keyword="searchKeyword"
+      placeholder="搜索分享名称"
+      hide-actions
+      @search="handleSearch"
+      @refresh="handleRefresh"
+    />
 
-    <!-- 标题栏 -->
-    <div class="shares-header">
-      <a-breadcrumb>
-        <a-breadcrumb-item>
-          <span class="breadcrumb-link is-current">
-            <icon-share-alt />
-            我的分享
-          </span>
-        </a-breadcrumb-item>
-      </a-breadcrumb>
-      <div class="header-info">共 {{ shareList.length }} 个分享</div>
+    <!-- 面包屑导航 -->
+    <file-breadcrumb custom-title="我的分享" />
+
+    <!-- 统一的视图控制栏 -->
+    <div class="view-control-bar">
+      <div class="control-left">
+        <span class="file-count-text">
+          {{
+            selectedKeys.length > 0
+              ? `已选 ${selectedKeys.length} 项`
+              : `共 ${shareList.length} 项`
+          }}
+        </span>
+      </div>
     </div>
 
     <!-- 表格 -->
@@ -227,6 +208,28 @@
       </LoadingSpinner>
     </div>
 
+    <!-- 底部悬浮批量操作栏 -->
+    <transition name="slide-up">
+      <div v-if="selectedKeys.length > 0" class="selection-dock">
+        <div class="dock-content">
+          <div class="dock-actions">
+            <a-tooltip content="取消分享">
+              <a-button
+                type="text"
+                class="dock-btn delete"
+                @click="handleBatchCancel"
+              >
+                <template #icon><icon-delete /></template>
+              </a-button>
+            </a-tooltip>
+          </div>
+          <a-button type="text" class="dock-btn cancel" @click="clearSelection">
+            <template #icon><icon-close-circle-fill /></template>
+          </a-button>
+        </div>
+      </div>
+    </transition>
+
     <!-- 查看分享弹窗 -->
     <a-modal
       v-model:visible="shareDetailVisible"
@@ -396,7 +399,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, onBeforeUnmount } from 'vue';
+  import dayjs from 'dayjs';
   import { Message, Modal } from '@arco-design/web-vue';
   import { LoadingSpinner } from '@/components';
   import {
@@ -406,8 +410,8 @@
     IconEye,
     IconDelete,
     IconCopy,
-    IconShareAlt,
     IconFile,
+    IconCloseCircleFill,
   } from '@arco-design/web-vue/es/icon';
   import {
     getMyShareList,
@@ -417,7 +421,8 @@
   } from '@/api/share';
   import type { ShareItem, ShareAccessRecord } from '@/types/modules/share';
   import { formatTime, formatDateTime } from '@/utils/format';
-  import dayjs from 'dayjs';
+  import Toolbar from './toolbar.vue';
+  import FileBreadcrumb from './file-breadcrumb.vue';
 
   // 搜索关键词
   const searchKeyword = ref('');
@@ -587,7 +592,7 @@
    */
   const formatScopeText = (scope?: string) => {
     if (!scope) return '预览 + 下载';
-    
+
     const permissions: string[] = [];
     if (scope.includes('preview')) {
       permissions.push('预览');
@@ -595,7 +600,7 @@
     if (scope.includes('download')) {
       permissions.push('下载');
     }
-    
+
     return permissions.length > 0 ? permissions.join(' + ') : '-';
   };
 
@@ -684,9 +689,30 @@
     });
   };
 
+  /**
+   * 清空选中
+   */
+  const clearSelection = () => {
+    selectedKeys.value = [];
+  };
+
+  /**
+   * 处理键盘事件
+   */
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      clearSelection();
+    }
+  };
+
   // 初始化
   onMounted(() => {
     fetchShareList();
+    window.addEventListener('keydown', handleKeyDown);
+  });
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleKeyDown);
   });
 </script>
 
@@ -695,56 +721,40 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    background-color: var(--color-bg-2);
 
-    .shares-toolbar {
+    .view-control-bar {
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--color-border-2);
-      background-color: var(--color-bg-2);
+      padding: 0 24px;
+      background-color: var(--color-bg-1);
+      flex-shrink: 0;
 
-      .toolbar-left,
-      .toolbar-right {
+      .control-left {
+        display: flex;
+        align-items: center;
+        .file-count-text {
+          font-size: 13px;
+          color: var(--color-text-3);
+          margin-left: 8px;
+        }
+      }
+
+      .control-right {
         display: flex;
         align-items: center;
         gap: 12px;
       }
     }
 
-    .shares-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--color-border-2);
-      background-color: var(--color-bg-2);
-
-      :deep(.arco-breadcrumb-item) {
-        cursor: default;
-      }
-
-      .breadcrumb-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        color: var(--color-text-1);
-        font-weight: 500;
-        font-size: 14px;
-      }
-
-      .header-info {
-        font-size: 14px;
-        color: var(--color-text-3);
-        white-space: nowrap;
-      }
-    }
-
     .shares-content {
       flex: 1;
-      padding: 16px 24px;
+      padding: 0 24px 16px;
       overflow: auto;
       position: relative;
+      background-color: var(--color-bg-1);
 
       :deep(.arco-table) {
         .arco-table-th {
@@ -832,6 +842,77 @@
         gap: 4px;
         flex-wrap: wrap;
       }
+    }
+
+    // 底部悬浮 Dock (深色高对比方案)
+    .selection-dock {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background-color: #1d1d1f;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      .dock-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .dock-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .dock-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 20px;
+        color: rgba(255, 255, 255, 0.85);
+        transition: all 0.2s;
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.12);
+          color: #ffffff;
+          transform: translateY(-3px);
+        }
+
+        &.delete:hover {
+          background-color: rgba(var(--danger-6), 0.2);
+          color: rgb(var(--danger-6));
+        }
+
+        &.cancel {
+          color: rgba(255, 255, 255, 0.45);
+          font-size: 24px;
+          &:hover {
+            background-color: transparent;
+            color: #ffffff;
+          }
+        }
+      }
+    }
+
+    // 动画
+    .slide-up-enter-active,
+    .slide-up-leave-active {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .slide-up-enter-from {
+      opacity: 0;
+      transform: translate(-50%, 40px);
+    }
+
+    .slide-up-leave-to {
+      opacity: 0;
+      transform: translate(-50%, 20px);
     }
 
     .empty-records {

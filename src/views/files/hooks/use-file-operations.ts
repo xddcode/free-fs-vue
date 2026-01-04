@@ -11,6 +11,7 @@ import {
 } from '@/api/file';
 import type { FileItem } from '@/types/modules/file';
 import { shareFiles } from '@/api/share';
+import { getToken } from '@/utils/auth';
 
 /**
  * 文件操作 Hook
@@ -285,84 +286,38 @@ export default function useFileOperations(refreshCallback: () => void) {
   };
 
   /**
-   * 传统下载方式（回退方案）
-   */
-  const fallbackDownload = (blob: Blob, fileName: string) => {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    Message.success('下载成功（使用默认下载文件夹）');
-  };
-
-  /**
    * 下载文件（支持单个和批量）
+   * 使用 a 标签直接下载，token 通过 URL 参数传递
    */
   const handleDownload = async (files: FileItem | FileItem[]) => {
-    // const fileArray = Array.isArray(files) ? files : [files];
-    // const fileIds = fileArray.map((f) => f.id);
+    try {
+      const fileArray = Array.isArray(files) ? files : [files];
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const token = getToken();
 
-    // await downloadFiles(fileIds).then(async (response) => {
-    //   const blob = new Blob([response.data]);
+      // 依次下载每个文件
+      fileArray.forEach((file) => {
+        // 构建下载链接，将 token 放到 URL 参数中
+        const downloadUrl = `${apiBaseUrl}/apis/transfer/download/${file.id}?Authorization=Bearer ${token}`;
 
-    //   // 单个文件使用原文件名，多个文件打包为zip
-    //   const fileName =
-    //     fileIds.length === 1
-    //       ? fileArray[0].displayName
-    //       : `批量下载_${Date.now()}.zip`;
+        // 创建隐藏的 a 标签触发下载
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = file.originalName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
 
-    //   // 检查浏览器是否支持 File System Access API
-    //   if ('showSaveFilePicker' in window) {
-    //     try {
-    //       const fileTypes =
-    //         fileIds.length === 1 && fileArray[0].suffix
-    //           ? [
-    //               {
-    //                 description: '文件',
-    //                 accept: {
-    //                   '*/*': [`.${fileArray[0].suffix}`],
-    //                 },
-    //               },
-    //             ]
-    //           : [
-    //               {
-    //                 description: 'ZIP 文件',
-    //                 accept: {
-    //                   'application/zip': ['.zip'],
-    //                 },
-    //               },
-    //             ];
-
-    //       const handle = await (window as any).showSaveFilePicker({
-    //         suggestedName: fileName,
-    //         types: fileTypes,
-    //       });
-
-    //       const writable = await handle.createWritable();
-    //       await writable.write(blob);
-    //       await writable.close();
-
-    //       const successMsg =
-    //         fileIds.length === 1
-    //           ? '下载成功'
-    //           : `成功下载 ${fileIds.length} 个文件`;
-    //       Message.success(successMsg);
-    //     } catch (error: any) {
-    //       if (error.name === 'AbortError') {
-    //         Message.info('已取消下载');
-    //         return;
-    //       }
-    //       Message.warning('保存失败，使用默认下载方式');
-    //       fallbackDownload(blob, fileName);
-    //     }
-    //   } else {
-    //     fallbackDownload(blob, fileName);
-    //   }
-    // });
+      const successMsg =
+        fileArray.length === 1
+          ? '开始下载文件'
+          : `开始下载 ${fileArray.length} 个文件`;
+      Message.success(successMsg);
+    } catch (err: any) {
+      Message.error(err.message || '下载失败，请稍后重试');
+    }
   };
 
   /**

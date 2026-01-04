@@ -26,7 +26,7 @@ const ROOT: AppRouteRecordRaw = {
       name: 'files',
       component: () => import('@/views/files/index.vue'),
       meta: {
-        title: '文件',
+        title: '全部文件',
         requiresAuth: true,
         icon: 'IconFile',
         hideInMenu: false,

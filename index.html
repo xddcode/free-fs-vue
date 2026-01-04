@@ -13,19 +13,22 @@
   <body>
     <div id="app">
       <!-- 初始 Lottie 加载动画 -->
-      <div id="initial-loading" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #ffffff;
-        z-index: 9999;
-      ">
-        <div id="lottie-container" style="width: 200px; height: 200px;"></div>
+      <div
+        id="initial-loading"
+        style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #ffffff;
+          z-index: 9999;
+        "
+      >
+        <div id="lottie-container" style="width: 200px; height: 200px"></div>
       </div>
       <style>
         body[arco-theme='dark'] #initial-loading {
@@ -33,15 +36,16 @@
         }
       </style>
     </div>
-    
+
     <!-- Lottie Web Player -->
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script>
       // 使用 lottie-web 加载动画
-      (function() {
+      (function () {
         const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
-        script.onload = function() {
+        script.src =
+          'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
+        script.onload = function () {
           const container = document.getElementById('lottie-container');
           if (container && window.lottie) {
             window.lottie.loadAnimation({
@@ -49,14 +53,14 @@
               renderer: 'svg',
               loop: true,
               autoplay: true,
-              path: '/src/assets/loading/loading.json'
+              path: '/src/assets/loading/loading.json',
             });
           }
         };
         document.head.appendChild(script);
       })();
     </script>
-    
+
     <script src="/src/main.ts" type="module"></script>
   </body>
 </html>

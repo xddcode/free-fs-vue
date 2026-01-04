@@ -399,10 +399,10 @@
     try {
       const shareToken = route.params.shareToken as string;
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      
+
       // 构建下载链接
       const downloadUrl = `${apiBaseUrl}/apis/share/${shareToken}/download/${file.id}`;
-      
+
       // 创建隐藏的 a 标签触发下载（浏览器直接流式下载，不占用内存）
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -411,7 +411,7 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       Message.success('开始下载文件');
     } catch (err: any) {
       Message.error(err.message || '下载失败，请稍后重试');

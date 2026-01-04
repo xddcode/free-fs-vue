@@ -31,10 +31,11 @@
           </a-tabs>
         </div>
         <div class="header-right">
-          <a-button type="text" @click="actions.refresh">
-            <template #icon><icon-refresh /></template>
-            刷新
-          </a-button>
+          <a-tooltip content="刷新">
+            <a-button size="large" @click="actions.refresh">
+              <template #icon><icon-refresh /></template>
+            </a-button>
+          </a-tooltip>
         </div>
       </a-layout-header>
 

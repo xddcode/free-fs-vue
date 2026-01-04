@@ -1,39 +1,5 @@
 <template>
   <div class="file-grid-view-container">
-    <div class="file-grid-header">
-      <div class="header-left">
-        <a-checkbox
-          :model-value="isAllSelected"
-          :indeterminate="isIndeterminate"
-          @change="handleSelectAll"
-        >
-          <span class="file-count-text">
-            {{
-              selectedKeys && selectedKeys.length > 0
-                ? `已选 ${selectedKeys.length} 个文件`
-                : `共 ${fileList.length} 个文件`
-            }}
-          </span>
-        </a-checkbox>
-      </div>
-      <div class="header-right">
-        <a-button-group size="large">
-          <a-button @click="$emit('update:viewMode', 'list')">
-            <icon-list
-              :style="{ color: viewMode === 'list' ? '#165dff' : '' }"
-            />
-          </a-button>
-          <a-button @click="$emit('update:viewMode', 'grid')">
-            <icon-apps
-              :style="{ color: viewMode === 'grid' ? '#165dff' : '' }"
-            />
-          </a-button>
-        </a-button-group>
-        <a-button size="large" @click="$emit('refresh')">
-          <icon-refresh />
-        </a-button>
-      </div>
-    </div>
     <div class="file-grid-view">
       <div
         v-for="file in fileList"
@@ -270,42 +236,30 @@
     ) {
       return;
     }
-    // 单击切换选中状态
-    handleCheckboxChange(file.id, !isSelected(file.id));
+
+    const isMultiSelect = event.ctrlKey || event.metaKey;
+    const newSelectedKeys = [...(props.selectedKeys || [])];
+    const isCurrentlySelected = isSelected(file.id);
+
+    if (isMultiSelect) {
+      // CTRL + Click: 切换当前项状态
+      if (isCurrentlySelected) {
+        const index = newSelectedKeys.indexOf(file.id);
+        if (index > -1) newSelectedKeys.splice(index, 1);
+      } else {
+        newSelectedKeys.push(file.id);
+      }
+    } else {
+      // 普通左键点击: 仅选中当前项
+      newSelectedKeys.splice(0, newSelectedKeys.length, file.id);
+    }
+
+    emit('update:selectedKeys', newSelectedKeys);
   };
 
   const handleFileDoubleClick = (file: FileItem) => {
     if (file.isDir) {
       emit('fileClick', file);
-    }
-  };
-
-  // 全选相关逻辑
-  const isAllSelected = computed(() => {
-    if (!props.fileList.length) return false;
-    return (
-      props.selectedKeys?.length === props.fileList.length &&
-      props.fileList.every((file) => props.selectedKeys?.includes(file.id))
-    );
-  });
-
-  const isIndeterminate = computed(() => {
-    const selectedCount = props.selectedKeys?.length || 0;
-    return selectedCount > 0 && selectedCount < props.fileList.length;
-  });
-
-  const handleSelectAll = (
-    value: boolean | (string | number | boolean)[],
-    ev?: Event
-  ) => {
-    const checked = typeof value === 'boolean' ? value : value.length > 0;
-    if (checked) {
-      // 全选
-      const allKeys = props.fileList.map((file) => file.id);
-      emit('update:selectedKeys', allKeys);
-    } else {
-      // 取消全选
-      emit('update:selectedKeys', []);
     }
   };
 

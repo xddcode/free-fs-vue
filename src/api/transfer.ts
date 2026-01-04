@@ -90,3 +90,15 @@ export function pauseUpload(taskId: string) {
 export function resumeUpload(taskId: string) {
   return request.post(`/apis/transfer/resume/${taskId}`);
 }
+
+/**
+ * 下载文件
+ * 注意：此接口返回文件流，使用原始axios请求以正确处理blob响应
+ */
+// export function downloadFile(fileId: string) {
+//   // 直接使用 axios 实例而非 request 包装器，避免 blob 响应被额外处理
+//   const service = require('@/api/interceptor').default;
+//   return service.get(`/apis/transfer/download/${fileId}`, {
+//     responseType: 'blob',
+//   });
+// }

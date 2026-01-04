@@ -1,57 +1,44 @@
 <template>
   <div class="recycle-bin-view">
     <!-- 工具栏 -->
-    <div class="recycle-toolbar">
-      <!-- 批量操作工具栏 -->
-      <div v-if="selectedIds.length > 0" class="batch-toolbar">
-        <div class="toolbar-left">
-          <!-- 批量还原 -->
-          <a-button type="outline" size="large" @click="handleBatchRestore">
-            <template #icon>
-              <icon-undo />
-            </template>
-            还原
-          </a-button>
-          <!-- 批量删除 -->
-          <a-button size="large" status="danger" @click="handleBatchDelete">
-            <template #icon>
-              <icon-delete />
-            </template>
-            删除
-          </a-button>
-        </div>
-      </div>
-
-      <!-- 普通工具栏 -->
-      <template v-else>
-        <div class="toolbar-left">
-          <a-input-search
-            v-model="searchKeyword"
-            placeholder="搜索回收站文件"
-            size="large"
-            style="width: 320px"
-            allow-clear
-            @search="handleSearch"
-            @clear="handleSearch"
-          />
-        </div>
+    <toolbar
+      v-model:search-keyword="searchKeyword"
+      placeholder="搜索回收站文件"
+      hide-actions
+      @search="handleSearch"
+      @refresh="handleRefresh"
+    >
+      <template #extra>
+        <a-button
+          size="large"
+          status="danger"
+          :disabled="fileList.length === 0"
+          @click="handleClearRecycle"
+        >
+          <template #icon><icon-delete /></template>
+          清空回收站
+        </a-button>
       </template>
-    </div>
+    </toolbar>
 
     <!-- 面包屑导航 -->
-    <div class="recycle-breadcrumb">
-      <a-breadcrumb>
-        <a-breadcrumb-item>
-          <span class="breadcrumb-link is-current">
-            <icon-delete />
-            回收站
-          </span>
-        </a-breadcrumb-item>
-      </a-breadcrumb>
-      <span class="recycle-breadcrumb-tip">
-        <icon-info-circle />
-        回收站默认保存7天，到期自动清理！
-      </span>
+    <file-breadcrumb custom-title="回收站" />
+    <div class="recycle-tip-bar">
+      <icon-info-circle />
+      回收站默认保存7天，到期自动清理！
+    </div>
+
+    <!-- 统一的视图控制栏 -->
+    <div class="view-control-bar">
+      <div class="control-left">
+        <span class="file-count-text">
+          {{
+            selectedIds.length > 0
+              ? `已选 ${selectedIds.length} 项`
+              : `共 ${fileList.length} 项`
+          }}
+        </span>
+      </div>
     </div>
 
     <!-- 文件列表 -->
@@ -67,140 +54,135 @@
           </template>
         </a-empty>
 
-        <!-- 列表视图 -->
-        <div v-else class="file-list-container">
-          <!-- 列表头部 -->
-          <div class="file-list-header">
-            <div class="header-left">
-              <span class="file-count-text">
-                {{
-                  selectedIds.length > 0
-                    ? `已选 ${selectedIds.length} 个文件`
-                    : `共 ${fileList.length} 个文件`
-                }}
-              </span>
-            </div>
-            <div class="header-right">
-              <!-- 清空回收站 -->
-              <a-button
-                size="large"
-                status="danger"
-                :disabled="fileList.length === 0"
-                @click="handleClearRecycle"
+        <!-- 表格视图 -->
+        <div v-else class="file-list">
+          <a-table
+            v-model:selected-keys="selectedIds"
+            :data="fileList"
+            :pagination="false"
+            :bordered="false"
+            :row-selection="{
+              type: 'checkbox',
+              showCheckedAll: true,
+            }"
+            row-key="id"
+          >
+            <template #columns>
+              <a-table-column
+                title="文件名"
+                data-index="displayName"
+                :width="400"
               >
-                <template #icon>
-                  <icon-delete />
-                </template>
-                清空
-              </a-button>
-              <!-- 刷新按钮 -->
-              <a-button size="large" @click="handleRefresh">
-                <template #icon>
-                  <icon-refresh />
-                </template>
-              </a-button>
-            </div>
-          </div>
-
-          <!-- 文件表格 -->
-          <div class="file-list">
-            <a-table
-              v-model:selected-keys="selectedIds"
-              :data="fileList"
-              :pagination="false"
-              :bordered="false"
-              :row-selection="{
-                type: 'checkbox',
-                showCheckedAll: true,
-              }"
-              row-key="id"
-            >
-              <template #columns>
-                <a-table-column
-                  title="文件名"
-                  data-index="displayName"
-                  :width="400"
-                >
-                  <template #cell="{ record }">
-                    <div class="file-name-cell">
-                      <div class="file-icon-wrapper">
-                        <img
-                          :src="
-                            getFileIconPath(
-                              record.isDir ? 'dir' : record.suffix || ''
-                            )
-                          "
-                          :alt="record.displayName"
-                          class="file-icon-img"
-                        />
-                      </div>
-                      <span class="file-name">{{ record.displayName }}</span>
+                <template #cell="{ record }">
+                  <div class="file-name-cell">
+                    <div class="file-icon-wrapper">
+                      <img
+                        :src="
+                          getFileIconPath(
+                            record.isDir ? 'dir' : record.suffix || ''
+                          )
+                        "
+                        :alt="record.displayName"
+                        class="file-icon-img"
+                      />
                     </div>
-                  </template>
-                </a-table-column>
+                    <span class="file-name">{{ record.displayName }}</span>
+                  </div>
+                </template>
+              </a-table-column>
 
-                <a-table-column title="大小" data-index="size" :width="120">
-                  <template #cell="{ record }">
-                    <span class="file-size">{{
-                      formatFileSize(record.size)
-                    }}</span>
-                  </template>
-                </a-table-column>
+              <a-table-column title="大小" data-index="size" :width="120">
+                <template #cell="{ record }">
+                  <span class="file-size">{{
+                    formatFileSize(record.size)
+                  }}</span>
+                </template>
+              </a-table-column>
 
-                <a-table-column
-                  title="删除时间"
-                  data-index="deletedTime"
-                  :width="180"
-                >
-                  <template #cell="{ record }">
-                    <span class="file-time">{{
-                      formatFileTime(record.deletedTime)
-                    }}</span>
-                  </template>
-                </a-table-column>
+              <a-table-column
+                title="删除时间"
+                data-index="deletedTime"
+                :width="180"
+              >
+                <template #cell="{ record }">
+                  <span class="file-time">{{
+                    formatFileTime(record.deletedTime)
+                  }}</span>
+                </template>
+              </a-table-column>
 
-                <a-table-column title="操作" :width="200" align="center">
-                  <template #cell="{ record }">
-                    <div class="file-actions">
-                      <a-tooltip content="还原">
-                        <a-button
-                          size="small"
-                          type="text"
-                          @click="handleRestoreSingle(record.id)"
-                        >
-                          <template #icon>
-                            <icon-undo />
-                          </template>
-                        </a-button>
-                      </a-tooltip>
-                      <a-tooltip content="删除">
-                        <a-button
-                          size="small"
-                          type="text"
-                          status="danger"
-                          @click="
-                            handleDeleteSingle(record.id, record.displayName)
-                          "
-                        >
-                          <template #icon>
-                            <icon-delete />
-                          </template>
-                        </a-button>
-                      </a-tooltip>
-                    </div>
-                  </template>
-                </a-table-column>
-              </template>
-            </a-table>
-          </div>
+              <a-table-column title="操作" :width="200" align="center">
+                <template #cell="{ record }">
+                  <div class="file-actions">
+                    <a-tooltip content="还原">
+                      <a-button
+                        size="small"
+                        type="text"
+                        @click="handleRestoreSingle(record.id)"
+                      >
+                        <template #icon>
+                          <icon-undo />
+                        </template>
+                      </a-button>
+                    </a-tooltip>
+                    <a-tooltip content="删除">
+                      <a-button
+                        size="small"
+                        type="text"
+                        status="danger"
+                        @click="
+                          handleDeleteSingle(record.id, record.displayName)
+                        "
+                      >
+                        <template #icon>
+                          <icon-delete />
+                        </template>
+                      </a-button>
+                    </a-tooltip>
+                  </div>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
         </div>
       </LoadingSpinner>
     </div>
+
+    <!-- 底部悬浮批量操作栏 -->
+    <transition name="slide-up">
+      <div v-if="selectedIds.length > 0" class="selection-dock">
+        <div class="dock-content">
+          <div class="dock-actions">
+            <a-tooltip content="还原">
+              <a-button
+                type="text"
+                class="dock-btn"
+                @click="handleBatchRestore"
+              >
+                <template #icon><icon-undo /></template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="彻底删除">
+              <a-button
+                type="text"
+                class="dock-btn delete"
+                @click="handleBatchDelete"
+              >
+                <template #icon><icon-delete /></template>
+              </a-button>
+            </a-tooltip>
+          </div>
+          <a-button type="text" class="dock-btn cancel" @click="clearSelection">
+            <template #icon><icon-close-circle-fill /></template>
+          </a-button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, onBeforeUnmount } from 'vue';
   import { Message, Modal } from '@arco-design/web-vue';
   import { LoadingSpinner } from '@/components';
   import {
@@ -208,8 +190,8 @@
     IconUndo,
     IconInfoCircle,
     IconRefresh,
+    IconCloseCircleFill,
   } from '@arco-design/web-vue/es/icon';
-  import type { FileRecycleItem } from '@/types/modules/file';
   import {
     getRecycleList,
     restoreFiles,
@@ -217,7 +199,10 @@
     clearRecycle,
   } from '@/api/file';
   import { getFileIconPath } from '@/utils/file-icon';
+  import type { FileRecycleItem } from '@/types/modules/file';
   import { formatFileSize, formatFileTime } from '../hooks/use-file-format';
+  import Toolbar from './toolbar.vue';
+  import FileBreadcrumb from './file-breadcrumb.vue';
 
   const loading = ref(false);
   const fileList = ref<FileRecycleItem[]>([]);
@@ -363,9 +348,30 @@
     });
   };
 
+  /**
+   * 清空选中
+   */
+  const clearSelection = () => {
+    selectedIds.value = [];
+  };
+
+  /**
+   * 处理键盘事件
+   */
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      clearSelection();
+    }
+  };
+
   // 初始化加载数据
   onMounted(() => {
     fetchRecycleList();
+    window.addEventListener('keydown', handleKeyDown);
+  });
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleKeyDown);
   });
 </script>
 
@@ -374,118 +380,127 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    background-color: var(--color-bg-2);
   }
 
-  .recycle-toolbar {
+  .recycle-tip-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 24px;
+    background-color: var(--color-warning-light-1);
+    color: var(--color-warning-7);
+    font-size: 13px;
+    border-bottom: 1px solid var(--color-border-2);
+
+    .arco-icon {
+      font-size: 14px;
+    }
+  }
+
+  .view-control-bar {
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--color-border-2);
-    background-color: var(--color-bg-2);
+    padding: 0 24px;
+    background-color: var(--color-bg-1);
+    flex-shrink: 0;
 
-    .toolbar-left {
+    .control-left {
+      display: flex;
+      align-items: center;
+      .file-count-text {
+        font-size: 13px;
+        color: var(--color-text-3);
+        margin-left: 8px;
+      }
+    }
+
+    .control-right {
       display: flex;
       align-items: center;
       gap: 12px;
-    }
-
-    .batch-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-
-      .toolbar-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-    }
-  }
-
-  .recycle-breadcrumb {
-    display: flex;
-    align-items: center;
-    padding: 12px 24px;
-    border-bottom: 1px solid var(--color-border-2);
-    background-color: var(--color-bg-2);
-
-    .breadcrumb-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: color 0.2s;
-
-      &.is-current {
-        color: var(--color-text-1);
-        font-weight: 500;
-        cursor: default;
-      }
-    }
-
-    .recycle-breadcrumb-tip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: 12px;
-      font-size: 13px;
-      color: var(--color-text-3);
-
-      .arco-icon {
-        font-size: 14px;
-      }
     }
   }
 
   .recycle-content {
     flex: 1;
+    padding: 0 24px 16px;
     overflow-y: auto;
     position: relative;
-  }
-
-  .file-list-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .file-list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-border-2);
     background-color: var(--color-bg-1);
+  }
 
-    .header-left {
+  // 底部悬浮 Dock (深色高对比方案)
+  .selection-dock {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background-color: #1d1d1f;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    .dock-content {
       display: flex;
       align-items: center;
       gap: 16px;
+    }
 
-      .file-count-text {
-        font-size: 14px;
-        color: var(--color-text-2);
+    .dock-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dock-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.85);
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        transform: translateY(-3px);
       }
 
-      .recycle-tip {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        color: var(--color-text-3);
+      &.delete:hover {
+        background-color: rgba(var(--danger-6), 0.2);
+        color: rgb(var(--danger-6));
+      }
 
-        .arco-icon {
-          font-size: 14px;
+      &.cancel {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 24px;
+        &:hover {
+          background-color: transparent;
+          color: #ffffff;
         }
       }
     }
+  }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+  // 动画
+  .slide-up-enter-active,
+  .slide-up-leave-active {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .slide-up-enter-from {
+    opacity: 0;
+    transform: translate(-50%, 40px);
+  }
+
+  .slide-up-leave-to {
+    opacity: 0;
+    transform: translate(-50%, 20px);
   }
 
   .file-list {

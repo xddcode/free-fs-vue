@@ -8,18 +8,24 @@
             <icon-storage class="page-icon" />
             <div class="page-info">
               <h2 class="page-title">存储平台管理</h2>
-              <p class="page-desc"
-                >配置和管理您的对象存储平台，支持 MinIO、阿里云 OSS、腾讯云 COS
-                等</p
-              >
+              <p class="page-desc">配置和管理您的对象存储平台</p>
             </div>
+            <a-input-search
+              v-model="searchKeyword"
+              placeholder="搜索配置..."
+              style="width: 240px; margin-left: 24px"
+              allow-clear
+            />
           </div>
-          <a-button type="outline" @click="handleRefresh">
-            <template #icon>
-              <icon-refresh />
-            </template>
-            刷新
-          </a-button>
+          <div class="page-header-right">
+            <a-tooltip content="刷新">
+              <a-button size="large" @click="handleRefresh">
+                <template #icon>
+                  <icon-refresh />
+                </template>
+              </a-button>
+            </a-tooltip>
+          </div>
         </div>
 
         <!-- 统计信息 -->
@@ -113,7 +119,7 @@
                 </a-col>
                 <!-- 用户已配置的存储平台卡片 -->
                 <a-col
-                  v-for="setting in userSettings"
+                  v-for="setting in filteredSettings"
                   :key="setting.id"
                   :xs="24"
                   :sm="12"
@@ -186,8 +192,21 @@
 
   const loading = ref(false);
   const userSettings = ref<StorageSetting[]>([]);
+  const searchKeyword = ref('');
   const addModalVisible = ref(false);
   const platformsCount = ref(0);
+
+  // 过滤后的设置列表
+  const filteredSettings = computed(() => {
+    if (!searchKeyword.value) return userSettings.value;
+    const keyword = searchKeyword.value.toLowerCase();
+    return userSettings.value.filter(
+      (s) =>
+        s.storagePlatform.name.toLowerCase().includes(keyword) ||
+        s.storagePlatform.identifier.toLowerCase().includes(keyword) ||
+        (s.remark || '').toLowerCase().includes(keyword)
+    );
+  });
 
   // 计算启用的数量
   const enabledCount = computed(() => {
@@ -195,7 +214,7 @@
   });
 
   const fetchData = async () => {
-      loading.value = true;
+    loading.value = true;
     try {
       const { data } = await getUserStorageSettings();
       userSettings.value = data;
@@ -277,6 +296,12 @@
           }
         }
       }
+
+      .page-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
     }
 
     // 统计卡片
@@ -284,27 +309,26 @@
       margin-bottom: 20px;
 
       .stat-card {
-        background: linear-gradient(
-          135deg,
-          rgb(var(--primary-1)) 0%,
-          rgb(var(--primary-2)) 100%
-        );
-        border-radius: 8px;
+        background: var(--color-bg-2);
+        border: 1px solid var(--color-border-1);
+        border-radius: 14px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
 
         :deep(.arco-statistic-title) {
-          font-size: 14px;
-          color: var(--color-text-2);
+          font-size: 13px;
+          color: var(--color-text-3);
+          margin-bottom: 8px;
         }
 
         :deep(.arco-statistic-value) {
-          font-size: 28px;
+          font-size: 26px;
           font-weight: 600;
-          color: rgb(var(--primary-6));
+          color: var(--color-text-1);
         }
 
         .stat-unit {
-          font-size: 14px;
-          color: var(--color-text-3);
+          font-size: 13px;
+          color: var(--color-text-4);
           margin-left: 4px;
         }
       }
@@ -313,18 +337,22 @@
     // 主内容卡片
     .storage-content-card {
       margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border-radius: 16px;
+      border: 1px solid var(--color-border-1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 
       .card-header {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
+        color: var(--color-text-1);
       }
 
       .empty-tip {
         margin-bottom: 20px;
+        border-radius: 10px;
       }
 
       .loading-wrap {
@@ -344,22 +372,26 @@
 
     // 帮助卡片
     .help-card {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      background: linear-gradient(
-        135deg,
-        rgba(var(--primary-1), 0.3) 0%,
-        rgba(var(--primary-2), 0.3) 100%
-      );
+      border-radius: 16px;
+      border: 1px solid var(--color-border-1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      background: var(--color-bg-2);
+
+      :deep(.arco-card-header) {
+        border-bottom: none;
+        padding-top: 20px;
+      }
 
       .help-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         font-size: 14px;
         color: var(--color-text-2);
+        padding: 4px 0;
 
         .help-icon {
-          color: rgb(var(--success-6));
+          color: #00b42a;
           font-size: 16px;
         }
       }

@@ -1,70 +1,6 @@
 <template>
   <div class="file-manager">
     <a-layout class="file-layout">
-      <!-- 左侧：文件分类（始终显示） -->
-      <a-layout-sider class="category-sider" :width="240">
-        <div class="category-header">
-          <div class="category-title">
-            <icon-cloud :size="20" />
-            <span>我的文件</span>
-          </div>
-        </div>
-
-        <div class="category-menu">
-          <div
-            v-for="category in fileCategories"
-            :key="category.key"
-            :class="[
-              'category-item',
-              { active: activeCategory === category.key },
-            ]"
-            @click="handleCategoryClick(category)"
-          >
-            <component :is="category.icon" :size="18" />
-            <span>{{ category.label }}</span>
-            <span v-if="category.count" class="count">{{
-              category.count
-            }}</span>
-          </div>
-
-          <a-divider style="margin: 16px 0" />
-
-          <div class="quick-access">
-            <div class="quick-title">快捷访问</div>
-            <div
-              :class="[
-                'category-item',
-                { active: activeCategory === 'favorites' },
-              ]"
-              @click="handleFavoritesClick"
-            >
-              <icon-star :size="18" />
-              <span>我的收藏</span>
-            </div>
-            <div
-              :class="[
-                'category-item',
-                { active: activeCategory === 'shares' },
-              ]"
-              @click="handleSharesClick"
-            >
-              <icon-share-alt :size="18" />
-              <span>我的分享</span>
-            </div>
-            <div
-              :class="[
-                'category-item',
-                { active: activeCategory === 'recents' },
-              ]"
-              @click="handleRecentsClick"
-            >
-              <icon-history :size="18" />
-              <span>最近使用</span>
-            </div>
-          </div>
-        </div>
-      </a-layout-sider>
-
       <!-- 右侧：主内容区 -->
       <a-layout-content class="file-main-content">
         <!-- 回收站视图 -->
@@ -79,16 +15,10 @@
           <toolbar
             v-model:search-keyword="searchKeyword"
             :hide-actions="isFavoritesView || isRecentsView"
-            :selected-count="selectedKeys.length"
-            :selected-files="selectedFiles"
             @upload="triggerFileSelect"
             @create-folder="operations.openCreateFolderModal"
             @search="fileList.search"
-            @batch-delete="handleBatchDelete"
-            @batch-download="handleBatchDownload"
-            @batch-share="handleBatchShare"
-            @batch-favorite="handleBatchFavorite"
-            @batch-move="handleBatchMove"
+            @refresh="fileList.refresh"
           />
 
           <!-- 面包屑导航 -->
@@ -103,6 +33,49 @@
             "
             @navigate="fileList.navigateToFolder"
           />
+
+          <!-- 统一的视图控制栏 (固定高度，防止切换跳动) -->
+          <div class="view-control-bar">
+            <div class="control-left">
+              <a-checkbox
+                v-if="viewMode === 'grid'"
+                :model-value="isAllSelected"
+                :indeterminate="isIndeterminate"
+                @change="handleSelectAll"
+              >
+                <span class="file-count-text">
+                  {{
+                    selectedKeys.length > 0
+                      ? `已选 ${selectedKeys.length} 项`
+                      : `共 ${fileList.fileList.value.length} 项`
+                  }}
+                </span>
+              </a-checkbox>
+              <span v-else class="file-count-text">
+                {{
+                  selectedKeys.length > 0
+                    ? `已选 ${selectedKeys.length} 项`
+                    : `共 ${fileList.fileList.value.length} 项`
+                }}
+              </span>
+            </div>
+            <div class="control-right">
+              <a-button-group size="small">
+                <a-button
+                  :type="viewMode === 'list' ? 'primary' : 'secondary'"
+                  @click="viewMode = 'list'"
+                >
+                  <template #icon><icon-list /></template>
+                </a-button>
+                <a-button
+                  :type="viewMode === 'grid' ? 'primary' : 'secondary'"
+                  @click="viewMode = 'grid'"
+                >
+                  <template #icon><icon-apps /></template>
+                </a-button>
+              </a-button-group>
+            </div>
+          </div>
 
           <!-- 文件内容区域 -->
           <a-dropdown
@@ -179,17 +152,17 @@
             </div>
             <template #content>
               <a-doption @click="operations.openCreateFolderModal">
-                <icon-folder-add />
+                <template #icon><icon-folder-add /></template>
                 新建文件夹
               </a-doption>
               <a-divider style="margin: 4px 0" />
               <a-doption @click="triggerFileSelect">
-                <icon-upload />
+                <template #icon><icon-upload /></template>
                 上传
               </a-doption>
               <a-divider style="margin: 4px 0" />
               <a-doption @click="fileList.refresh">
-                <icon-refresh />
+                <template #icon><icon-refresh /></template>
                 刷新
               </a-doption>
             </template>
@@ -238,31 +211,77 @@
       :files="operations.sharingFiles.value"
       @success="clearSelection"
     />
+
+    <!-- 底部悬浮批量操作栏 -->
+    <transition name="slide-up">
+      <div v-if="selectedKeys.length > 0" class="selection-dock">
+        <div class="dock-content">
+          <div class="dock-actions">
+            <a-tooltip content="下载">
+              <a-button
+                type="text"
+                class="dock-btn"
+                @click="handleBatchDownload"
+              >
+                <template #icon><icon-download /></template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="分享">
+              <a-button type="text" class="dock-btn" @click="handleBatchShare">
+                <template #icon><icon-share-alt /></template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip :content="favoriteButtonText">
+              <a-button
+                type="text"
+                class="dock-btn"
+                @click="handleBatchFavorite"
+              >
+                <template #icon>
+                  <icon-heart
+                    :fill="hasUnfavorited ? undefined : 'currentColor'"
+                  />
+                </template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="移动">
+              <a-button type="text" class="dock-btn" @click="handleBatchMove">
+                <template #icon><icon-drag-arrow /></template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="删除">
+              <a-button
+                type="text"
+                class="dock-btn delete"
+                @click="handleBatchDelete"
+              >
+                <template #icon><icon-delete /></template>
+              </a-button>
+            </a-tooltip>
+          </div>
+          <a-button type="text" class="dock-btn cancel" @click="clearSelection">
+            <template #icon><icon-close-circle-fill /></template>
+          </a-button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import {
-    ref,
-    computed,
-    onMounted,
-    onBeforeUnmount,
-    markRaw,
-    watch,
-  } from 'vue';
+  import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import {
-    IconCloud,
-    IconFile,
-    IconImage,
-    IconMusic,
-    IconDelete,
-    IconStar,
-    IconHistory,
-    IconFileVideo,
-    IconMore,
+    IconFolderAdd,
+    IconUpload,
+    IconRefresh,
+    IconDownload,
     IconShareAlt,
+    IconHeart,
+    IconDragArrow,
+    IconDelete,
+    IconCloseCircleFill,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
   import { uploadService } from '@/services/upload.service';
@@ -289,79 +308,10 @@
   // 文件选择input引用
   const fileInputRef = ref<HTMLInputElement | null>(null);
 
-  // 文件分类（对应后端 FileTypeEnum）
-  const fileCategories = [
-    {
-      key: 'all',
-      label: '全部文件',
-      icon: markRaw(IconFile),
-      path: '/files',
-      count: null,
-    },
-    {
-      key: 'image',
-      label: '图片',
-      icon: markRaw(IconImage),
-      path: '/files?type=image',
-      count: null,
-    },
-    {
-      key: 'document',
-      label: '文档',
-      icon: markRaw(IconFile),
-      path: '/files?type=document',
-      count: null,
-    },
-    {
-      key: 'video',
-      label: '视频',
-      icon: markRaw(IconFileVideo),
-      path: '/files?type=video',
-      count: null,
-    },
-    {
-      key: 'audio',
-      label: '音频',
-      icon: markRaw(IconMusic),
-      path: '/files?type=audio',
-      count: null,
-    },
-    {
-      key: 'other',
-      label: '其它',
-      icon: markRaw(IconMore),
-      path: '/files?type=other',
-      count: null,
-    },
-    {
-      key: 'recycle',
-      label: '回收站',
-      icon: markRaw(IconDelete),
-      path: '/files?view=recycle',
-      count: null,
-    },
-  ];
-
-  // 当前激活的分类
-  const activeCategory = computed(() => {
-    if (route.query.view === 'recycle') return 'recycle';
-    if (route.query.view === 'favorites') return 'favorites';
-    if (route.query.view === 'shares') return 'shares';
-    if (route.query.view === 'recents') return 'recents';
-    if (!route.query.type) return 'all';
-    return route.query.type as string;
-  });
-
-  // 是否是回收站视图
+  // 当前激活的分类 - 逻辑现在由全局侧边栏路由驱动
   const isRecycleBin = computed(() => route.query.view === 'recycle');
-
-  // 是否是收藏视图
   const isFavoritesView = computed(() => route.query.view === 'favorites');
-
-  // 是否是分享视图
   const isSharesView = computed(() => route.query.view === 'shares');
-
-  // 是否是最近使用视图
   const isRecentsView = computed(() => route.query.view === 'recents');
 
   // 视图模式
@@ -391,6 +341,17 @@
     );
   });
 
+  // 计算是否有未收藏的文件
+  const hasUnfavorited = computed(() => {
+    if (selectedFiles.value.length === 0) return true;
+    return selectedFiles.value.some((file) => !file.isFavorite);
+  });
+
+  // 收藏按钮文本
+  const favoriteButtonText = computed(() => {
+    return hasUnfavorited.value ? '收藏' : '取消收藏';
+  });
+
   // 使用文件操作 Hook
   const operations = useFileOperations(() => {
     fileList.refresh();
@@ -412,7 +373,6 @@
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
 
-      // 限制一次最多上传5个文件
       if (fileArray.length > 5) {
         Message.warning('一次最多只能上传5个文件');
         target.value = '';
@@ -423,9 +383,7 @@
         fileArray,
         fileList.currentParentId.value
       );
-      // 清空input，以便可以重复选择相同文件
       target.value = '';
-      // 刷新文件列表
       fileList.refresh();
     }
   };
@@ -435,7 +393,6 @@
    */
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      // 如果在收藏/最近视图下，跳转到全部文件页面并进入该文件夹
       if (isFavoritesView.value || isRecentsView.value) {
         router.push({
           path: '/files',
@@ -444,7 +401,6 @@
           },
         });
       } else {
-        // 正常进入文件夹
         fileList.enterFolder(file.id, viewMode.value);
       }
     }
@@ -485,16 +441,11 @@
    */
   const handleBatchDownload = async () => {
     if (selectedKeys.value.length === 0) return;
-
-    // 过滤出非文件夹的文件
     const downloadableFiles = selectedFiles.value.filter((f) => !f.isDir);
-
     if (downloadableFiles.length === 0) {
       Message.warning('没有可下载的文件');
       return;
     }
-
-    // 使用批量下载
     await operations.handleDownload(downloadableFiles);
     clearSelection();
   };
@@ -512,8 +463,6 @@
    */
   const handleBatchFavorite = async () => {
     if (selectedKeys.value.length === 0) return;
-
-    // 使用统一的收藏方法
     await operations.handleFavorite(selectedFiles.value);
     clearSelection();
   };
@@ -533,32 +482,14 @@
     await operations.handleFavorite(file);
   };
 
-  /**
-   * 处理分类点击
-   */
-  const handleCategoryClick = (category: any) => {
-    router.push(category.path);
-  };
-
-  /**
-   * 处理收藏点击
-   */
-  const handleFavoritesClick = () => {
-    router.push('/files?view=favorites');
-  };
-
-  /**
-   * 处理最近使用点击
-   */
-  const handleRecentsClick = () => {
-    router.push('/files?view=recents');
-  };
-
-  /**
-   * 处理分享点击
-   */
-  const handleSharesClick = () => {
-    router.push('/files?view=shares');
+  // 处理来自侧边栏的全局动作事件
+  const handleSidebarAction = (event: any) => {
+    const { type } = event.detail;
+    if (type === 'create-folder') {
+      operations.openCreateFolderModal();
+    } else if (type === 'upload') {
+      triggerFileSelect();
+    }
   };
 
   // 监听文件列表变化，清空选中状态
@@ -569,10 +500,7 @@
     }
   );
 
-  // 初始化加载数据
-  // 防止用户在上传过程中刷新页面
   const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    // 检查是否有正在上传的任务
     const uploadStore = useUploadTaskStore();
     const hasUploadingTasks = uploadStore.taskList.some(
       (task) => task.status === 'uploading'
@@ -580,72 +508,76 @@
 
     if (hasUploadingTasks) {
       e.preventDefault();
-      e.returnValue = ''; // Chrome requires returnValue to be set
+      e.returnValue = '';
       return '有文件正在上传，确定要离开吗？';
     }
     return undefined;
   };
 
-  /**
-   * 处理文件上传完成事件
-   */
   const handleFileUploadComplete = (event: Event) => {
     const customEvent = event as CustomEvent;
     const { parentId } = customEvent.detail;
-
-    // 如果上传的文件在当前目录，刷新列表
     if (parentId === fileList.currentParentId.value || !parentId) {
       fileList.refresh();
     }
   };
 
-  /**
-   * 处理键盘按键事件
-   */
   const handleKeyDown = (event: KeyboardEvent) => {
-    // 按下ESC键时取消全选
     if (event.key === 'Escape') {
       clearSelection();
     }
   };
 
-  /**
-   * 处理内容区域点击事件
-   */
   const handleContentClick = () => {
-    // 点击内容区域时关闭右键菜单
     contextMenuVisible.value = false;
   };
 
-  /**
-   * 处理文件项下拉菜单打开事件
-   */
   const handleDropdownOpen = () => {
-    // 文件项菜单打开时关闭右键菜单
     contextMenuVisible.value = false;
+  };
+
+  // 全选相关逻辑
+  const isAllSelected = computed(() => {
+    const list = fileList.fileList.value;
+    if (!list.length) return false;
+    return (
+      selectedKeys.value.length === list.length &&
+      list.every((file) => selectedKeys.value.includes(file.id))
+    );
+  });
+
+  const isIndeterminate = computed(() => {
+    const selectedCount = selectedKeys.value.length;
+    return selectedCount > 0 && selectedCount < fileList.fileList.value.length;
+  });
+
+  const handleSelectAll = (value: boolean | (string | number | boolean)[]) => {
+    const checked = typeof value === 'boolean' ? value : value.length > 0;
+    if (checked) {
+      selectedKeys.value = fileList.fileList.value.map((file) => file.id);
+    } else {
+      selectedKeys.value = [];
+    }
   };
 
   onMounted(() => {
-    // 获取样式变量
     viewMode.value = (route.query.viewMode ?? 'grid') as 'grid' | 'list';
-
     fileList.fetchFileList();
-    // 添加页面刷新/关闭警告
     window.addEventListener('beforeunload', handleBeforeUnload);
-    // 监听文件上传完成事件
     window.addEventListener('file-upload-complete', handleFileUploadComplete);
-    // 监听键盘事件
     window.addEventListener('keydown', handleKeyDown);
+    // 监听全局动作
+    window.addEventListener('sidebar-action', handleSidebarAction);
   });
 
   onBeforeUnmount(() => {
-    // 移除事件监听器
     window.removeEventListener('beforeunload', handleBeforeUnload);
     window.removeEventListener(
       'file-upload-complete',
       handleFileUploadComplete
     );
     window.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('sidebar-action', handleSidebarAction);
   });
 </script>
 
@@ -655,101 +587,139 @@
     display: flex;
     flex-direction: column;
     background-color: var(--color-bg-2);
+    position: relative; // 必须设为 relative 供底部操作栏定位
 
     .file-layout {
       height: 100%;
       background-color: var(--color-bg-2);
     }
 
-    // 分类侧边栏
-    .category-sider {
-      background-color: var(--color-bg-2);
-      border-right: 1px solid var(--color-border-2);
-
-      :deep(.arco-layout-sider-children) {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-      }
-    }
-
-    .category-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px;
-      border-bottom: 1px solid var(--color-border-2);
-
-      .category-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-text-1);
-      }
-    }
-
-    .category-menu {
-      flex: 1;
-      padding: 8px;
-      overflow-y: auto;
-    }
-
-    .category-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: var(--color-text-2);
-      font-size: 14px;
-      margin-bottom: 2px;
-
-      span:first-of-type {
-        flex: 1;
-      }
-
-      .count {
-        font-size: 12px;
-        color: var(--color-text-3);
-        flex: none;
-      }
-
-      &:hover {
-        background-color: var(--color-fill-2);
-        color: rgb(var(--primary-6));
-      }
-
-      &.active {
-        background-color: var(--color-primary-light-1);
-        color: rgb(var(--primary-6));
-        font-weight: 500;
-      }
-    }
-
-    .quick-access {
-      .quick-title {
-        font-size: 12px;
-        color: var(--color-text-3);
-        padding: 8px 12px 4px;
-      }
-    }
-
     // 右侧主内容区
     .file-main-content {
       display: flex;
       flex-direction: column;
-      background-color: var(--color-bg-2);
+      background-color: var(--color-bg-1); // 使用 bg-1 增加对比
     }
 
     // 文件内容区域
     .file-content {
       flex: 1;
-      padding: 16px 24px;
+      padding: 0 24px 16px; // 顶部间距由 view-control-bar 提供
       overflow-y: auto;
     }
+  }
+
+  // 统一的控制栏样式
+  .view-control-bar {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background-color: var(--color-bg-1);
+    flex-shrink: 0;
+
+    .control-left {
+      display: flex;
+      align-items: center;
+      .file-count-text {
+        font-size: 13px;
+        color: var(--color-text-3);
+        margin-left: 8px;
+      }
+    }
+
+    .control-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      :deep(.arco-btn-group) {
+        background-color: var(--color-fill-2);
+        padding: 2px;
+        border-radius: 6px;
+        .arco-btn {
+          border: none;
+          &.arco-btn-secondary {
+            background: transparent;
+            color: var(--color-text-3);
+          }
+          &.arco-btn-primary {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          }
+        }
+      }
+    }
+  }
+
+  // 底部悬浮 Dock (深色高对比方案)
+  .selection-dock {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background-color: #1d1d1f;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    padding: 8px 12px; // 稍微收窄内边距
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    .dock-content {
+      display: flex;
+      align-items: center;
+      gap: 16px; // 加大按钮组与取消按钮的间距
+    }
+
+    .dock-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dock-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.85);
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        transform: translateY(-3px);
+      }
+
+      &.delete:hover {
+        background-color: rgba(var(--danger-6), 0.2);
+        color: rgb(var(--danger-6));
+      }
+
+      &.cancel {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 24px;
+        &:hover {
+          background-color: transparent;
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  // 动画
+  .slide-up-enter-active,
+  .slide-up-leave-active {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .slide-up-enter-from {
+    opacity: 0;
+    transform: translate(-50%, 40px);
+  }
+
+  .slide-up-leave-to {
+    opacity: 0;
+    transform: translate(-50%, 20px);
   }
 </style>

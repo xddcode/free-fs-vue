@@ -83,4 +83,6 @@ export interface FileListParams {
   isFavorite?: boolean;
   /** 是否最近使用 */
   isRecents?: boolean;
+  /** 是否目录 */
+  isDir?: boolean;
 }
