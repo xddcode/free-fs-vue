@@ -19,18 +19,19 @@
           </a-avatar>
           <div class="card-title-wrap">
             <div class="card-title">
-              {{ setting.storagePlatform.name }}
+              <span class="title-text">{{ setting.storagePlatform.name }}</span>
               <a-link
                 v-if="setting.storagePlatform.link"
                 :href="setting.storagePlatform.link"
-                icon
                 rel="noopener noreferrer"
                 target="_blank"
-                style="margin-left: 4px"
+                style="margin-left: 4px; padding: 0"
               >
-                <icon-link style="font-size: 12px" />
+                <icon-link style="font-size: 14px" />
               </a-link>
-              <!-- 启用状态标签 -->
+            </div>
+            <!-- 启用状态标签 -->
+            <div class="status-tag-wrap">
               <a-tag
                 v-if="setting.enabled === 1"
                 color="green"
@@ -50,21 +51,44 @@
               </a-tag>
             </div>
             <div class="card-subtitle">
-              <span class="config-id">配置ID: {{ setting.id }}</span>
-              <div
-                v-if="setting.remark && setting.remark.trim()"
-                class="config-remark"
+              <span class="config-id">ID: {{ setting.id }}</span>
+              <a-typography-text
+                copyable
+                :copy-text="String(setting.id)"
+                style="margin-left: 4px"
               >
-                <icon-tags style="font-size: 12px; margin-right: 2px" />
-                <span>{{ setting.remark }}</span>
-              </div>
-              <div v-else class="config-remark-empty">
-                <icon-exclamation-circle
-                  style="font-size: 12px; margin-right: 2px"
-                />
-                <span>未设置备注（建议添加）</span>
-              </div>
+                <template #copy-icon>
+                  <icon-copy style="font-size: 10px; cursor: pointer" />
+                </template>
+                <template #copy-success-icon>
+                  <icon-check
+                    style="font-size: 10px; color: var(--color-success-light-4)"
+                  />
+                </template>
+              </a-typography-text>
             </div>
+          </div>
+        </div>
+
+        <div class="card-info-box">
+          <div
+            v-if="setting.remark && setting.remark.trim()"
+            :class="[
+              'config-remark',
+              setting.remark === '测试' ? 'test-remark' : '',
+            ]"
+          >
+            <component
+              :is="setting.remark === '测试' ? IconSafe : IconTags"
+              style="font-size: 12px; margin-right: 4px"
+            />
+            <span>{{ setting.remark }}</span>
+          </div>
+          <div v-else class="config-remark-empty">
+            <icon-exclamation-circle
+              style="font-size: 11px; margin-right: 4px"
+            />
+            <span>未设置备注</span>
           </div>
         </div>
 
@@ -84,61 +108,49 @@
 
       <template #actions>
         <div class="card-actions">
-          <!-- 启用/禁用按钮 -->
-          <a-button
-            v-if="setting.enabled === 1"
-            :loading="btnLoading"
-            size="small"
-            status="danger"
-            type="outline"
-            @click="handleToggleEnabled"
-          >
-            <template #icon>
-              <icon-poweroff />
-            </template>
-            禁用
-          </a-button>
-          <a-button
-            v-else
-            :loading="btnLoading"
-            size="small"
-            type="primary"
-            @click="handleToggleEnabled"
-          >
-            <template #icon>
-              <icon-check />
-            </template>
-            启用
-          </a-button>
+          <!-- 启用/禁用切换（电源样式） -->
+          <div class="action-light-wrap">
+            <a-tooltip
+              :content="setting.enabled === 1 ? '点击禁用' : '点击启用'"
+            >
+              <div
+                class="light-toggle-btn"
+                :class="{
+                  'is-active': setting.enabled === 1,
+                  'is-loading': btnLoading,
+                }"
+                @click="!btnLoading && handleToggleEnabled()"
+              >
+                <div class="light-glow"></div>
+                <icon-poweroff v-if="!btnLoading" />
+                <icon-loading v-else />
+              </div>
+            </a-tooltip>
+          </div>
 
-          <!-- 查看配置按钮 -->
-          <a-button size="small" type="outline" @click="handleViewConfig">
-            <template #icon>
-              <icon-eye />
-            </template>
-            查看
-          </a-button>
-
-          <!-- 编辑配置按钮 -->
-          <a-button size="small" type="outline" @click="handleEditConfig">
-            <template #icon>
-              <icon-settings />
-            </template>
-            编辑
-          </a-button>
-
-          <!-- 删除按钮 -->
-          <a-button
-            size="small"
-            status="danger"
-            type="outline"
-            @click="handleDelete"
-          >
-            <template #icon>
-              <icon-delete />
-            </template>
-            删除
-          </a-button>
+          <a-button-group class="action-btn-group">
+            <a-tooltip content="查看配置">
+              <a-button size="small" @click="handleViewConfig">
+                <template #icon>
+                  <icon-eye />
+                </template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="编辑配置">
+              <a-button size="small" @click="handleEditConfig">
+                <template #icon>
+                  <icon-settings />
+                </template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="删除配置">
+              <a-button size="small" status="danger" @click="handleDelete">
+                <template #icon>
+                  <icon-delete />
+                </template>
+              </a-button>
+            </a-tooltip>
+          </a-button-group>
         </div>
       </template>
     </a-card>
@@ -228,7 +240,6 @@
   import { Icon, Message, Modal } from '@arco-design/web-vue';
   import { PropType, reactive, ref, computed } from 'vue';
   import {
-    IconPoweroff,
     IconCheck,
     IconSettings,
     IconDelete,
@@ -236,6 +247,11 @@
     IconExclamationCircle,
     IconInfoCircle,
     IconEye,
+    IconSafe,
+    IconCopy,
+    IconLink,
+    IconPoweroff,
+    IconLoading,
   } from '@arco-design/web-vue/es/icon';
   import {
     updateStorageSetting,
@@ -630,10 +646,11 @@
 
     .card-header {
       display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 10px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
       flex-shrink: 0;
+      position: relative;
 
       .card-title-wrap {
         flex: 1;
@@ -642,63 +659,79 @@
         .card-title {
           display: flex;
           align-items: center;
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 600;
           color: var(--color-text-1);
           margin-bottom: 4px;
           line-height: 1.4;
-          height: 20px;
 
-          .status-tag {
-            margin-left: auto;
+          .title-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
+        }
+
+        .status-tag-wrap {
+          position: absolute;
+          top: 0;
+          right: 0;
         }
 
         .card-subtitle {
           display: flex;
-          flex-direction: column;
-          gap: 4px;
-          margin-bottom: 4px;
+          align-items: center;
+          gap: 8px;
           font-size: 11px;
           color: var(--color-text-3);
-          line-height: 1.3;
+          line-height: 1;
 
           .config-id {
-            font-weight: 500;
-          }
-
-          .config-remark {
-            display: flex;
-            align-items: center;
-            padding: 4px 8px;
-            background: linear-gradient(
-              135deg,
-              rgba(var(--primary-6), 0.08) 0%,
-              rgba(var(--primary-6), 0.03) 100%
-            );
-            border-radius: 4px;
-            color: rgb(var(--primary-6));
-            font-weight: 500;
-            font-size: 12px;
-            max-width: 100%;
-
-            span {
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-            }
-          }
-
-          .config-remark-empty {
-            display: flex;
-            align-items: center;
-            padding: 4px 8px;
-            background: rgba(var(--warning-6), 0.08);
-            border-radius: 4px;
-            color: rgb(var(--warning-6));
-            font-size: 11px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            opacity: 0.8;
           }
         }
+      }
+    }
+
+    .card-info-box {
+      margin-bottom: 8px;
+
+      .config-remark {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        background: rgba(var(--primary-6), 0.08);
+        border-radius: 6px;
+        color: rgb(var(--primary-6));
+        font-weight: 500;
+        font-size: 12px;
+        max-width: 100%;
+        border: 1px solid rgba(var(--primary-6), 0.1);
+        transition: all 0.2s;
+
+        &.test-remark {
+          background: rgba(var(--success-6), 0.08);
+          color: rgb(var(--success-6));
+          border-color: rgba(var(--success-6), 0.1);
+        }
+
+        span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+
+      .config-remark-empty {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        background: var(--color-fill-2);
+        border-radius: 4px;
+        color: var(--color-text-4);
+        font-size: 11px;
+        border: 1px dashed var(--color-border-3);
       }
     }
 
@@ -727,13 +760,73 @@
 
     .card-actions {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      justify-content: space-between;
       width: 100%;
 
-      .arco-btn {
+      .action-light-wrap {
         flex: 1;
-        height: 30px;
-        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .light-toggle-btn {
+          position: relative;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-fill-2);
+          color: var(--color-text-3);
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          font-size: 20px;
+          border: 1px solid var(--color-border-2);
+
+          &:hover {
+            background: var(--color-fill-3);
+            transform: scale(1.05);
+          }
+
+          .light-glow {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(0, 180, 42, 0.3);
+          }
+
+          &.is-active {
+            background: #00b42a;
+            color: #fff;
+            border-color: #00b42a;
+
+            .light-glow {
+              opacity: 1;
+              animation: light-pulse 2s infinite;
+            }
+          }
+
+          &.is-loading {
+            cursor: not-allowed;
+            opacity: 0.7;
+          }
+        }
+      }
+
+      .action-btn-group {
+        flex-shrink: 0;
+        margin-left: 8px;
+
+        .arco-btn {
+          padding: 0 8px;
+        }
       }
     }
 
@@ -920,6 +1013,21 @@
         line-height: 1.5;
         margin-top: 4px;
       }
+    }
+  }
+
+  @keyframes light-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 0.6;
     }
   }
 </style>
