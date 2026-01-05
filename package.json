@@ -39,7 +39,6 @@
     "echarts": "^5.4.0",
     "gsap": "^3.13.0",
     "mitt": "^3.0.0",
-    "monaco-editor": "^0.54.0",
     "motion-v": "^1.7.4",
     "nprogress": "^0.2.0",
     "pinia": "^2.0.23",
@@ -97,7 +96,6 @@
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-imagemin": "^0.6.1",
-    "vite-plugin-monaco-editor-esm": "^2.0.2",
     "vite-svg-loader": "^3.6.0",
     "vue-tsc": "^1.0.14"
   },
