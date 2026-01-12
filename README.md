@@ -9,13 +9,13 @@
  <img src="https://img.shields.io/badge/Spring%20Boot-3.5.4-blue.svg" alt="Downloads">
  <img src="https://img.shields.io/badge/Vue-3.2-blue.svg" alt="Downloads">
 
-[![star](https://gitee.com/xddcode/free-fs/badge/star.svg?theme=dark)](https://gitee.com/xddcode/free-fs/stargazers)
-[![fork](https://gitee.com/xddcode/free-fs/badge/fork.svg?theme=dark)](https://gitee.com/xddcode/free-fs/members)
-[![GitHub stars](https://img.shields.io/github/stars/xddcode/free-fs?logo=github)](https://github.com/xddcode/free-fs/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/xddcode/free-fs?logo=github)](https://github.com/xddcode/free-fs/network)
-[![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://gitee.com/xddcode/free-fs/blob/master/LICENSE)
+[![star](https://gitee.com/dromara/free-fs/badge/star.svg?theme=dark)](https://gitee.com/dromara/free-fs/stargazers)
+[![fork](https://gitee.com/dromara/free-fs/badge/fork.svg?theme=dark)](https://gitee.com/dromara/free-fs/members)
+[![GitHub stars](https://img.shields.io/github/stars/dromara/free-fs?logo=github)](https://github.com/dromara/free-fs/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/dromara/free-fs?logo=github)](https://github.com/dromara/free-fs/network)
+[![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://gitee.com/dromara/free-fs/blob/master/LICENSE)
 
-[问题反馈](https://gitee.com/xddcode/free-fs/issues) · [功能请求](https://gitee.com/xddcode/free-fs/issues/new)
+[问题反馈](https://gitee.com/dromara/free-fs/issues) · [功能请求](https://gitee.com/dromara/free-fs/issues/new)
 
 [项目文档](https://free-fs-doc.vercel.app/)
 
@@ -25,13 +25,13 @@
 
 ## 源码地址
 
-[Gitee：https://gitee.com/xddcode/free-fs](https://gitee.com/xddcode/free-fs)
+[Gitee：https://gitee.com/dromara/free-fs](https://gitee.com/dromara/free-fs)
 
-[GitHub：https://github.com/xddcode/free-fs](https://github.com/xddcode/free-fs)
+[GitHub：https://github.com/dromara/free-fs](https://github.com/dromara/free-fs)
 
 ## 后端仓库
 
-[![Free FS/free-fs](https://gitee.com/xddcode/free-fs/widgets/widget_card.svg?colors=393222,ebdfc1,fffae5,d8ca9f,393222,a28b40)](https://gitee.com/xddcode/free-fs.git)
+[![Free FS/free-fs](https://gitee.com/dromara/free-fs/widgets/widget_card.svg?colors=393222,ebdfc1,fffae5,d8ca9f,393222,a28b40)](https://gitee.com/dromara/free-fs.git)
 
 --- 
 
@@ -181,7 +181,7 @@ chore: 构建/工具链更新
 
 如果你发现了 Bug 或有功能建议，请通过以下方式反馈：
 
-- [Gitee Issues](https://gitee.com/xddcode/free-fs/issues)
+- [Gitee Issues](https://gitee.com/dromara/free-fs/issues)
 
 ---
 
@@ -202,11 +202,11 @@ chore: 构建/工具链更新
 
   **添加微信，请注明来意**
 
-<img alt="wx.png" height="300" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/wx.png" width="250"/>
+<img alt="wx.png" height="300" src="https://gitee.com/dromara/free-fs/raw/feature-vue/.images/wx.png" width="250"/>
 
 - 微信公众号：
 
-<img alt="wp.png" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/mp.png"/>
+<img alt="wp.png" src="https://gitee.com/dromara/free-fs/raw/feature-vue/.images/mp.png"/>
 
 ---
 
@@ -216,7 +216,7 @@ chore: 构建/工具链更新
 
 请给一个 ⭐️ 支持一下！
 
-<img alt="pay.png" height="300" src="https://gitee.com/xddcode/free-fs/raw/feature-vue/.images/pay.png" width="250"/>
+<img alt="pay.png" height="300" src="https://gitee.com/dromara/free-fs/raw/feature-vue/.images/pay.png" width="250"/>
 
 <div align="center">
 
