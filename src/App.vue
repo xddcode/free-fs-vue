@@ -14,12 +14,13 @@
   import { onMounted, onUnmounted, watch } from 'vue';
   import GlobalSetting from '@/components/global-setting/index.vue';
   import GlobalLoading from '@/components/global-loading/index.vue';
-  import transferWebSocketService from '@/services/transfer-websocket.service';
-  import { useUserStore } from '@/store';
+  import { sseService } from '@/services/sse.service';
+  import { useUserStore, useTransferStore } from '@/store';
 
   const userStore = useUserStore();
+  const transferStore = useTransferStore();
 
-  // 在应用挂载时初始化WebSocket和移除loading
+  // 在应用挂载时初始化SSE和移除loading
   onMounted(() => {
     // 移除初始 loading
     const initialLoading = document.getElementById('initial-loading');
@@ -32,7 +33,7 @@
     }
 
     if (userStore.id) {
-      transferWebSocketService.connect();
+      transferStore.initSSE(userStore.id);
     }
   });
 
@@ -42,16 +43,16 @@
     (newUserId, oldUserId) => {
       if (newUserId && !oldUserId) {
         // 用户刚登录
-        transferWebSocketService.connect();
+        transferStore.initSSE(newUserId);
       } else if (!newUserId && oldUserId) {
         // 用户登出
-        transferWebSocketService.disconnect();
+        transferStore.disconnectSSE();
       }
     }
   );
 
-  // 在应用卸载时清理WebSocket
+  // 在应用卸载时清理SSE
   onUnmounted(() => {
-    transferWebSocketService.disconnect();
+    sseService.disconnect();
   });
 </script>

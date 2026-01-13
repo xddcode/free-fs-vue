@@ -1,8 +1,6 @@
 <script setup lang="ts">
-  import {
-    UploadTaskStatus,
-    type FileTransferTaskVO,
-  } from '@/types/modules/transfer';
+  import type { TransferTask, TaskStatus } from '@/types/modules/transfer';
+  import { useTransferStore } from '@/store/modules/transfer';
   import {
     formatFileSize,
     formatSpeed,
@@ -12,80 +10,111 @@
     IconPause,
     IconPlayArrow,
     IconDelete,
+    IconRefresh,
   } from '@arco-design/web-vue/es/icon';
 
   const props = defineProps<{
-    tasks: FileTransferTaskVO[];
+    tasks: TransferTask[];
     loading: boolean;
     showActions?: boolean; // 是否显示操作列（已完成列表不需要显示暂停）
     showCompleteTime?: boolean; // 是否显示完成时间
   }>();
 
-  const emit = defineEmits(['pause', 'resume', 'cancel']);
+  const emit = defineEmits(['pause', 'resume', 'cancel', 'retry']);
 
-  const getStatusText = (status: UploadTaskStatus) => {
-    const statusMap = {
-      [UploadTaskStatus.INITIALIZED]: '准备中',
-      [UploadTaskStatus.CHECKING]: '校验中',
-      [UploadTaskStatus.UPLOADING]: '上传中',
-      [UploadTaskStatus.PAUSED]: '已暂停',
-      [UploadTaskStatus.MERGING]: '处理中',
-      [UploadTaskStatus.COMPLETED]: '已完成',
-      [UploadTaskStatus.FAILED]: '失败',
-      [UploadTaskStatus.CANCELLING]: '取消中',
-      [UploadTaskStatus.CANCELED]: '已取消',
+  const transferStore = useTransferStore();
+
+  // 获取任务的平滑显示数据
+  const getTaskDisplayData = (taskId: string) => {
+    return transferStore.getDisplayData(taskId);
+  };
+
+  // 计算任务的显示进度（使用平滑后的数据）
+  const getDisplayProgress = (task: TransferTask) => {
+    // 直接使用 task.progress，已经在 store 中保留了2位小数
+    return task.progress;
+  };
+
+  // 计算任务的显示速度（使用平滑后的数据）
+  const getDisplaySpeed = (task: TransferTask) => {
+    if (task.status === 'uploading') {
+      const displayData = getTaskDisplayData(task.taskId);
+      return displayData.speed;
+    }
+    return task.speed;
+  };
+
+  // 计算任务的显示剩余时间（使用平滑后的数据）
+  const getDisplayRemainingTime = (task: TransferTask) => {
+    if (task.status === 'uploading') {
+      const displayData = getTaskDisplayData(task.taskId);
+      return displayData.remainingTime;
+    }
+    return task.remainingTime;
+  };
+
+  // 状态文本映射
+  const getStatusText = (status: TaskStatus) => {
+    const statusMap: Record<TaskStatus, string> = {
+      idle: '空闲',
+      initialized: '准备中',
+      checking: '校验中',
+      uploading: '上传中',
+      paused: '已暂停',
+      merging: '处理中',
+      completed: '已完成',
+      failed: '失败',
+      cancelled: '已取消',
     };
     return statusMap[status] || '未知';
   };
-  const getStatusColor = (status: UploadTaskStatus) => {
-    const colorMap = {
-      [UploadTaskStatus.INITIALIZED]: 'cyan',
-      [UploadTaskStatus.CHECKING]: 'arcoblue',
-      [UploadTaskStatus.UPLOADING]: 'blue',
-      [UploadTaskStatus.PAUSED]: 'orange',
-      [UploadTaskStatus.MERGING]: 'purple',
-      [UploadTaskStatus.COMPLETED]: 'green',
-      [UploadTaskStatus.FAILED]: 'red',
-      [UploadTaskStatus.CANCELLING]: 'orange',
-      [UploadTaskStatus.CANCELED]: 'gray',
+
+  // 状态颜色映射
+  const getStatusColor = (status: TaskStatus) => {
+    const colorMap: Record<TaskStatus, string> = {
+      idle: 'gray',
+      initialized: 'cyan',
+      checking: 'arcoblue',
+      uploading: 'blue',
+      paused: 'orange',
+      merging: 'purple',
+      completed: 'green',
+      failed: 'red',
+      cancelled: 'gray',
     };
     return colorMap[status] || 'gray';
   };
+
+  // 根据状态判断可用的操作按钮
+  // Requirements 8.3: uploading → [pause, cancel], paused → [resume, cancel], failed → [retry, cancel]
+  const canPause = (status: TaskStatus) => status === 'uploading';
+  const canResume = (status: TaskStatus) => status === 'paused';
+  const canRetry = (status: TaskStatus) => status === 'failed';
+  const canCancel = (status: TaskStatus) =>
+    ['initialized', 'checking', 'uploading', 'paused', 'failed'].includes(
+      status
+    );
 </script>
 
 <template>
   <a-table :data="tasks" :loading="loading" :pagination="false">
     <template #columns>
-      <a-table-column title="文件名称" :width="300">
+      <a-table-column title="文件名称" :width="280">
         <template #cell="{ record }">
           <div class="file-name-cell">
             <span class="file-name">{{ record.fileName }}</span>
-            <span v-if="record.suffix" class="file-suffix">{{
-              record.suffix
-            }}</span>
           </div>
         </template>
       </a-table-column>
 
-      <a-table-column title="文件大小" :width="160">
+      <a-table-column title="文件大小" :width="140">
         <template #cell="{ record }">
           <span
-            v-if="
-              record.status === UploadTaskStatus.UPLOADING ||
-              record.status === UploadTaskStatus.PAUSED
-            "
+            v-if="record.status === 'uploading' || record.status === 'paused'"
             class="file-size-text"
           >
             <span class="uploaded-size">
-              {{
-                formatFileSize(
-                  record.uploadedSize ||
-                    Math.round(
-                      (record.uploadedChunks / record.totalChunks) *
-                        record.fileSize
-                    )
-                )
-              }}
+              {{ formatFileSize(record.uploadedBytes || 0) }}
             </span>
             <span class="size-separator">/</span>
             <span class="total-size">
@@ -96,7 +125,7 @@
         </template>
       </a-table-column>
 
-      <a-table-column title="状态" :width="100">
+      <a-table-column title="状态" :width="90">
         <template #cell="{ record }">
           <a-tag :color="getStatusColor(record.status)">
             {{ getStatusText(record.status) }}
@@ -104,11 +133,11 @@
         </template>
       </a-table-column>
 
-      <a-table-column title="进度" :width="260">
+      <a-table-column title="进度" :width="300">
         <template #cell="{ record }">
-          <!-- 初始化状态 -->
+          <!-- 空闲/初始化状态 -->
           <div
-            v-if="record.status === UploadTaskStatus.INITIALIZED"
+            v-if="record.status === 'idle' || record.status === 'initialized'"
             class="progress-container"
           >
             <a-spin :size="16" />
@@ -118,7 +147,7 @@
           </div>
           <!-- 校验中状态 -->
           <div
-            v-else-if="record.status === UploadTaskStatus.CHECKING"
+            v-else-if="record.status === 'checking'"
             class="progress-container"
           >
             <a-spin :size="16" />
@@ -128,36 +157,36 @@
           </div>
           <!-- 上传中状态 -->
           <div
-            v-else-if="record.status === UploadTaskStatus.UPLOADING"
+            v-else-if="record.status === 'uploading'"
             class="progress-container"
           >
             <a-progress
-              :percent="record.progress / 100"
+              :percent="getDisplayProgress(record) / 100"
               size="medium"
-              :style="{ width: '120px' }"
+              :style="{ width: '300px' }"
             />
             <div class="speed-info">
               <span class="speed-text">
-                {{ formatSpeed(record.speed || 0) }}
+                {{ formatSpeed(getDisplaySpeed(record) || 0) }}
               </span>
-              <span v-if="record.remainTime" class="time-text">
-                剩余 {{ formatRemainingTime(record.remainTime) }}
+              <span v-if="getDisplayRemainingTime(record)" class="time-text">
+                剩余 {{ formatRemainingTime(getDisplayRemainingTime(record)) }}
               </span>
             </div>
           </div>
           <!-- 暂停状态 -->
-          <div v-else-if="record.status === UploadTaskStatus.PAUSED">
+          <div v-else-if="record.status === 'paused'" class="progress-container" style="width: 100%;">
             <a-progress
-              :percent="record.progress / 100"
+              :percent="getDisplayProgress(record) / 100"
               size="medium"
               status="warning"
-              :style="{ width: '160px' }"
+              :style="{ width: '300px' }"
             />
-            <span class="progress-text">已暂停</span>
+            <span class="progress-text" style="min-width: 100px;">已暂停</span>
           </div>
           <!-- 合并中状态 -->
           <div
-            v-else-if="record.status === UploadTaskStatus.MERGING"
+            v-else-if="record.status === 'merging'"
             class="progress-container"
           >
             <a-spin :size="16" />
@@ -165,25 +194,19 @@
               正在处理文件...
             </span>
           </div>
-          <!-- 取消中状态 -->
-          <div
-            v-else-if="record.status === UploadTaskStatus.CANCELLING"
-            class="progress-container"
-          >
-            <a-spin :size="16" />
-            <span class="progress-text" style="margin-left: 8px">
-              正在取消...
-            </span>
-          </div>
           <!-- 完成状态 -->
-          <div v-else-if="record.status === UploadTaskStatus.COMPLETED">
+          <div v-else-if="record.status === 'completed'">
             <span class="status-text success">100%</span>
           </div>
           <!-- 失败状态 -->
-          <div v-else-if="record.status === UploadTaskStatus.FAILED">
+          <div v-else-if="record.status === 'failed'">
             <span class="status-text error">{{
-              record.errorMsg || '上传失败'
+              record.errorMessage || '上传失败'
             }}</span>
+          </div>
+          <!-- 已取消状态 -->
+          <div v-else-if="record.status === 'cancelled'">
+            <span class="status-text">已取消</span>
           </div>
           <!-- 其他状态 -->
           <div v-else>
@@ -195,14 +218,14 @@
       <a-table-column
         v-if="showActions"
         title="操作"
-        :width="150"
+        :width="180"
         align="center"
       >
         <template #cell="{ record }">
           <a-space>
-            <!-- 暂停按钮 -->
+            <!-- 暂停按钮：仅在 uploading 状态显示 -->
             <a-button
-              v-if="record.status === UploadTaskStatus.UPLOADING"
+              v-if="canPause(record.status)"
               type="text"
               size="small"
               @click="emit('pause', record)"
@@ -213,9 +236,9 @@
               暂停
             </a-button>
 
-            <!-- 开始按钮 -->
+            <!-- 恢复按钮：仅在 paused 状态显示 -->
             <a-button
-              v-else-if="record.status === UploadTaskStatus.PAUSED"
+              v-if="canResume(record.status)"
               type="text"
               size="small"
               status="success"
@@ -227,9 +250,23 @@
               开始
             </a-button>
 
-            <!-- 删除按钮（取消中状态不显示） -->
+            <!-- 重试按钮：仅在 failed 状态显示 -->
             <a-button
-              v-if="record.status !== UploadTaskStatus.CANCELLING"
+              v-if="canRetry(record.status)"
+              type="text"
+              size="small"
+              status="warning"
+              @click="emit('retry', record)"
+            >
+              <template #icon>
+                <icon-refresh />
+              </template>
+              重试
+            </a-button>
+
+            <!-- 取消按钮：在 initialized, checking, uploading, paused, failed 状态显示 -->
+            <a-button
+              v-if="canCancel(record.status)"
               type="text"
               size="small"
               status="danger"
@@ -247,8 +284,8 @@
       <a-table-column v-if="showCompleteTime" title="完成时间" :width="180">
         <template #cell="{ record }">
           <span>{{
-            record.completeTime
-              ? new Date(record.completeTime).toLocaleString('zh-CN')
+            record.updatedAt && record.status === 'completed'
+              ? new Date(record.updatedAt).toLocaleString('zh-CN')
               : '-'
           }}</span>
         </template>
@@ -275,9 +312,68 @@
       font-size: 12px;
     }
   }
+
+  .file-size-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+
+    .uploaded-size {
+      color: var(--color-text-2);
+      font-weight: 500;
+    }
+
+    .size-separator {
+      color: var(--color-text-4);
+      margin: 0 2px;
+    }
+
+    .total-size {
+      color: var(--color-text-3);
+    }
+  }
+
   .progress-container {
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  .speed-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 100px;
+  }
+
+  .speed-text {
+    font-size: 13px;
+    color: var(--color-text-2);
+    font-weight: 500;
+  }
+
+  .time-text {
+    font-size: 11px;
+    color: var(--color-text-3);
+  }
+
+  .progress-text {
+    font-size: 12px;
+    color: var(--color-text-3);
+    margin-left: 8px;
+  }
+
+  .status-text {
+    font-size: 13px;
+    color: var(--color-text-2);
+
+    &.success {
+      color: rgb(var(--success-6));
+    }
+
+    &.error {
+      color: rgb(var(--danger-6));
+    }
   }
 </style>

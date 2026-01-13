@@ -76,7 +76,7 @@
             </span>
           </div>
           <a-progress
-            :percent="storagePercent"
+            :percent="storagePercentForProgress"
             :stroke-width="8"
             :show-text="false"
             color="#2a6fe8"
@@ -195,9 +195,13 @@
   const MAX_STORAGE = 107374182400; // 100GB
   const homeData = ref<any>(null);
   const usedStorage = computed(() => homeData.value?.usedStorage || 0);
-  const storagePercent = computed(() =>
-    Math.min(100, (usedStorage.value / MAX_STORAGE) * 100)
-  );
+  const storagePercent = computed(() => {
+    const percent = (usedStorage.value / MAX_STORAGE) * 100;
+    return Math.min(100, Math.round(percent)); // 返回0-100的整数，用于显示文本
+  });
+  const storagePercentForProgress = computed(() => {
+    return storagePercent.value / 100; // 转换为0-1的小数，用于进度条
+  });
 
   const mainMenuItems = computed(() => {
     const rootRoute = router.getRoutes().find((r) => r.name === 'root');

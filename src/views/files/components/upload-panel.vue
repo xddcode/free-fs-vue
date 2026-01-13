@@ -1,75 +1,104 @@
 <template>
   <div>
-    <!-- 隐藏的文件选择input -->
-    <input
-      ref="fileInputRef"
-      type="file"
-      multiple
-      style="display: none"
-      @change="handleFileSelect"
-    />
-
-    <a-button
-      class="custom-upload-fab"
-      type="primary"
-      shape="circle"
-      :style="{ bottom: fabButtonBottom }"
-      @click="handleOpen"
-    >
-      <template #icon>
-        <icon-upload :size="38" style="margin: auto" />
-      </template>
-    </a-button>
-
-    <div v-if="uploadStore.showPanel" class="upload-panel-wrapper">
+    <div v-if="showPanel" class="upload-panel-wrapper">
       <div
-        v-if="!uploadStore.isExpanded"
+        v-if="!isExpanded"
         class="upload-panel-collapsed"
-        @click="uploadStore.toggleExpand"
+        @click="toggleExpand"
       >
         <a-spin v-if="isUploading" :size="14" />
         <icon-check-circle-fill v-else style="color: rgb(var(--success-6))" />
         <span class="summary-text">{{ summaryText }}</span>
-        <icon-close class="panel-icon" @click.stop="uploadStore.closePanel" />
+        <icon-close class="panel-icon" @click.stop="closePanel" />
       </div>
 
       <div v-else ref="expandedPanelRef" class="upload-panel-expanded">
         <div class="panel-header">
           <span class="summary-text">{{ summaryText }}</span>
           <div>
-            <icon-close class="panel-icon" @click="uploadStore.closePanel" />
+            <icon-close class="panel-icon" @click="closePanel" />
           </div>
         </div>
 
         <div class="panel-body">
           <div v-if="taskList.length === 0"> 没有更多内容了 </div>
-          <div v-for="task in taskList" :key="task.id" class="task-item">
+          <div v-for="task in taskList" :key="task.taskId" class="task-item">
             <icon-file :size="24" />
             <div class="task-info">
-              <div class="file-name">{{ task.file.name }}</div>
-              <a-progress
-                v-if="task.status === 'uploading'"
-                :percent="task.progress"
-                size="small"
-                :style="{ width: '160px' }"
-              />
+              <div class="file-name">{{ task.fileName }}</div>
+              
+              <!-- 空闲/初始化状态 -->
+              <div
+                v-if="task.status === 'idle' || task.status === 'initialized'"
+                class="progress-row"
+              >
+                <a-spin :size="14" />
+                <span class="status-text">准备中...</span>
+              </div>
+              
+              <!-- 校验中状态 -->
+              <div v-else-if="task.status === 'checking'" class="progress-row">
+                <a-spin :size="14" />
+                <span class="status-text">校验文件...</span>
+              </div>
+              
+              <!-- 上传中状态：进度条 + 速度 + 剩余时间 -->
+              <div v-else-if="task.status === 'uploading'" class="progress-row">
+                <a-progress
+                  :percent="task.progress / 100"
+                  size="small"
+                  :style="{ width: '100px', flex: 'none' }"
+                />
+                <div class="speed-info">
+                  <span class="speed-text">{{ formatSpeed(task.speed) }}</span>
+                  <span v-if="task.remainingTime" class="time-text">
+                    剩余 {{ formatRemainingTime(task.remainingTime) }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- 暂停状态：进度条 + "已暂停" -->
+              <div v-else-if="task.status === 'paused'" class="progress-row">
+                <a-progress
+                  :percent="task.progress / 100"
+                  size="small"
+                  status="warning"
+                  :style="{ width: '100px', flex: 'none' }"
+                />
+                <span class="status-text">已暂停</span>
+              </div>
+              
+              <!-- 合并中状态 -->
+              <div v-else-if="task.status === 'merging'" class="progress-row">
+                <a-spin :size="14" />
+                <span class="status-text">正在处理...</span>
+              </div>
+              
+              <!-- 完成状态 -->
               <span
-                v-else-if="task.status === 'success'"
+                v-else-if="task.status === 'completed'"
                 class="status-text success"
               >
                 已上传至 目标文件夹
               </span>
+              
+              <!-- 失败状态 -->
               <span
-                v-else-if="task.status === 'error'"
+                v-else-if="task.status === 'failed'"
                 class="status-text error"
               >
-                {{ task.errorMessage }}
+                {{ task.errorMessage || '上传失败' }}
+              </span>
+              
+              <!-- 已取消状态 -->
+              <span v-else-if="task.status === 'cancelled'" class="status-text">
+                已取消
               </span>
             </div>
           </div>
         </div>
 
-        <div class="panel-footer" @click="uploadStore.toggleExpand"> 收起 </div>
+        <div class="panel-footer" @click="toggleExpand"> 收起 </div>
       </div>
     </div>
   </div>
@@ -81,48 +110,45 @@
     IconCheckCircleFill,
     IconFile,
     IconClose,
-    IconUpload,
   } from '@arco-design/web-vue/es/icon';
-  import { useUploadTaskStore } from '@/store';
+  import { useTransferStore } from '@/store';
   import { storeToRefs } from 'pinia';
-  import { uploadService } from '@/services/upload.service';
+  import { formatSpeed, formatRemainingTime } from '@/utils/format';
 
   interface Props {
     parentId?: string;
   }
-  const props = defineProps<Props>();
+  defineProps<Props>();
   const emit = defineEmits<{
     (e: 'success'): void;
   }>();
 
-  const fileInputRef = ref<HTMLInputElement | null>(null);
-  const uploadStore = useUploadTaskStore();
-  const { taskList } = storeToRefs(uploadStore);
+  const transferStore = useTransferStore();
+  
+  // 使用 transfer store 的任务列表
+  const { taskList } = storeToRefs(transferStore);
+  
+  // 面板显示状态（本地管理）
+  const showPanel = ref(false);
+  const isExpanded = ref(false);
 
-  const handleOpen = () => {
-    // 触发文件选择
-    fileInputRef.value?.click();
+  const toggleExpand = () => {
+    isExpanded.value = !isExpanded.value;
   };
 
-  const handleFileSelect = async (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    const { files } = target;
-    if (files && files.length > 0) {
-      const fileArray = Array.from(files);
-      await uploadService.uploadFiles(fileArray, props.parentId);
-      // 清空input，以便可以重复选择相同文件
-      target.value = '';
-      // 触发成功事件
-      emit('success');
-    }
+  const closePanel = () => {
+    showPanel.value = false;
+    isExpanded.value = false;
   };
 
   const isUploading = computed(() =>
-    uploadStore.taskList.some((t) => t.status === 'uploading')
+    taskList.value.some((t) => 
+      ['initialized', 'checking', 'uploading', 'merging'].includes(t.status)
+    )
   );
 
   const completedCount = computed(() => {
-    return taskList.value.filter((t) => t.status === 'success').length;
+    return taskList.value.filter((t) => t.status === 'completed').length;
   });
 
   watch(completedCount, (newCount, oldCount) => {
@@ -146,9 +172,9 @@
   const measuredPanelHeight = ref(0);
 
   watch(
-    () => uploadStore.isExpanded,
-    (isExpanded) => {
-      if (isExpanded) {
+    () => isExpanded.value,
+    (expanded) => {
+      if (expanded) {
         requestAnimationFrame(() => {
           if (!expandedPanelRef.value) return;
 
@@ -169,35 +195,18 @@
     }
   );
 
-  /** 计算按钮样式 */
-  const fabButtonBottom = computed(() => {
-    const defaultBottom = 40;
-    if (!uploadStore.showPanel) {
-      return `${defaultBottom}px`;
+  // 监听任务列表变化，自动显示面板
+  watch(
+    () => taskList.value.length,
+    (newLength, oldLength) => {
+      if (newLength > oldLength) {
+        showPanel.value = true;
+      }
     }
-    const buttonSpacing = 14;
-    if (!uploadStore.isExpanded) {
-      return `${20 + defaultBottom + buttonSpacing}px`;
-    }
-    // 修改需要同步修改 .upload-panel-expanded
-    const panelWrapperBottom = 24;
-    return `${
-      measuredPanelHeight.value + panelWrapperBottom + buttonSpacing
-    }px`;
-  });
+  );
 </script>
 
 <style lang="less" scoped>
-  .custom-upload-fab {
-    height: 56px;
-    width: 56px;
-    position: fixed;
-    right: 40px;
-    //bottom: 40px;
-    z-index: 99;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
   .upload-panel-wrapper {
     position: fixed;
     bottom: 24px;
@@ -273,6 +282,26 @@
         font-size: 13px;
         .file-name {
           margin-bottom: 4px;
+        }
+        .progress-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .speed-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 80px;
+        }
+        .speed-text {
+          font-size: 12px;
+          color: var(--color-text-2);
+          font-weight: 500;
+        }
+        .time-text {
+          font-size: 11px;
+          color: var(--color-text-3);
         }
         .status-text {
           font-size: 12px;

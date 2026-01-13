@@ -1,15 +1,23 @@
+# Dependencies
 node_modules
-.DS_Store
+
+# Build outputs
 dist
 dist-ssr
+
+# Local environment files
 *.local
-node_modules
-.DS_Store
-dist
-dist-ssr
-*.local
+
+# Lock files (use npm ci for reproducible builds)
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+
+# IDE and editor directories
 .idea/
 .vscode/
+
+# OS generated files
+.DS_Store
+
+.kiro/

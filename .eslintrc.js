@@ -66,5 +66,24 @@ module.exports = {
     'no-param-reassign': 0,
     'prefer-regex-literals': 0,
     'import/no-extraneous-dependencies': 0,
+
+    // ==================== 放宽的规则 ====================
+    // 关闭 no-use-before-define（单例模式、类型引用等场景太常见）
+    'no-use-before-define': 'off',
+    '@typescript-eslint/no-use-before-define': 'off',
+
+    // 允许每个文件多个类（紧密相关的类放一起更清晰）
+    'max-classes-per-file': 'off',
+
+    // 类成员之间的空行：单行成员后不强制空行
+    'lines-between-class-members': ['error', 'always', {
+      exceptAfterSingleLine: true,
+    }],
+
+    // 允许类方法不使用 this（有时方法逻辑上属于类但不需要访问实例）
+    'class-methods-use-this': 'off',
+
+    // 允许命名导出（不强制 default export）
+    'import/prefer-default-export': 'off',
   },
 };

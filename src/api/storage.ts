@@ -7,6 +7,15 @@ import type {
   UpdateStorageSettingParams,
 } from '@/types/modules/storage';
 
+// 重新导出类型，方便其他模块使用
+export type {
+  StoragePlatform,
+  StorageSetting,
+  ActiveStoragePlatform,
+  AddStorageSettingParams,
+  UpdateStorageSettingParams,
+};
+
 /**
  * 获取存储平台列表（用于下拉选择）
  */

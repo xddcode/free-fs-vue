@@ -180,8 +180,6 @@
       @change="handleFileSelect"
     />
     <upload-panel />
-
-    <!-- 新建文件夹弹窗 -->
     <create-folder-modal
       v-model:visible="operations.createFolderModalVisible.value"
       :parent-id="fileList.currentParentId.value"
@@ -284,8 +282,7 @@
     IconCloseCircleFill,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
-  import { uploadService } from '@/services/upload.service';
-  import { useUploadTaskStore } from '@/store';
+  import { useUploadTaskStore, useTransferStore } from '@/store';
   import { LoadingSpinner } from '@/components';
   import { useFileList, useFileOperations } from './hooks';
   import {
@@ -379,12 +376,32 @@
         return;
       }
 
-      await uploadService.uploadFiles(
-        fileArray,
-        fileList.currentParentId.value
-      );
-      target.value = '';
-      fileList.refresh();
+      const transferStore = useTransferStore();
+      const fileCount = fileArray.length;
+      
+      try {
+        // 使用 Transfer Store 创建上传任务
+        await Promise.all(
+          fileArray.map((file) =>
+            transferStore.createTask(file, fileList.currentParentId.value)
+          )
+        );
+        
+        // 显示成功通知
+        Message.success({
+          content: `已添加 ${fileCount} 个文件到传输列表`,
+          duration: 2000,
+        });
+        
+        target.value = '';
+        fileList.refresh();
+      } catch (error) {
+        Message.error({
+          content: '添加文件失败，请重试',
+          duration: 3000,
+        });
+        console.error('Failed to add files:', error);
+      }
     }
   };
 

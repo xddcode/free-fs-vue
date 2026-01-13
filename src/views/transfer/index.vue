@@ -1,20 +1,107 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, onMounted, onUnmounted } from 'vue';
   import { IconRefresh } from '@arco-design/web-vue/es/icon';
+  import { Message } from '@arco-design/web-vue';
 
-  import { useTransferManager } from './hooks/use-transfer-manager';
+  import { useTransferStore } from '@/store/modules/transfer';
+  import useUserStore from '@/store/modules/user';
+  import type { TransferTask } from '@/types/modules/transfer';
   import TransferTable from './components/transfer-table.vue';
 
   // 当前激活的标签页 1-上传 2-下载 3-已完成
   const activeTab = ref(1);
+  const loading = ref(false);
 
-  const { loading, uploadingTasks, completedTasks, actions } =
-    useTransferManager();
+  // 使用 Transfer Store 替代 useTransferManager hook
+  const transferStore = useTransferStore();
+  const userStore = useUserStore();
+
+  // 获取任务列表（从 Store 的 getters）
+  // 上传中的任务包括：initialized, checking, uploading, paused, merging
+  const uploadingTasks = computed<TransferTask[]>(() => {
+    return transferStore.taskList.filter((task) =>
+      ['initialized', 'checking', 'uploading', 'paused', 'merging'].includes(
+        task.status
+      )
+    );
+  });
+
+  // 已完成的任务包括：completed, failed, cancelled
+  const completedTasks = computed<TransferTask[]>(() => {
+    return transferStore.taskList.filter((task) =>
+      ['completed', 'failed', 'cancelled'].includes(task.status)
+    );
+  });
 
   const currentDisplayTasks = computed(() => {
     if (activeTab.value === 1) return uploadingTasks.value;
     if (activeTab.value === 2) return []; // 下载暂空
     return completedTasks.value;
+  });
+
+  // 操作方法
+  const actions = {
+    pause: async (task: TransferTask) => {
+      try {
+        await transferStore.pauseTask(task.taskId);
+        Message.success('已暂停');
+      } catch (error) {
+        Message.error('暂停失败');
+      }
+    },
+    resume: async (task: TransferTask) => {
+      try {
+        await transferStore.resumeTask(task.taskId);
+        Message.success('已恢复');
+      } catch (error) {
+        Message.error('恢复失败');
+      }
+    },
+    cancel: async (task: TransferTask) => {
+      try {
+        await transferStore.cancelTask(task.taskId);
+        Message.success('已取消');
+      } catch (error) {
+        Message.error('取消失败');
+      }
+    },
+    retry: async (task: TransferTask) => {
+      try {
+        await transferStore.retryTask(task.taskId);
+        Message.success('已重试');
+      } catch (error) {
+        Message.error('重试失败');
+      }
+    },
+    refresh: async () => {
+      loading.value = true;
+      try {
+        await transferStore.fetchTasks();
+      } catch (error) {
+        Message.error('刷新失败');
+      } finally {
+        loading.value = false;
+      }
+    },
+  };
+
+  // 生命周期：初始化 SSE 连接
+  onMounted(async () => {
+    loading.value = true;
+    try {
+      // 使用用户 ID 初始化 SSE 连接（token 可选）
+      const userId = userStore.id || 'default';
+      await transferStore.initSSE(userId);
+    } catch (error) {
+      Message.error('初始化传输列表失败');
+    } finally {
+      loading.value = false;
+    }
+  });
+
+  // 生命周期：断开 SSE 连接
+  onUnmounted(() => {
+    transferStore.disconnectSSE();
   });
 </script>
 
@@ -95,6 +182,7 @@
             @pause="actions.pause"
             @resume="actions.resume"
             @cancel="actions.cancel"
+            @retry="actions.retry"
           />
         </div>
       </a-layout-content>

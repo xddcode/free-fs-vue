@@ -101,7 +101,7 @@
           <div class="radial-progress-wrap">
             <a-progress
               type="circle"
-              :percent="storagePercent"
+              :percent="storagePercentForProgress"
               :stroke-width="10"
               size="large"
               :color="{
@@ -112,7 +112,7 @@
               <template #text>
                 <div class="progress-inner">
                   <span class="percent-val"
-                    >{{ storagePercent.toFixed(1) }}%</span
+                    >{{ storagePercent }}%</span
                   >
                   <span class="percent-label">已使用</span>
                 </div>
@@ -229,9 +229,13 @@
 
   // 计算属性
   const usedStorage = computed(() => homeInfo.value?.usedStorage || 0);
-  const storagePercent = computed(() =>
-    Math.min(1, usedStorage.value / MAX_STORAGE)
-  );
+  const storagePercent = computed(() => {
+    const percent = (usedStorage.value / MAX_STORAGE) * 100;
+    return Math.min(100, Math.round(percent)); // 返回0-100的整数，用于显示文本
+  });
+  const storagePercentForProgress = computed(() => {
+    return storagePercent.value / 100; // 转换为0-1的小数，用于进度条
+  });
 
   const quickTiles = computed(() => [
     {
