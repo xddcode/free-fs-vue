@@ -172,7 +172,7 @@
             </p>
             <div class="oss-links">
               <a
-                href="https://gitee.com/xddcode/free-fs"
+                href="https://gitee.com/dromara/free-fs"
                 target="_blank"
                 class="oss-link-item gitee"
               >
@@ -180,7 +180,7 @@
                 <span>Gitee 仓库</span>
               </a>
               <a
-                href="https://github.com/xddcode/free-fs"
+                href="https://github.com/dromara/free-fs"
                 target="_blank"
                 class="oss-link-item github"
               >
