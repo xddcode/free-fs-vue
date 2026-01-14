@@ -1,162 +1,214 @@
 <template>
   <div class="file-grid-view-container">
     <div class="file-grid-view">
-      <div
+      <a-dropdown
         v-for="file in fileList"
         :key="file.id"
-        class="grid-item"
-        :class="{
-          'is-folder': file.isDir,
-          'is-selected': isSelected(file.id),
-          'is-dragging': draggingItemIds.includes(file.id),
-        }"
-        draggable="true"
-        @click="handleItemClick(file, $event)"
-        @dblclick="handleFileDoubleClick(file)"
-        @contextmenu.stop
-        @dragstart="handleDragStart(file, $event)"
-        @dragover="handleDragOver(file, $event)"
-        @dragleave="handleDragLeave($event)"
-        @drop="handleDrop(file, $event)"
-        @dragend="handleDragEnd($event)"
+        trigger="contextMenu"
+        align-point
+        :popup-max-height="false"
+        @popup-visible-change="handleDropdownVisibleChange"
       >
-        <div class="grid-item-checkbox">
-          <a-checkbox
-            :model-value="isSelected(file.id)"
-            @click.stop
-            @change="
-              (value: boolean | (string | number | boolean)[]) =>
-                handleCheckboxChange(file.id, value)
-            "
-          />
-        </div>
-        <div class="grid-item-icon">
-          <img
-            :src="getFileIconPath(file.isDir ? 'dir' : file.suffix || '')"
-            :alt="file.displayName"
-            class="file-icon-img"
-          />
-        </div>
-        <file-tooltip position="bottom">
-          <div class="grid-item-name">
-            {{ file.displayName }}
+        <div
+          class="grid-item"
+          :class="{
+            'is-folder': file.isDir,
+            'is-selected': isSelected(file.id),
+            'is-dragging': draggingItemIds.includes(file.id),
+          }"
+          draggable="true"
+          @click="handleItemClick(file, $event)"
+          @dblclick="handleFileDoubleClick(file)"
+          @contextmenu.stop
+          @dragstart="handleDragStart(file, $event)"
+          @dragover="handleDragOver(file, $event)"
+          @dragleave="handleDragLeave($event)"
+          @drop="handleDrop(file, $event)"
+          @dragend="handleDragEnd"
+        >
+          <div class="grid-item-checkbox">
+            <a-checkbox
+              :model-value="isSelected(file.id)"
+              @click.stop
+              @change="
+                (value: boolean | (string | number | boolean)[]) =>
+                  handleCheckboxChange(file.id, value)
+              "
+            />
           </div>
-          <template #content>
-            <div class="file-tooltip">
-              <div class="tooltip-item">
-                <span class="tooltip-label">名称：</span>
-                <span class="tooltip-value">{{ file.displayName }}</span>
-              </div>
-              <div class="tooltip-item">
-                <span class="tooltip-label">大小：</span>
-                <span class="tooltip-value">{{
-                  formatFileSize(file.size) || '-'
-                }}</span>
-              </div>
-              <div class="tooltip-item">
-                <span class="tooltip-label">修改日期：</span>
-                <span class="tooltip-value">{{
-                  formatFileTime(file.updateTime)
-                }}</span>
-              </div>
-            </div>
-          </template>
-        </file-tooltip>
-        <file-tooltip position="bottom">
-          <div class="grid-item-info">
-            {{ formatFileTime(file.updateTime) }}
+          <div class="grid-item-icon">
+            <img
+              :src="getFileIconPath(file.isDir ? 'dir' : file.suffix || '')"
+              :alt="file.displayName"
+              class="file-icon-img"
+            />
           </div>
-          <template #content>
-            <div class="file-tooltip">
-              <div class="tooltip-item">
-                <span class="tooltip-label">名称：</span>
-                <span class="tooltip-value">{{ file.displayName }}</span>
-              </div>
-              <div class="tooltip-item">
-                <span class="tooltip-label">大小：</span>
-                <span class="tooltip-value">{{
-                  formatFileSize(file.size) || '-'
-                }}</span>
-              </div>
-              <div class="tooltip-item">
-                <span class="tooltip-label">修改日期：</span>
-                <span class="tooltip-value">{{
-                  formatFileTime(file.updateTime)
-                }}</span>
-              </div>
+          <file-tooltip position="bottom">
+            <div class="grid-item-name">
+              {{ file.displayName }}
             </div>
-          </template>
-        </file-tooltip>
-        <div v-if="!isSelected(file.id)" class="grid-item-actions">
-          <a-dropdown
-            trigger="click"
-            position="bl"
-            :popup-max-height="false"
-            @popup-visible-change="handleDropdownVisibleChange"
-          >
-            <a-button size="small" type="text" @click.stop>
-              <icon-more :size="18" />
-            </a-button>
             <template #content>
-              <a-doption
-                v-if="!file.isDir && hasHandler('preview')"
-                @click="$emit('preview', file)"
-              >
-                <icon-eye />
-                预览
-              </a-doption>
-              <a-doption
-                v-if="hasHandler('share')"
-                @click="$emit('share', file)"
-              >
-                <icon-share-alt />
-                分享
-              </a-doption>
-              <a-doption
-                v-if="hasHandler('favorite')"
-                @click="$emit('favorite', file)"
-              >
-                <icon-star-fill v-if="file.isFavorite" />
-                <icon-star v-else />
-                {{ file.isFavorite ? '取消收藏' : '收藏' }}
-              </a-doption>
-              <a-doption
-                v-if="hasHandler('download')"
-                @click="$emit('download', file)"
-              >
-                <icon-download />
-                下载
-              </a-doption>
-              <a-divider style="margin: 4px 0" />
-              <a-doption
-                v-if="hasHandler('rename')"
-                @click="$emit('rename', file)"
-              >
-                <icon-edit />
-                重命名
-              </a-doption>
-              <a-doption v-if="hasHandler('move')" @click="$emit('move', file)">
-                <icon-drag-arrow />
-                移动到
-              </a-doption>
-              <a-divider style="margin: 4px 0" />
-              <a-doption
-                v-if="hasHandler('delete')"
-                @click="$emit('delete', file)"
-              >
-                <icon-delete />
-                放入回收站
-              </a-doption>
+              <div class="file-tooltip">
+                <div class="tooltip-item">
+                  <span class="tooltip-label">名称：</span>
+                  <span class="tooltip-value">{{ file.displayName }}</span>
+                </div>
+                <div class="tooltip-item">
+                  <span class="tooltip-label">大小：</span>
+                  <span class="tooltip-value">{{
+                    formatFileSize(file.size) || '-'
+                  }}</span>
+                </div>
+                <div class="tooltip-item">
+                  <span class="tooltip-label">修改日期：</span>
+                  <span class="tooltip-value">{{
+                    formatFileTime(file.updateTime)
+                  }}</span>
+                </div>
+              </div>
             </template>
-          </a-dropdown>
+          </file-tooltip>
+          <file-tooltip position="bottom">
+            <div class="grid-item-info">
+              {{ formatFileTime(file.updateTime) }}
+            </div>
+            <template #content>
+              <div class="file-tooltip">
+                <div class="tooltip-item">
+                  <span class="tooltip-label">名称：</span>
+                  <span class="tooltip-value">{{ file.displayName }}</span>
+                </div>
+                <div class="tooltip-item">
+                  <span class="tooltip-label">大小：</span>
+                  <span class="tooltip-value">{{
+                    formatFileSize(file.size) || '-'
+                  }}</span>
+                </div>
+                <div class="tooltip-item">
+                  <span class="tooltip-label">修改日期：</span>
+                  <span class="tooltip-value">{{
+                    formatFileTime(file.updateTime)
+                  }}</span>
+                </div>
+              </div>
+            </template>
+          </file-tooltip>
+          <div v-if="!isSelected(file.id)" class="grid-item-actions">
+            <a-dropdown
+              trigger="click"
+              position="bl"
+              :popup-max-height="false"
+              @popup-visible-change="handleDropdownVisibleChange"
+            >
+              <a-button size="small" type="text" @click.stop>
+                <icon-more :size="18" />
+              </a-button>
+              <template #content>
+                <a-doption
+                  v-if="!file.isDir && hasHandler('preview')"
+                  @click="$emit('preview', file)"
+                >
+                  <icon-eye />
+                  预览
+                </a-doption>
+                <a-doption
+                  v-if="hasHandler('share')"
+                  @click="$emit('share', file)"
+                >
+                  <icon-share-alt />
+                  分享
+                </a-doption>
+                <a-doption
+                  v-if="hasHandler('favorite')"
+                  @click="$emit('favorite', file)"
+                >
+                  <icon-star-fill v-if="file.isFavorite" />
+                  <icon-star v-else />
+                  {{ file.isFavorite ? '取消收藏' : '收藏' }}
+                </a-doption>
+                <a-doption
+                  v-if="hasHandler('download')"
+                  @click="$emit('download', file)"
+                >
+                  <icon-download />
+                  下载
+                </a-doption>
+                <a-divider style="margin: 4px 0" />
+                <a-doption
+                  v-if="hasHandler('rename')"
+                  @click="$emit('rename', file)"
+                >
+                  <icon-edit />
+                  重命名
+                </a-doption>
+                <a-doption
+                  v-if="hasHandler('move')"
+                  @click="$emit('move', file)"
+                >
+                  <icon-drag-arrow />
+                  移动到
+                </a-doption>
+                <a-divider style="margin: 4px 0" />
+                <a-doption
+                  v-if="hasHandler('delete')"
+                  @click="$emit('delete', file)"
+                >
+                  <icon-delete />
+                  放入回收站
+                </a-doption>
+              </template>
+            </a-dropdown>
+          </div>
         </div>
-      </div>
+        <template #content>
+          <a-doption
+            v-if="!file.isDir && hasHandler('preview')"
+            @click="$emit('preview', file)"
+          >
+            <icon-eye />
+            预览
+          </a-doption>
+          <a-doption v-if="hasHandler('share')" @click="$emit('share', file)">
+            <icon-share-alt />
+            分享
+          </a-doption>
+          <a-doption
+            v-if="hasHandler('favorite')"
+            @click="$emit('favorite', file)"
+          >
+            <icon-star-fill v-if="file.isFavorite" />
+            <icon-star v-else />
+            {{ file.isFavorite ? '取消收藏' : '收藏' }}
+          </a-doption>
+          <a-doption
+            v-if="hasHandler('download')"
+            @click="$emit('download', file)"
+          >
+            <icon-download />
+            下载
+          </a-doption>
+          <a-divider style="margin: 4px 0" />
+          <a-doption v-if="hasHandler('rename')" @click="$emit('rename', file)">
+            <icon-edit />
+            重命名
+          </a-doption>
+          <a-doption v-if="hasHandler('move')" @click="$emit('move', file)">
+            <icon-drag-arrow />
+            移动到
+          </a-doption>
+          <a-divider style="margin: 4px 0" />
+          <a-doption v-if="hasHandler('delete')" @click="$emit('delete', file)">
+            <icon-delete />
+            放入回收站
+          </a-doption>
+        </template>
+      </a-dropdown>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, getCurrentInstance, ref } from 'vue';
+  import { getCurrentInstance, ref } from 'vue';
   import {
     IconDownload,
     IconDelete,
@@ -166,9 +218,6 @@
     IconDragArrow,
     IconStar,
     IconStarFill,
-    IconRefresh,
-    IconApps,
-    IconList,
     IconEye,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
@@ -260,6 +309,9 @@
   const handleFileDoubleClick = (file: FileItem) => {
     if (file.isDir) {
       emit('fileClick', file);
+    } else if (hasHandler('preview')) {
+      // 双击文件触发预览
+      emit('preview', file);
     }
   };
 
@@ -334,7 +386,7 @@
   /**
    * 当拖拽操作结束时
    */
-  const handleDragEnd = (event: DragEvent) => {
+  const handleDragEnd = () => {
     document.querySelectorAll('.is-drop-target').forEach((el) => {
       el.classList.remove('is-drop-target');
     });

@@ -1,196 +1,238 @@
 <template>
   <div class="file-list-view-container">
-    <div class="file-list-header">
-      <div class="header-left">
-        <span class="file-count-text">
-          {{
-            selectedKeys && selectedKeys.length > 0
-              ? `已选 ${selectedKeys.length} 个文件`
-              : `共 ${fileList.length} 个文件`
-          }}
-        </span>
-      </div>
-      <div class="header-right">
-        <a-button-group size="large">
-          <a-button @click="$emit('update:viewMode', 'list')">
-            <icon-list
-              :style="{ color: viewMode === 'list' ? '#165dff' : '' }"
-            />
-          </a-button>
-          <a-button @click="$emit('update:viewMode', 'grid')">
-            <icon-apps
-              :style="{ color: viewMode === 'grid' ? '#165dff' : '' }"
-            />
-          </a-button>
-        </a-button-group>
-        <a-button size="large" @click="$emit('refresh')">
-          <icon-refresh />
-        </a-button>
-      </div>
-    </div>
-    <div class="file-list-view">
-      <a-table
-        v-model:selected-keys="selectedKeysModel"
-        :data="fileList"
-        :pagination="false"
-        :bordered="false"
-        row-key="id"
-        :row-class="() => 'file-row'"
-        :row-selection="{
-          type: 'checkbox',
-          showCheckedAll: true,
-        }"
-        @change="handleTableChange"
-        @row-click="handleRowClick"
-      >
-        <template #tr="slotProps">
-          <tr
-            v-bind="slotProps.props"
-            :class="[
-              'file-row',
-              {
-                'is-dragging-row': draggingItemIds.includes(
-                  slotProps.record.id
-                ),
-              },
-            ]"
-            draggable="true"
-            @contextmenu.stop
-            @dragstart="handleDragStart(slotProps.record, $event)"
-            @dragover="handleDragOver(slotProps.record, $event)"
-            @dragleave="handleDragLeave($event)"
-            @drop="handleDrop(slotProps.record, $event)"
-            @dragend="handleDragEnd"
-          >
-            <component
-              :is="s"
-              v-for="(s, index) in slotProps.slots"
-              :key="index"
-            />
-          </tr>
-        </template>
-        <template #columns>
-          <a-table-column title="文件名" data-index="displayName" :width="400">
-            <template #cell="{ record }">
-              <div
-                class="file-name-cell"
-                :class="{ 'is-folder': record.isDir }"
-                @dblclick="handleDoubleClick(record)"
-              >
-                <div class="file-icon-wrapper">
-                  <img
-                    :src="
-                      getFileIconPath(
-                        record.isDir ? 'dir' : record.suffix || ''
-                      )
-                    "
-                    :alt="record.displayName"
-                    class="file-icon-img"
-                  />
+    <a-dropdown
+      v-model:popup-visible="contextMenuVisible"
+      trigger="contextMenu"
+      align-point
+      :popup-max-height="false"
+      @popup-visible-change="handleDropdownVisibleChange"
+    >
+      <div class="file-list-view">
+        <a-table
+          v-model:selected-keys="selectedKeysModel"
+          :data="fileList"
+          :pagination="false"
+          :bordered="false"
+          row-key="id"
+          :row-class="() => 'file-row'"
+          :row-selection="{
+            type: 'checkbox',
+            showCheckedAll: true,
+          }"
+          @change="handleTableChange"
+          @row-click="handleRowClick"
+        >
+          <template #tr="slotProps">
+            <tr
+              v-bind="slotProps.props"
+              :class="[
+                'file-row',
+                {
+                  'is-dragging-row': draggingItemIds.includes(
+                    slotProps.record.id
+                  ),
+                },
+              ]"
+              draggable="true"
+              @contextmenu.stop="handleContextMenu(slotProps.record, $event)"
+              @dragstart="handleDragStart(slotProps.record, $event)"
+              @dragover="handleDragOver(slotProps.record, $event)"
+              @dragleave="handleDragLeave($event)"
+              @drop="handleDrop(slotProps.record, $event)"
+              @dragend="handleDragEnd"
+            >
+              <component
+                :is="s"
+                v-for="(s, index) in slotProps.slots"
+                :key="index"
+              />
+            </tr>
+          </template>
+          <template #columns>
+            <a-table-column
+              title="文件名"
+              data-index="displayName"
+              :width="400"
+            >
+              <template #cell="{ record }">
+                <div
+                  class="file-name-cell"
+                  :class="{ 'is-folder': record.isDir }"
+                  @dblclick="handleDoubleClick(record)"
+                >
+                  <div class="file-icon-wrapper">
+                    <img
+                      :src="
+                        getFileIconPath(
+                          record.isDir ? 'dir' : record.suffix || ''
+                        )
+                      "
+                      :alt="record.displayName"
+                      class="file-icon-img"
+                    />
+                  </div>
+                  <span class="file-name">{{ record.displayName }}</span>
                 </div>
-                <span class="file-name">{{ record.displayName }}</span>
-              </div>
-            </template>
-          </a-table-column>
+              </template>
+            </a-table-column>
 
-          <a-table-column title="大小" data-index="size" :width="120">
-            <template #cell="{ record }">
-              <span class="file-size">{{ formatFileSize(record.size) }}</span>
-            </template>
-          </a-table-column>
+            <a-table-column title="大小" data-index="size" :width="120">
+              <template #cell="{ record }">
+                <span class="file-size">{{ formatFileSize(record.size) }}</span>
+              </template>
+            </a-table-column>
 
-          <a-table-column
-            title="修改时间"
-            data-index="updateTime"
-            :width="180"
-            :sortable="{
-              sortDirections: ['ascend', 'descend'],
-              sorter: true,
-            }"
-          >
-            <template #cell="{ record }">
-              <span class="file-time">{{
-                formatFileTime(record.updateTime)
-              }}</span>
-            </template>
-          </a-table-column>
+            <a-table-column
+              title="修改时间"
+              data-index="updateTime"
+              :width="180"
+              :sortable="{
+                sortDirections: ['ascend', 'descend'],
+                sorter: true,
+              }"
+            >
+              <template #cell="{ record }">
+                <span class="file-time">{{
+                  formatFileTime(record.updateTime)
+                }}</span>
+              </template>
+            </a-table-column>
 
-          <a-table-column title="操作" :width="200" align="center">
-            <template #cell="{ record }">
-              <div v-if="!isRowSelected(record.id)" class="file-actions">
-                <a-button
-                  v-if="!record.isDir && hasHandler('preview')"
-                  size="small"
-                  type="text"
-                  @click.stop="$emit('preview', record)"
-                >
-                  <icon-eye />
-                </a-button>
-                <a-button
-                  v-if="!record.isDir && hasHandler('download')"
-                  size="small"
-                  type="text"
-                  @click.stop="$emit('download', record)"
-                >
-                  <icon-download />
-                </a-button>
-                <a-button
-                  v-if="hasHandler('share')"
-                  size="small"
-                  type="text"
-                  @click.stop="$emit('share', record)"
-                >
-                  <icon-share-alt />
-                </a-button>
-                <a-button
-                  v-if="hasHandler('favorite')"
-                  size="small"
-                  type="text"
-                  :class="{ 'is-favorite': record.isFavorite }"
-                  @click.stop="$emit('favorite', record)"
-                >
-                  <icon-star-fill v-if="record.isFavorite" />
-                  <icon-star v-else />
-                </a-button>
-                <a-button
-                  v-if="hasHandler('delete')"
-                  size="small"
-                  type="text"
-                  status="danger"
-                  @click.stop="$emit('delete', record)"
-                >
-                  <icon-delete />
-                </a-button>
-                <a-dropdown
-                  trigger="hover"
-                  @popup-visible-change="handleDropdownVisibleChange"
-                >
-                  <a-button size="small" type="text" @click.stop>
-                    <icon-more />
+            <a-table-column title="操作" :width="200" align="center">
+              <template #cell="{ record }">
+                <div v-if="!isRowSelected(record.id)" class="file-actions">
+                  <a-button
+                    v-if="!record.isDir && hasHandler('preview')"
+                    size="small"
+                    type="text"
+                    @click.stop="$emit('preview', record)"
+                  >
+                    <icon-eye />
                   </a-button>
-                  <template #content>
-                    <a-doption
-                      v-if="hasHandler('rename')"
-                      @click="$emit('rename', record)"
-                    >
-                      <icon-edit />
-                      重命名
-                    </a-doption>
-                    <a-doption
-                      v-if="hasHandler('move')"
-                      @click="$emit('move', record)"
-                    >
-                      <icon-drag-arrow />
-                      移动到
-                    </a-doption>
-                  </template>
-                </a-dropdown>
-              </div>
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-    </div>
+                  <a-button
+                    v-if="!record.isDir && hasHandler('download')"
+                    size="small"
+                    type="text"
+                    @click.stop="$emit('download', record)"
+                  >
+                    <icon-download />
+                  </a-button>
+                  <a-button
+                    v-if="hasHandler('share')"
+                    size="small"
+                    type="text"
+                    @click.stop="$emit('share', record)"
+                  >
+                    <icon-share-alt />
+                  </a-button>
+                  <a-button
+                    v-if="hasHandler('favorite')"
+                    size="small"
+                    type="text"
+                    :class="{ 'is-favorite': record.isFavorite }"
+                    @click.stop="$emit('favorite', record)"
+                  >
+                    <icon-star-fill v-if="record.isFavorite" />
+                    <icon-star v-else />
+                  </a-button>
+                  <a-button
+                    v-if="hasHandler('delete')"
+                    size="small"
+                    type="text"
+                    status="danger"
+                    @click.stop="$emit('delete', record)"
+                  >
+                    <icon-delete />
+                  </a-button>
+                  <a-dropdown
+                    trigger="hover"
+                    @popup-visible-change="handleDropdownVisibleChange"
+                  >
+                    <a-button size="small" type="text" @click.stop>
+                      <icon-more />
+                    </a-button>
+                    <template #content>
+                      <a-doption
+                        v-if="hasHandler('rename')"
+                        @click="$emit('rename', record)"
+                      >
+                        <icon-edit />
+                        重命名
+                      </a-doption>
+                      <a-doption
+                        v-if="hasHandler('move')"
+                        @click="$emit('move', record)"
+                      >
+                        <icon-drag-arrow />
+                        移动到
+                      </a-doption>
+                    </template>
+                  </a-dropdown>
+                </div>
+              </template>
+            </a-table-column>
+          </template>
+        </a-table>
+      </div>
+      <template #content>
+        <a-doption
+          v-if="
+            contextMenuFile && !contextMenuFile.isDir && hasHandler('preview')
+          "
+          @click="$emit('preview', contextMenuFile)"
+        >
+          <icon-eye />
+          预览
+        </a-doption>
+        <a-doption
+          v-if="contextMenuFile && hasHandler('share')"
+          @click="$emit('share', contextMenuFile)"
+        >
+          <icon-share-alt />
+          分享
+        </a-doption>
+        <a-doption
+          v-if="contextMenuFile && hasHandler('favorite')"
+          @click="$emit('favorite', contextMenuFile)"
+        >
+          <icon-star-fill v-if="contextMenuFile?.isFavorite" />
+          <icon-star v-else />
+          {{ contextMenuFile?.isFavorite ? '取消收藏' : '收藏' }}
+        </a-doption>
+        <a-doption
+          v-if="
+            contextMenuFile && !contextMenuFile.isDir && hasHandler('download')
+          "
+          @click="$emit('download', contextMenuFile)"
+        >
+          <icon-download />
+          下载
+        </a-doption>
+        <a-divider style="margin: 4px 0" />
+        <a-doption
+          v-if="contextMenuFile && hasHandler('rename')"
+          @click="$emit('rename', contextMenuFile)"
+        >
+          <icon-edit />
+          重命名
+        </a-doption>
+        <a-doption
+          v-if="contextMenuFile && hasHandler('move')"
+          @click="$emit('move', contextMenuFile)"
+        >
+          <icon-drag-arrow />
+          移动到
+        </a-doption>
+        <a-divider style="margin: 4px 0" />
+        <a-doption
+          v-if="contextMenuFile && hasHandler('delete')"
+          @click="$emit('delete', contextMenuFile)"
+        >
+          <icon-delete />
+          放入回收站
+        </a-doption>
+      </template>
+    </a-dropdown>
   </div>
 </template>
 
@@ -205,9 +247,6 @@
     IconDragArrow,
     IconStar,
     IconStarFill,
-    IconRefresh,
-    IconApps,
-    IconList,
     IconEye,
   } from '@arco-design/web-vue/es/icon';
   import type { FileItem } from '@/types/modules/file';
@@ -247,6 +286,19 @@
     (e: 'dropdownOpen'): void;
   }>();
 
+  // 右键菜单相关
+  const contextMenuVisible = ref(false);
+  const contextMenuFile = ref<FileItem | null>(null);
+
+  /**
+   * 处理右键菜单
+   */
+  const handleContextMenu = (record: FileItem, event: MouseEvent) => {
+    event.preventDefault();
+    contextMenuFile.value = record;
+    contextMenuVisible.value = true;
+  };
+
   // 双向绑定选中的 keys
   const selectedKeysModel = computed({
     get: () => props.selectedKeys || [],
@@ -261,6 +313,9 @@
   const handleDoubleClick = (record: FileItem) => {
     if (record.isDir) {
       emit('rowClick', record);
+    } else if (hasHandler('preview')) {
+      // 双击文件触发预览
+      emit('preview', record);
     }
   };
 
@@ -395,31 +450,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-  }
-
-  .file-list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-border-2);
-    background-color: var(--color-bg-1);
-
-    .header-left {
-      display: flex;
-      align-items: center;
-
-      .file-count-text {
-        font-size: 14px;
-        color: var(--color-text-2);
-      }
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
   }
 
   .file-list-view {
