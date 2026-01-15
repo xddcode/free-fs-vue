@@ -125,15 +125,17 @@ export const useTransferStore = defineStore('transfer', () => {
   const getConcurrency = computed(() => {
     const userStore = useUserStore();
     const settings = userStore.transferSetting;
-    
+
     // 如果用户配置存在且有效（1-3），使用用户配置
-    if (settings && 
-        typeof settings.concurrentUploadQuantity === 'number' &&
-        settings.concurrentUploadQuantity >= 1 && 
-        settings.concurrentUploadQuantity <= 3) {
+    if (
+      settings &&
+      typeof settings.concurrentUploadQuantity === 'number' &&
+      settings.concurrentUploadQuantity >= 1 &&
+      settings.concurrentUploadQuantity <= 3
+    ) {
       return settings.concurrentUploadQuantity;
     }
-    
+
     // 否则使用默认值
     return 3;
   });
@@ -145,14 +147,16 @@ export const useTransferStore = defineStore('transfer', () => {
   const getChunkSize = computed(() => {
     const userStore = useUserStore();
     const settings = userStore.transferSetting;
-    
+
     // 如果用户配置存在且有效，使用用户配置
-    if (settings && 
-        typeof settings.chunkSize === 'number' &&
-        settings.chunkSize > 0) {
+    if (
+      settings &&
+      typeof settings.chunkSize === 'number' &&
+      settings.chunkSize > 0
+    ) {
       return settings.chunkSize;
     }
-    
+
     // 否则使用默认值 5MB
     return 5 * 1024 * 1024;
   });
@@ -164,11 +168,11 @@ export const useTransferStore = defineStore('transfer', () => {
    */
   function convertVOToTask(vo: FileTransferTaskVO): TransferTask {
     const now = Date.now();
-    
+
     // 确保进度值为整数，避免浮点精度问题
     const progress = vo.progress ?? 0;
     const formattedProgress = Math.round(progress);
-    
+
     return {
       taskId: vo.taskId,
       fileName: vo.fileName,
@@ -218,7 +222,7 @@ export const useTransferStore = defineStore('transfer', () => {
     const updatedTask = stateMachine.transition(task, newStatus);
     if (updatedTask) {
       tasks.value.set(taskId, updatedTask);
-      
+
       // 如果转换到 completed 状态，触发文件列表刷新事件
       if (newStatus === 'completed') {
         // 显示完成通知
@@ -226,19 +230,19 @@ export const useTransferStore = defineStore('transfer', () => {
           content: `文件 "${task.fileName}" 上传完成`,
           duration: 3000,
         });
-        
+
         // 触发文件上传完成事件，通知文件列表刷新
         window.dispatchEvent(
           new CustomEvent('file-upload-complete', {
             detail: { parentId: task.parentId },
           })
         );
-        
+
         // 清理资源
         progressCalculator.clear(taskId);
         fileCache.delete(taskId);
       }
-      
+
       return true;
     }
 
@@ -358,11 +362,13 @@ export const useTransferStore = defineStore('transfer', () => {
         };
         const task = tasks.value.get(taskId);
         setTaskError(taskId, errorData.message || '上传失败');
-        
+
         // 显示错误通知
         if (task) {
           Message.error({
-            content: `文件 "${task.fileName}" 上传失败: ${errorData.message || '未知错误'}`,
+            content: `文件 "${task.fileName}" 上传失败: ${
+              errorData.message || '未知错误'
+            }`,
             duration: 5000,
           });
         }
@@ -429,10 +435,12 @@ export const useTransferStore = defineStore('transfer', () => {
         const newPriority = statePriority[newTask.status] || 0;
 
         // 只有当后端状态优先级更高，或者是终态时才更新
-        if (newPriority > existingPriority || 
-            newTask.status === 'completed' || 
-            newTask.status === 'failed' || 
-            newTask.status === 'cancelled') {
+        if (
+          newPriority > existingPriority ||
+          newTask.status === 'completed' ||
+          newTask.status === 'failed' ||
+          newTask.status === 'cancelled'
+        ) {
           tasks.value.set(vo.taskId, newTask);
         } else {
           // 保持前端状态，但更新其他信息（如进度）
@@ -447,7 +455,7 @@ export const useTransferStore = defineStore('transfer', () => {
     });
 
     // 清理前端有但后端没有的任务（可能已被删除）
-    const backendTaskIds = new Set(taskVOs.map(vo => vo.taskId));
+    const backendTaskIds = new Set(taskVOs.map((vo) => vo.taskId));
     tasks.value.forEach((task, taskId) => {
       if (!backendTaskIds.has(taskId)) {
         tasks.value.delete(taskId);
@@ -461,7 +469,9 @@ export const useTransferStore = defineStore('transfer', () => {
    * @returns 批次 ID
    */
   function startUploadSession(): string {
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const sessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     currentSessionId.value = sessionId;
     sessionTasks.value.set(sessionId, []);
     return sessionId;
@@ -474,7 +484,11 @@ export const useTransferStore = defineStore('transfer', () => {
    * @param sessionId 可选的批次 ID，如果不提供则使用当前批次
    * @returns 任务 ID
    */
-  async function createTask(file: File, parentId?: string, sessionId?: string): Promise<string> {
+  async function createTask(
+    file: File,
+    parentId?: string,
+    sessionId?: string
+  ): Promise<string> {
     // 确保回调已初始化
     initExecutorCallbacks();
 
@@ -534,9 +548,11 @@ export const useTransferStore = defineStore('transfer', () => {
     // 获取当前并发配置和分片大小，并启动上传执行器
     // 传递并发配置和分片大小确保任务使用创建时的配置，不受后续配置变更影响
     const currentConcurrency = getConcurrency.value;
-    uploadExecutor.start(taskId, file, currentConcurrency, chunkSize).catch(() => {
-      // 静默处理错误，错误已在 executor 中处理
-    });
+    uploadExecutor
+      .start(taskId, file, currentConcurrency, chunkSize)
+      .catch(() => {
+        // 静默处理错误，错误已在 executor 中处理
+      });
 
     return taskId;
   }
@@ -661,9 +677,11 @@ export const useTransferStore = defineStore('transfer', () => {
     // 传递并发配置和分片大小确保任务使用重试时的配置
     const currentConcurrency = getConcurrency.value;
     const currentChunkSize = getChunkSize.value;
-    uploadExecutor.start(taskId, file, currentConcurrency, currentChunkSize).catch(() => {
-      // 静默处理错误，错误已在 executor 中处理
-    });
+    uploadExecutor
+      .start(taskId, file, currentConcurrency, currentChunkSize)
+      .catch(() => {
+        // 静默处理错误，错误已在 executor 中处理
+      });
   }
 
   /**

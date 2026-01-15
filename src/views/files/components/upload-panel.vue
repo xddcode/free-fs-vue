@@ -26,7 +26,7 @@
             <icon-file :size="24" />
             <div class="task-info">
               <div class="file-name">{{ task.fileName }}</div>
-              
+
               <!-- 空闲/初始化状态 -->
               <div
                 v-if="task.status === 'idle' || task.status === 'initialized'"
@@ -35,13 +35,13 @@
                 <a-spin :size="14" />
                 <span class="status-text">准备中...</span>
               </div>
-              
+
               <!-- 校验中状态 -->
               <div v-else-if="task.status === 'checking'" class="progress-row">
                 <a-spin :size="14" />
                 <span class="status-text">校验文件...</span>
               </div>
-              
+
               <!-- 上传中状态：进度条 + 速度 + 剩余时间 -->
               <div v-else-if="task.status === 'uploading'" class="progress-row">
                 <a-progress
@@ -56,7 +56,7 @@
                   </span>
                 </div>
               </div>
-              
+
               <!-- 暂停状态：进度条 + "已暂停" -->
               <div v-else-if="task.status === 'paused'" class="progress-row">
                 <a-progress
@@ -67,13 +67,13 @@
                 />
                 <span class="status-text">已暂停</span>
               </div>
-              
+
               <!-- 合并中状态 -->
               <div v-else-if="task.status === 'merging'" class="progress-row">
                 <a-spin :size="14" />
                 <span class="status-text">正在处理...</span>
               </div>
-              
+
               <!-- 完成状态 -->
               <span
                 v-else-if="task.status === 'completed'"
@@ -81,7 +81,7 @@
               >
                 已上传至 目标文件夹
               </span>
-              
+
               <!-- 失败状态 -->
               <span
                 v-else-if="task.status === 'failed'"
@@ -89,7 +89,7 @@
               >
                 {{ task.errorMessage || '上传失败' }}
               </span>
-              
+
               <!-- 已取消状态 -->
               <span v-else-if="task.status === 'cancelled'" class="status-text">
                 已取消
@@ -124,10 +124,10 @@
   }>();
 
   const transferStore = useTransferStore();
-  
+
   // 使用当前批次的任务列表，而不是所有任务
   const { currentSessionTasks: taskList } = storeToRefs(transferStore);
-  
+
   // 面板显示状态（本地管理）
   const showPanel = ref(false);
   const isExpanded = ref(false);
@@ -142,7 +142,7 @@
   };
 
   const isUploading = computed(() =>
-    taskList.value.some((t) => 
+    taskList.value.some((t) =>
       ['initialized', 'checking', 'uploading', 'merging'].includes(t.status)
     )
   );

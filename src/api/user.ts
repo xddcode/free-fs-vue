@@ -95,9 +95,9 @@ export function getSecurityLogs(params?: SecurityLogQueryParams) {
  * 获取用户传输设置
  */
 export function getTransferSetting() {
-  return request.get<import('@/types/modules/transfer-setting').TransferSetting>(
-    '/apis/user/transfer/setting'
-  );
+  return request.get<
+    import('@/types/modules/transfer-setting').TransferSetting
+  >('/apis/user/transfer/setting');
 }
 
 /**
@@ -114,11 +114,13 @@ export function updateTransferSetting(
  * @param path 父路径
  */
 export function getFolderList(path: string) {
-  return request.get<Array<{
-    name: string;
-    path: string;
-    type: 'folder' | 'drive';
-  }>>('/apis/user/folders', {
+  return request.get<
+    Array<{
+      name: string;
+      path: string;
+      type: 'folder' | 'drive';
+    }>
+  >('/apis/user/folders', {
     params: { path },
   });
 }
@@ -127,20 +129,24 @@ export function getFolderList(path: string) {
  * 获取系统快捷路径（桌面、下载等）
  */
 export function getQuickAccessPaths() {
-  return request.get<Array<{
-    name: string;
-    path: string;
-    type: string;
-  }>>('/apis/user/quick-paths');
+  return request.get<
+    Array<{
+      name: string;
+      path: string;
+      type: string;
+    }>
+  >('/apis/user/quick-paths');
 }
 
 /**
  * 获取系统驱动器列表
  */
 export function getSystemDrives() {
-  return request.get<Array<{
-    name: string;
-    path: string;
-    type: 'drive';
-  }>>('/apis/user/drives');
+  return request.get<
+    Array<{
+      name: string;
+      path: string;
+      type: 'drive';
+    }>
+  >('/apis/user/drives');
 }

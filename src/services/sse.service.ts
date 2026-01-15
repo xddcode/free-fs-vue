@@ -151,9 +151,11 @@ class SSEService {
     }
 
     this.currentUserId = userId;
-    
+
     // 构建 URL，包含 userId 和 token（如果有）
-    let url = `${this.config.baseUrl}${this.config.endpoint}?userId=${encodeURIComponent(userId)}`;
+    let url = `${this.config.baseUrl}${
+      this.config.endpoint
+    }?userId=${encodeURIComponent(userId)}`;
     if (token) {
       url += `&token=${encodeURIComponent(token)}`;
     }

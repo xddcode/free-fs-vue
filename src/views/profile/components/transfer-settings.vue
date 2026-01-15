@@ -32,14 +32,17 @@
     // Windows 路径格式
     // 绝对路径: C:\ 或 C:\folder 或 D:\folder\subfolder
     // 网络路径: \\server\share
-    const windowsAbsolutePathRegex = /^[a-zA-Z]:\\([\w\s\u4e00-\u9fa5\-().]+\\)*[\w\s\u4e00-\u9fa5\-().]*$/;
-    const windowsNetworkPathRegex = /^\\\\[\w\-.]+(\\[\w\s\u4e00-\u9fa5\-().]+)+(\\[\w\s\u4e00-\u9fa5\-().]+)*$/;
-    
+    const windowsAbsolutePathRegex =
+      /^[a-zA-Z]:\\([\w\s\u4e00-\u9fa5\-().]+\\)*[\w\s\u4e00-\u9fa5\-().]*$/;
+    const windowsNetworkPathRegex =
+      /^\\\\[\w\-.]+(\\[\w\s\u4e00-\u9fa5\-().]+)+(\\[\w\s\u4e00-\u9fa5\-().]+)*$/;
+
     // Linux/Mac 路径格式: /xxx 或 /xxx/xxx
     const unixPathRegex = /^\/[\w\s\u4e00-\u9fa5\-./]*$/;
 
     // 检测是否为合法路径格式
-    const isWindowsPath = windowsAbsolutePathRegex.test(path) || windowsNetworkPathRegex.test(path);
+    const isWindowsPath =
+      windowsAbsolutePathRegex.test(path) || windowsNetworkPathRegex.test(path);
     const isUnixPath = unixPathRegex.test(path);
 
     if (!isWindowsPath && !isUnixPath) {
@@ -110,7 +113,7 @@
       formData.downloadLocation = settings.downloadLocation || '';
       formData.isDefaultDownloadLocation =
         settings.isDefaultDownloadLocation === 1;
-      
+
       // -1 表示不限制，> 0 表示有限制
       if (settings.downloadSpeedLimit && settings.downloadSpeedLimit > 0) {
         formData.downloadSpeedLimit = settings.downloadSpeedLimit;
@@ -119,7 +122,7 @@
         formData.downloadSpeedLimit = 5;
         formData.enableDownloadSpeedLimit = false;
       }
-      
+
       formData.concurrentUploadQuantity =
         settings.concurrentUploadQuantity || 3;
       formData.concurrentDownloadQuantity =
@@ -157,10 +160,10 @@
         });
 
         Message.success('保存成功');
-        
+
         // 重新加载表单数据
         await loadSettings();
-        
+
         // 更新 User Store 中的配置，这样 Transfer Store 才能获取到最新值
         await userStore.loadTransferSetting();
       } catch (error) {
@@ -199,15 +202,23 @@
             allow-clear
           >
             <template #suffix>
-              <a-tooltip content="请输入完整的文件夹路径&#10;Windows 示例: C:\Users\用户名\Desktop&#10;Linux/Mac 示例: /home/username/Desktop" position="left">
-                <icon-question-circle style="color: var(--color-text-3); cursor: help;" />
+              <a-tooltip
+                content="请输入完整的文件夹路径&#10;Windows 示例: C:\Users\用户名\Desktop&#10;Linux/Mac 示例: /home/username/Desktop"
+                position="left"
+              >
+                <icon-question-circle
+                  style="color: var(--color-text-3); cursor: help"
+                />
               </a-tooltip>
             </template>
           </a-input>
         </a-form-item>
 
         <!-- 默认下载路径 -->
-        <a-form-item field="isDefaultDownloadLocation" :style="{ marginBottom: '20px' }">
+        <a-form-item
+          field="isDefaultDownloadLocation"
+          :style="{ marginBottom: '20px' }"
+        >
           <div style="display: flex; align-items: center; gap: 8px">
             <a-checkbox v-model="formData.isDefaultDownloadLocation">
               默认此路径为下载路径
@@ -234,7 +245,11 @@
             >
               <template #suffix>MB/s</template>
             </a-input-number>
-            <span v-if="formData.enableDownloadSpeedLimit" class="form-item-tip" style="margin-left: 0">
+            <span
+              v-if="formData.enableDownloadSpeedLimit"
+              class="form-item-tip"
+              style="margin-left: 0"
+            >
               (可输入 1-200 之间的整数)
             </span>
           </a-space>
@@ -248,11 +263,7 @@
               v-model="formData.concurrentUploadQuantity"
               :style="{ width: '100px' }"
             >
-              <a-option
-                v-for="num in [1, 2, 3]"
-                :key="num"
-                :value="num"
-              >
+              <a-option v-for="num in [1, 2, 3]" :key="num" :value="num">
                 {{ num }}个
               </a-option>
             </a-select>
@@ -262,11 +273,7 @@
               v-model="formData.concurrentDownloadQuantity"
               :style="{ width: '100px' }"
             >
-              <a-option
-                v-for="num in [1, 2, 3]"
-                :key="num"
-                :value="num"
-              >
+              <a-option v-for="num in [1, 2, 3]" :key="num" :value="num">
                 {{ num }}个
               </a-option>
             </a-select>

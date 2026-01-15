@@ -76,9 +76,13 @@ module.exports = {
     'max-classes-per-file': 'off',
 
     // 类成员之间的空行：单行成员后不强制空行
-    'lines-between-class-members': ['error', 'always', {
-      exceptAfterSingleLine: true,
-    }],
+    'lines-between-class-members': [
+      'error',
+      'always',
+      {
+        exceptAfterSingleLine: true,
+      },
+    ],
 
     // 允许类方法不使用 this（有时方法逻辑上属于类但不需要访问实例）
     'class-methods-use-this': 'off',

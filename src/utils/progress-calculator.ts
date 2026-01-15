@@ -35,7 +35,7 @@ export interface DisplayData {
  * 滑动窗口速度计算器
  * 使用 5 秒窗口计算平均速度
  */
-export class SlidingWindowSpeed { 
+export class SlidingWindowSpeed {
   private samples: SpeedSample[] = [];
 
   private readonly windowSize: number;
@@ -180,7 +180,7 @@ export class ProgressCalculator {
 
     // 确保进度在 0-100 范围内
     progress = Math.min(100, Math.max(0, progress));
-    
+
     // 四舍五入到整数（不保留小数）
     progress = Math.round(progress);
 

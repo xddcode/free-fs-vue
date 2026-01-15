@@ -174,14 +174,18 @@
             </div>
           </div>
           <!-- 暂停状态 -->
-          <div v-else-if="record.status === 'paused'" class="progress-container" style="width: 100%;">
+          <div
+            v-else-if="record.status === 'paused'"
+            class="progress-container"
+            style="width: 100%"
+          >
             <a-progress
               :percent="getDisplayProgress(record) / 100"
               size="medium"
               status="warning"
               :style="{ width: '300px' }"
             />
-            <span class="progress-text" style="min-width: 100px;">已暂停</span>
+            <span class="progress-text" style="min-width: 100px">已暂停</span>
           </div>
           <!-- 合并中状态 -->
           <div

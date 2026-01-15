@@ -111,9 +111,7 @@
             >
               <template #text>
                 <div class="progress-inner">
-                  <span class="percent-val"
-                    >{{ storagePercent }}%</span
-                  >
+                  <span class="percent-val">{{ storagePercent }}%</span>
                   <span class="percent-label">已使用</span>
                 </div>
               </template>

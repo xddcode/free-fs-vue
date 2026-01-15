@@ -27,7 +27,7 @@ export function canTransition(from: TaskStatus, to: TaskStatus): boolean {
   if (from === to) {
     return true;
   }
-  
+
   const validTargets = VALID_TRANSITIONS[from];
   return validTargets.includes(to);
 }

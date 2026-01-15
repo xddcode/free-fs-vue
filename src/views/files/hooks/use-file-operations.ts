@@ -165,7 +165,7 @@ export default function useFileOperations(refreshCallback: () => void) {
     movingFile.value = null;
     movingFiles.value = files;
     moveModalVisible.value = true;
-    
+
     // 保存成功回调，在移动完成后执行
     moveSuccessCallback.value = onSuccess || null;
   };
@@ -189,7 +189,7 @@ export default function useFileOperations(refreshCallback: () => void) {
       movingFile.value = null;
       movingFiles.value = [];
       refreshCallback();
-      
+
       // 执行成功回调（用于清空选中状态等）
       if (moveSuccessCallback.value) {
         moveSuccessCallback.value();
@@ -252,7 +252,10 @@ export default function useFileOperations(refreshCallback: () => void) {
    * @param fileIds 文件ID或ID数组
    * @param onSuccess 可选的成功回调函数
    */
-  const handleDelete = async (fileIds: string | string[], onSuccess?: () => void) => {
+  const handleDelete = async (
+    fileIds: string | string[],
+    onSuccess?: () => void
+  ) => {
     const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
 
     await deleteFiles(ids).then(() => {
@@ -262,7 +265,7 @@ export default function useFileOperations(refreshCallback: () => void) {
           : `已将 ${ids.length} 个文件移到回收站`;
       Message.success(successMsg);
       refreshCallback();
-      
+
       // 执行成功回调（用于清空选中状态等）
       onSuccess?.();
     });
@@ -289,7 +292,10 @@ export default function useFileOperations(refreshCallback: () => void) {
    * @param files 要删除的文件列表
    * @param onSuccess 可选的成功回调函数
    */
-  const openBatchDeleteConfirm = (files: FileItem[], onSuccess?: () => void) => {
+  const openBatchDeleteConfirm = (
+    files: FileItem[],
+    onSuccess?: () => void
+  ) => {
     if (files.length === 0) return;
     Modal.confirm({
       title: '确认批量放入回收站',

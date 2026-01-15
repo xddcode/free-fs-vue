@@ -26,7 +26,9 @@ const useStorageStore = defineStore('storage', {
 
     // 是否有已启用的存储平台
     hasActivePlatform(state): boolean {
-      return state.activePlatforms.some((p: ActiveStoragePlatform) => p.isEnabled);
+      return state.activePlatforms.some(
+        (p: ActiveStoragePlatform) => p.isEnabled
+      );
     },
   },
 
@@ -38,7 +40,9 @@ const useStorageStore = defineStore('storage', {
         this.activePlatforms = data;
 
         // 查找启用的平台（isEnabled: true）
-        const enabledPlatform = data.find((p: ActiveStoragePlatform) => p.isEnabled);
+        const enabledPlatform = data.find(
+          (p: ActiveStoragePlatform) => p.isEnabled
+        );
 
         // 设置当前平台
         if (enabledPlatform) {

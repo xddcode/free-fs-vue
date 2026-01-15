@@ -12,7 +12,7 @@
   // 当前激活的标签页 1-上传 2-下载 3-已完成
   const activeTab = ref(1);
   const loading = ref(false);
-  
+
   // 设置弹窗显示状态
   const settingModalVisible = ref(false);
 

@@ -153,7 +153,12 @@ class UploadExecutor {
    * @param concurrency 可选的并发数配置，如果不提供则使用当前全局配置
    * @param chunkSize 可选的分片大小配置，如果不提供则使用默认值 5MB
    */
-  public async start(taskId: string, file: File, concurrency?: number, chunkSize?: number): Promise<void> {
+  public async start(
+    taskId: string,
+    file: File,
+    concurrency?: number,
+    chunkSize?: number
+  ): Promise<void> {
     // 使用提供的分片大小，如果没有提供则使用默认值
     const taskChunkSize = chunkSize ?? this.CHUNK_SIZE;
     const totalChunks = this.calculateChunkCount(file.size, taskChunkSize);
@@ -260,7 +265,7 @@ class UploadExecutor {
     if (!context) {
       return;
     }
-    
+
     context.isPaused = true;
     // 不中止正在进行的上传，让它们自然完成
     // 但不会启动新的上传
@@ -282,13 +287,15 @@ class UploadExecutor {
       // 从后端获取实际已上传的分片列表（这是真实情况）
       const uploadedResponse = await getUploadedChunks(taskId);
       const backendUploadedChunks = uploadedResponse.data || [];
-      
+
       // 清空前端记录，以后端为准
       context.uploadedChunks.clear();
-      
+
       // 使用后端返回的已上传分片列表
-      backendUploadedChunks.forEach((index) => context.uploadedChunks.add(index));
-      
+      backendUploadedChunks.forEach((index) =>
+        context.uploadedChunks.add(index)
+      );
+
       // 找出缺失的分片
       const missingChunks: number[] = [];
       for (let i = 0; i < context.totalChunks; i += 1) {
@@ -318,7 +325,9 @@ class UploadExecutor {
         this.cleanup(taskId);
       } else {
         // 理论上不应该到这里，因为 uploadChunks 会上传所有缺失的分片
-        throw new Error(`分片不完整：已上传 ${context.uploadedChunks.size}/${context.totalChunks}`);
+        throw new Error(
+          `分片不完整：已上传 ${context.uploadedChunks.size}/${context.totalChunks}`
+        );
       }
     } catch (error) {
       if (isNetworkError(error)) {
