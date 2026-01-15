@@ -138,6 +138,25 @@ export const useTransferStore = defineStore('transfer', () => {
     return 3;
   });
 
+  /**
+   * 获取分片大小配置
+   * 从 User Store 读取用户配置，如果配置有效则使用，否则使用默认值 5MB
+   */
+  const getChunkSize = computed(() => {
+    const userStore = useUserStore();
+    const settings = userStore.transferSetting;
+    
+    // 如果用户配置存在且有效，使用用户配置
+    if (settings && 
+        typeof settings.chunkSize === 'number' &&
+        settings.chunkSize > 0) {
+      return settings.chunkSize;
+    }
+    
+    // 否则使用默认值 5MB
+    return 5 * 1024 * 1024;
+  });
+
   // ==================== Internal Helpers ====================
 
   /**
@@ -188,8 +207,6 @@ export const useTransferStore = defineStore('transfer', () => {
   function transitionTo(taskId: string, newStatus: TaskStatus): boolean {
     const task = tasks.value.get(taskId);
     if (!task) {
-      // eslint-disable-next-line no-console
-      console.warn(`[TransferStore] Task not found: ${taskId}`);
       return false;
     }
 
@@ -353,8 +370,7 @@ export const useTransferStore = defineStore('transfer', () => {
       }
 
       default:
-        // eslint-disable-next-line no-console
-        console.warn('[TransferStore] Unknown SSE message type:', type);
+        break;
     }
   }
 
@@ -462,7 +478,8 @@ export const useTransferStore = defineStore('transfer', () => {
     // 确保回调已初始化
     initExecutorCallbacks();
 
-    const chunkSize = 5 * 1024 * 1024; // 5MB
+    // 使用用户配置的分片大小
+    const chunkSize = getChunkSize.value;
     const totalChunks = Math.ceil(file.size / chunkSize);
 
     // 调用后端初始化上传
@@ -514,12 +531,11 @@ export const useTransferStore = defineStore('transfer', () => {
     // 立即转换到 initialized 状态
     transitionTo(taskId, 'initialized');
 
-    // 获取当前并发配置并启动上传执行器
-    // 传递并发配置确保任务使用创建时的配置，不受后续配置变更影响
+    // 获取当前并发配置和分片大小，并启动上传执行器
+    // 传递并发配置和分片大小确保任务使用创建时的配置，不受后续配置变更影响
     const currentConcurrency = getConcurrency.value;
-    uploadExecutor.start(taskId, file, currentConcurrency).catch((error) => {
-      // eslint-disable-next-line no-console
-      console.error('[TransferStore] Upload executor error:', error);
+    uploadExecutor.start(taskId, file, currentConcurrency, chunkSize).catch(() => {
+      // 静默处理错误，错误已在 executor 中处理
     });
 
     return taskId;
@@ -568,9 +584,8 @@ export const useTransferStore = defineStore('transfer', () => {
     try {
       await resumeUpload(taskId);
 
-      uploadExecutor.resume(taskId).catch((error) => {
-        // eslint-disable-next-line no-console
-        console.error('[TransferStore] Resume executor error:', error);
+      uploadExecutor.resume(taskId).catch(() => {
+        // 静默处理错误，错误已在 executor 中处理
       });
     } catch (error) {
       transitionTo(taskId, task.status);
@@ -642,12 +657,12 @@ export const useTransferStore = defineStore('transfer', () => {
       });
     }
 
-    // 获取当前并发配置并重新启动上传
-    // 传递并发配置确保任务使用重试时的配置
+    // 获取当前并发配置和分片大小，并重新启动上传
+    // 传递并发配置和分片大小确保任务使用重试时的配置
     const currentConcurrency = getConcurrency.value;
-    uploadExecutor.start(taskId, file, currentConcurrency).catch((error) => {
-      // eslint-disable-next-line no-console
-      console.error('[TransferStore] Retry upload executor error:', error);
+    const currentChunkSize = getChunkSize.value;
+    uploadExecutor.start(taskId, file, currentConcurrency, currentChunkSize).catch(() => {
+      // 静默处理错误，错误已在 executor 中处理
     });
   }
 
@@ -736,6 +751,7 @@ export const useTransferStore = defineStore('transfer', () => {
     cancelledTasks,
     currentSessionTasks,
     getConcurrency,
+    getChunkSize,
 
     // Actions
     startUploadSession,

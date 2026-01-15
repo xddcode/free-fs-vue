@@ -186,9 +186,7 @@
     try {
       const { data } = await getStoragePlatforms();
       platforms.value = data;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取存储平台列表失败:', error);
+    } catch {
       Message.error('获取存储平台列表失败');
     } finally {
       platformsLoading.value = false;
@@ -202,9 +200,8 @@
       userPlatformIdentifiers.value = data.map(
         (setting) => setting.storagePlatform.identifier
       );
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取用户配置列表失败:', error);
+    } catch {
+      // 静默处理错误
     }
   };
 
@@ -270,9 +267,7 @@
       try {
         schemes.value = JSON.parse(platform.configScheme);
         resetForm();
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('解析配置方案失败:', error);
+      } catch {
         Message.error('配置方案格式错误');
         schemes.value = [];
       }
@@ -337,9 +332,7 @@
         } else {
           done(false);
         }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('添加配置失败:', error);
+      } catch {
         done(false);
       }
     }

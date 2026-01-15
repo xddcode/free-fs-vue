@@ -398,12 +398,11 @@
         
         target.value = '';
         fileList.refresh();
-      } catch (error) {
+      } catch {
         Message.error({
           content: '添加文件失败，请重试',
           duration: 3000,
         });
-        console.error('Failed to add files:', error);
       }
     }
   };

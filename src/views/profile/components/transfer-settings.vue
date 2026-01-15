@@ -17,6 +17,7 @@
     enableDownloadSpeedLimit: false,
     concurrentUploadQuantity: 3,
     concurrentDownloadQuantity: 3,
+    chunkSize: 5 * 1024 * 1024, // 默认 5MB
   });
 
   // 路径格式校验
@@ -123,6 +124,7 @@
         settings.concurrentUploadQuantity || 3;
       formData.concurrentDownloadQuantity =
         settings.concurrentDownloadQuantity || 3;
+      formData.chunkSize = settings.chunkSize || 5 * 1024 * 1024; // 默认 5MB
     } catch (error) {
       Message.error('加载设置失败');
     } finally {
@@ -151,6 +153,7 @@
             : -1,
           concurrentUploadQuantity: formData.concurrentUploadQuantity,
           concurrentDownloadQuantity: formData.concurrentDownloadQuantity,
+          chunkSize: formData.chunkSize,
         });
 
         Message.success('保存成功');
@@ -267,6 +270,20 @@
                 {{ num }}个
               </a-option>
             </a-select>
+          </a-space>
+        </a-form-item>
+
+        <!-- 分片大小 -->
+        <a-form-item label="分片大小" field="chunkSize">
+          <a-space :size="16" align="center">
+            <a-select v-model="formData.chunkSize" :style="{ width: '120px' }">
+              <a-option :value="2 * 1024 * 1024">2 MB</a-option>
+              <a-option :value="5 * 1024 * 1024">5 MB</a-option>
+              <a-option :value="10 * 1024 * 1024">10 MB</a-option>
+            </a-select>
+            <span class="form-item-tip" style="margin-left: 0">
+              上传文件时的分片大小，推荐设置 5 MB
+            </span>
           </a-space>
         </a-form-item>
 

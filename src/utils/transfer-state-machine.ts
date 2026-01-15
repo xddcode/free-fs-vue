@@ -43,10 +43,6 @@ export function transition(
   to: TaskStatus
 ): TransferTask | null {
   if (!canTransition(task.status, to)) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[StateMachine] Invalid transition: ${task.status} -> ${to} for task ${task.taskId}`
-    );
     return null;
   }
 

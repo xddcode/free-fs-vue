@@ -84,8 +84,7 @@
         linesClass: 'split-line',
       });
       splitterRef.value = splitter;
-    } catch (error) {
-      console.error('Failed to create SplitText:', error);
+    } catch {
       return;
     }
 
@@ -105,7 +104,6 @@
     }
 
     if (!targets || targets.length === 0) {
-      console.warn('No targets found for SplitText animation');
       splitter.revert();
       return;
     }

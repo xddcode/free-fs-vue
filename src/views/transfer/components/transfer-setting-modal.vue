@@ -26,6 +26,7 @@
     enableDownloadSpeedLimit: false,
     concurrentUploadQuantity: 3,
     concurrentDownloadQuantity: 3,
+    chunkSize: 5 * 1024 * 1024, // 默认 5MB
   });
 
   // 路径格式校验
@@ -40,14 +41,17 @@
     // Windows 路径格式
     // 绝对路径: C:\ 或 C:\folder 或 D:\folder\subfolder
     // 网络路径: \\server\share
-    const windowsAbsolutePathRegex = /^[a-zA-Z]:\\([\w\s\u4e00-\u9fa5\-().]+\\)*[\w\s\u4e00-\u9fa5\-().]*$/;
-    const windowsNetworkPathRegex = /^\\\\[\w\-.]+(\\[\w\s\u4e00-\u9fa5\-().]+)+(\\[\w\s\u4e00-\u9fa5\-().]+)*$/;
-    
+    const windowsAbsolutePathRegex =
+      /^[a-zA-Z]:\\([\w\s\u4e00-\u9fa5\-().]+\\)*[\w\s\u4e00-\u9fa5\-().]*$/;
+    const windowsNetworkPathRegex =
+      /^\\\\[\w\-.]+(\\[\w\s\u4e00-\u9fa5\-().]+)+(\\[\w\s\u4e00-\u9fa5\-().]+)*$/;
+
     // Linux/Mac 路径格式: /xxx 或 /xxx/xxx
     const unixPathRegex = /^\/[\w\s\u4e00-\u9fa5\-./]*$/;
 
     // 检测是否为合法路径格式
-    const isWindowsPath = windowsAbsolutePathRegex.test(path) || windowsNetworkPathRegex.test(path);
+    const isWindowsPath =
+      windowsAbsolutePathRegex.test(path) || windowsNetworkPathRegex.test(path);
     const isUnixPath = unixPathRegex.test(path);
 
     if (!isWindowsPath && !isUnixPath) {
@@ -118,7 +122,7 @@
       formData.downloadLocation = settings.downloadLocation || '';
       formData.isDefaultDownloadLocation =
         settings.isDefaultDownloadLocation === 1;
-      
+
       // -1 表示不限制，> 0 表示有限制
       if (settings.downloadSpeedLimit && settings.downloadSpeedLimit > 0) {
         formData.downloadSpeedLimit = settings.downloadSpeedLimit;
@@ -127,11 +131,12 @@
         formData.downloadSpeedLimit = 5;
         formData.enableDownloadSpeedLimit = false;
       }
-      
+
       formData.concurrentUploadQuantity =
         settings.concurrentUploadQuantity || 3;
       formData.concurrentDownloadQuantity =
         settings.concurrentDownloadQuantity || 3;
+      formData.chunkSize = settings.chunkSize || 5 * 1024 * 1024; // 默认 5MB
     } catch (error) {
       Message.error('加载设置失败');
     } finally {
@@ -152,7 +157,7 @@
           return;
         }
 
-        await updateTransferSetting({
+        const settingsToSave = {
           downloadLocation: formData.downloadLocation,
           isDefaultDownloadLocation: formData.isDefaultDownloadLocation ? 1 : 0,
           downloadSpeedLimit: formData.enableDownloadSpeedLimit
@@ -160,13 +165,16 @@
             : -1,
           concurrentUploadQuantity: formData.concurrentUploadQuantity,
           concurrentDownloadQuantity: formData.concurrentDownloadQuantity,
-        });
+          chunkSize: formData.chunkSize,
+        };
+
+        await updateTransferSetting(settingsToSave);
 
         Message.success('保存成功');
-        
+
         // 更新 User Store 中的配置
         await userStore.loadTransferSetting();
-        
+
         emit('success');
         handleClose();
       } catch (error) {
@@ -217,15 +225,23 @@
           allow-clear
         >
           <template #suffix>
-            <a-tooltip content="请输入完整的文件夹路径&#10;Windows 示例: C:\Users\用户名\Desktop&#10;Linux/Mac 示例: /home/username/Desktop" position="left">
-              <icon-question-circle style="color: var(--color-text-3); cursor: help;" />
+            <a-tooltip
+              content="请输入完整的文件夹路径&#10;Windows 示例: C:\Users\用户名\Desktop&#10;Linux/Mac 示例: /home/username/Desktop"
+              position="left"
+            >
+              <icon-question-circle
+                style="color: var(--color-text-3); cursor: help"
+              />
             </a-tooltip>
           </template>
         </a-input>
       </a-form-item>
 
       <!-- 默认下载路径 -->
-      <a-form-item field="isDefaultDownloadLocation" :style="{ marginBottom: '20px' }">
+      <a-form-item
+        field="isDefaultDownloadLocation"
+        :style="{ marginBottom: '20px' }"
+      >
         <div style="display: flex; align-items: center; gap: 8px">
           <a-checkbox v-model="formData.isDefaultDownloadLocation">
             默认此路径为下载路径
@@ -252,7 +268,11 @@
           >
             <template #suffix>MB/s</template>
           </a-input-number>
-          <span v-if="formData.enableDownloadSpeedLimit" class="form-item-tip" style="margin-left: 0">
+          <span
+            v-if="formData.enableDownloadSpeedLimit"
+            class="form-item-tip"
+            style="margin-left: 0"
+          >
             (可输入 1-200 之间的整数)
           </span>
         </a-space>
@@ -266,11 +286,7 @@
             v-model="formData.concurrentUploadQuantity"
             :style="{ width: '100px' }"
           >
-            <a-option
-              v-for="num in [1, 2, 3]"
-              :key="num"
-              :value="num"
-            >
+            <a-option v-for="num in [1, 2, 3]" :key="num" :value="num">
               {{ num }}个
             </a-option>
           </a-select>
@@ -280,14 +296,24 @@
             v-model="formData.concurrentDownloadQuantity"
             :style="{ width: '100px' }"
           >
-            <a-option
-              v-for="num in [1, 2, 3]"
-              :key="num"
-              :value="num"
-            >
+            <a-option v-for="num in [1, 2, 3]" :key="num" :value="num">
               {{ num }}个
             </a-option>
           </a-select>
+        </a-space>
+      </a-form-item>
+
+      <!-- 分片大小 -->
+      <a-form-item label="分片大小" field="chunkSize">
+        <a-space :size="16" align="center">
+          <a-select v-model="formData.chunkSize" :style="{ width: '120px' }">
+            <a-option :value="2 * 1024 * 1024">2 MB</a-option>
+            <a-option :value="5 * 1024 * 1024">5 MB</a-option>
+            <a-option :value="10 * 1024 * 1024">10 MB</a-option>
+          </a-select>
+          <span class="form-item-tip" style="margin-left: 0">
+            上传文件时的分片大小，推荐设置 5 MB
+          </span>
         </a-space>
       </a-form-item>
     </a-form>

@@ -161,9 +161,7 @@ class SSEService {
     try {
       this.eventSource = new EventSource(url);
       this.setupEventListeners();
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[SSE] Failed to create EventSource:', error);
+    } catch {
       this.setConnected(false);
     }
   }
@@ -241,9 +239,8 @@ class SSEService {
     this.connectionHandlers.forEach((handler) => {
       try {
         handler(connected);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('[SSE] Connection handler error:', error);
+      } catch {
+        // 静默处理连接处理器错误
       }
     });
 
@@ -260,9 +257,8 @@ class SSEService {
     if (this.onReconnectSync) {
       try {
         await this.onReconnectSync();
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('[SSE] Reconnect sync failed:', error);
+      } catch {
+        // 静默处理重连同步错误
       }
     }
   }
@@ -279,9 +275,7 @@ class SSEService {
     };
 
     // 连接错误（浏览器会自动重连）
-    this.eventSource.onerror = (event) => {
-      // eslint-disable-next-line no-console
-      console.error('[SSE] Connection error:', event);
+    this.eventSource.onerror = () => {
       // 只有在 CLOSED 状态时才标记为断开
       if (this.eventSource?.readyState === EventSource.CLOSED) {
         this.setConnected(false);
@@ -329,9 +323,8 @@ class SSEService {
       if (message) {
         this.dispatchMessage(message);
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(`[SSE] Failed to parse ${type} event:`, error, event.data);
+    } catch {
+      // 静默处理解析错误
     }
   }
 
@@ -350,13 +343,8 @@ class SSEService {
           this.dispatchMessage(message);
         }
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(
-        '[SSE] Failed to parse generic message:',
-        error,
-        event.data
-      );
+    } catch {
+      // 静默处理解析错误
     }
   }
 
@@ -373,8 +361,6 @@ class SSEService {
   ): SSEMessage | null {
     const taskId = rawData.taskId as string;
     if (!taskId) {
-      // eslint-disable-next-line no-console
-      console.warn('[SSE] Message missing taskId:', rawData);
       return null;
     }
 
@@ -411,8 +397,6 @@ class SSEService {
         };
 
       default:
-        // eslint-disable-next-line no-console
-        console.warn('[SSE] Unknown message type:', type);
         return null;
     }
   }
@@ -426,9 +410,8 @@ class SSEService {
     this.messageHandlers.forEach((handler) => {
       try {
         handler(message);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('[SSE] Message handler error:', error);
+      } catch {
+        // 静默处理消息处理器错误
       }
     });
   }

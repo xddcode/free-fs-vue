@@ -86,7 +86,6 @@
   };
 
   // 根据状态判断可用的操作按钮
-  // Requirements 8.3: uploading → [pause, cancel], paused → [resume, cancel], failed → [retry, cancel]
   const canPause = (status: TaskStatus) => status === 'uploading';
   const canResume = (status: TaskStatus) => status === 'paused';
   const canRetry = (status: TaskStatus) => status === 'failed';

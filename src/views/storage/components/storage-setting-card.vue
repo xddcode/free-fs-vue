@@ -401,9 +401,7 @@
     try {
       viewConfigSchemes.value = JSON.parse(storagePlatform.configScheme);
       viewModalVisible.value = true;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取配置信息失败:', error);
+    } catch {
       Message.error('获取配置信息失败');
     }
   };
@@ -480,9 +478,7 @@
       }
 
       editModalVisible.value = true;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('获取配置信息失败:', error);
+    } catch {
       Message.error('获取配置信息失败');
     }
   };
@@ -545,9 +541,8 @@
           await deleteStorageSetting(id);
           Message.success(`${storagePlatform.name} 配置已删除`);
           emit('refresh');
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('删除失败:', error);
+        } catch {
+          Message.error('删除失败');
         } finally {
           btnLoading.value = false;
         }
@@ -581,9 +576,7 @@
         } else {
           done(false);
         }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('保存配置失败:', error);
+      } catch {
         done(false);
       }
     }

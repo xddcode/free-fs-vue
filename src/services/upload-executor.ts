@@ -138,11 +138,12 @@ class UploadExecutor {
   /**
    * 计算文件的分片数量
    * @param fileSize 文件大小（字节）
+   * @param chunkSize 分片大小（字节）
    * @returns 分片数量
    *
    */
-  public calculateChunkCount(fileSize: number): number {
-    return Math.ceil(fileSize / this.CHUNK_SIZE);
+  public calculateChunkCount(fileSize: number, chunkSize: number): number {
+    return Math.ceil(fileSize / chunkSize);
   }
 
   /**
@@ -150,9 +151,12 @@ class UploadExecutor {
    * @param taskId 任务 ID
    * @param file 要上传的文件
    * @param concurrency 可选的并发数配置，如果不提供则使用当前全局配置
+   * @param chunkSize 可选的分片大小配置，如果不提供则使用默认值 5MB
    */
-  public async start(taskId: string, file: File, concurrency?: number): Promise<void> {
-    const totalChunks = this.calculateChunkCount(file.size);
+  public async start(taskId: string, file: File, concurrency?: number, chunkSize?: number): Promise<void> {
+    // 使用提供的分片大小，如果没有提供则使用默认值
+    const taskChunkSize = chunkSize ?? this.CHUNK_SIZE;
+    const totalChunks = this.calculateChunkCount(file.size, taskChunkSize);
 
     // 如果提供了并发数，使用提供的值；否则使用当前全局配置
     // 这样可以确保已运行的任务不受配置变更影响
@@ -163,7 +167,7 @@ class UploadExecutor {
       taskId,
       file,
       totalChunks,
-      chunkSize: this.CHUNK_SIZE,
+      chunkSize: taskChunkSize,
       uploadedChunks: new Set(),
       isPaused: false,
       isCancelled: false,
@@ -314,14 +318,9 @@ class UploadExecutor {
         this.cleanup(taskId);
       } else {
         // 理论上不应该到这里，因为 uploadChunks 会上传所有缺失的分片
-        const stillMissing = Array.from({ length: context.totalChunks }, (_, i) => i)
-          .filter(i => !context.uploadedChunks.has(i));
-        console.error(`[UploadExecutor] Chunk count mismatch! Expected ${context.totalChunks}, got ${context.uploadedChunks.size}`);
-        console.error(`[UploadExecutor] Still missing chunks:`, stillMissing);
         throw new Error(`分片不完整：已上传 ${context.uploadedChunks.size}/${context.totalChunks}`);
       }
     } catch (error) {
-      console.error(`[UploadExecutor] Resume error:`, error);
       if (isNetworkError(error)) {
         this.notifyTransition(taskId, 'paused');
       } else {

@@ -178,7 +178,6 @@
   const handleSocialLogin = (platform: 'wechat' | 'github' | 'qq') => {
     Message.info(`${platform} 登录功能开发中...`);
     // TODO: 实现第三方登录逻辑
-    // console.log(`Attempting ${platform} login...`);
   };
 
   defineEmits(['switchForm']);

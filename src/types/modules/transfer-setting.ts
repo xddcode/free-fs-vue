@@ -27,6 +27,9 @@ export interface TransferSetting {
   /** 并发下载数量 */
   concurrentDownloadQuantity: number;
   
+  /** 分片大小 单位：字节 */
+  chunkSize: number;
+  
   /** 创建时间 */
   createdAt?: string;
   
@@ -52,6 +55,9 @@ export interface UpdateTransferSettingCmd {
   
   /** 并发下载数量（必填，最大3） */
   concurrentDownloadQuantity: number;
+  
+  /** 分片大小（必填，单位：字节） */
+  chunkSize: number;
 }
 
 /**
@@ -75,4 +81,7 @@ export interface TransferSettingForm {
   
   /** 并发下载数量 */
   concurrentDownloadQuantity: number;
+  
+  /** 分片大小 单位：字节 */
+  chunkSize: number;
 }

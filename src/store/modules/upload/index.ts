@@ -81,9 +81,8 @@ export const useUploadTaskStore = defineStore('uploadTask', () => {
             taskId,
           };
           taskList.value.push(uiTask);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('[上传任务] 创建任务失败:', error);
+        } catch {
+          // 静默处理创建任务错误
         }
       })
     );
