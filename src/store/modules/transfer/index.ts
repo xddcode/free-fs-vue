@@ -19,12 +19,11 @@ import {
 } from '@/api/transfer';
 import { sseService } from '@/services/sse.service';
 import { uploadExecutor } from '@/services/upload-executor';
+import useUserStore from '@/store/modules/user';
 
 /**
  * Transfer Store
  * 作为传输任务的单一数据源，管理所有任务状态
- *
- * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 6.1, 6.2, 6.3
  */
 export const useTransferStore = defineStore('transfer', () => {
   // ==================== State ====================
@@ -34,6 +33,12 @@ export const useTransferStore = defineStore('transfer', () => {
 
   /** SSE 连接状态 */
   const sseConnected = ref(false);
+
+  /** 当前上传批次 ID */
+  const currentSessionId = ref<string | null>(null);
+
+  /** 批次任务映射：sessionId -> taskId[] */
+  const sessionTasks = ref<Map<string, string[]>>(new Map());
 
   /** SSE 消息处理器取消函数 */
   let sseMessageUnsubscribe: (() => void) | null = null;
@@ -102,6 +107,37 @@ export const useTransferStore = defineStore('transfer', () => {
     taskList.value.filter((task) => task.status === 'cancelled')
   );
 
+  /** 获取当前批次的任务列表 */
+  const currentSessionTasks = computed(() => {
+    if (!currentSessionId.value) {
+      return [];
+    }
+    const taskIds = sessionTasks.value.get(currentSessionId.value) || [];
+    return taskIds
+      .map((id) => tasks.value.get(id))
+      .filter((task): task is TransferTask => task !== undefined);
+  });
+
+  /**
+   * 获取并发上传数量配置
+   * 从 User Store 读取用户配置，如果配置有效（1-3）则使用，否则使用默认值 3
+   */
+  const getConcurrency = computed(() => {
+    const userStore = useUserStore();
+    const settings = userStore.transferSetting;
+    
+    // 如果用户配置存在且有效（1-3），使用用户配置
+    if (settings && 
+        typeof settings.concurrentUploadQuantity === 'number' &&
+        settings.concurrentUploadQuantity >= 1 && 
+        settings.concurrentUploadQuantity <= 3) {
+      return settings.concurrentUploadQuantity;
+    }
+    
+    // 否则使用默认值
+    return 3;
+  });
+
   // ==================== Internal Helpers ====================
 
   /**
@@ -148,8 +184,6 @@ export const useTransferStore = defineStore('transfer', () => {
    * @param taskId 任务 ID
    * @param newStatus 目标状态
    * @returns 是否转换成功
-   *
-   * Requirements: 1.3
    */
   function transitionTo(taskId: string, newStatus: TaskStatus): boolean {
     const task = tasks.value.get(taskId);
@@ -161,20 +195,36 @@ export const useTransferStore = defineStore('transfer', () => {
 
     // 如果已经是目标状态，跳过转换（优化）
     if (task.status === newStatus) {
-      // 不打印日志，避免噪音
       return true;
     }
-
-    console.log(`[TransferStore] Transition: ${task.status} -> ${newStatus} (taskId: ${taskId})`);
 
     const updatedTask = stateMachine.transition(task, newStatus);
     if (updatedTask) {
       tasks.value.set(taskId, updatedTask);
-      console.log(`[TransferStore] Transition successful: ${newStatus}`);
+      
+      // 如果转换到 completed 状态，触发文件列表刷新事件
+      if (newStatus === 'completed') {
+        // 显示完成通知
+        Message.success({
+          content: `文件 "${task.fileName}" 上传完成`,
+          duration: 3000,
+        });
+        
+        // 触发文件上传完成事件，通知文件列表刷新
+        window.dispatchEvent(
+          new CustomEvent('file-upload-complete', {
+            detail: { parentId: task.parentId },
+          })
+        );
+        
+        // 清理资源
+        progressCalculator.clear(taskId);
+        fileCache.delete(taskId);
+      }
+      
       return true;
     }
 
-    console.warn(`[TransferStore] Transition failed: ${task.status} -> ${newStatus}`);
     return false;
   }
 
@@ -203,8 +253,6 @@ export const useTransferStore = defineStore('transfer', () => {
    * 更新任务进度（调用进度计算器）
    * @param taskId 任务 ID
    * @param data 进度更新数据
-   *
-   * Requirements: 1.2
    */
   function updateProgress(taskId: string, data: ProgressUpdate): void {
     const task = tasks.value.get(taskId);
@@ -248,8 +296,6 @@ export const useTransferStore = defineStore('transfer', () => {
   /**
    * 处理 SSE 消息
    * @param message SSE 消息
-   *
-   * Requirements: 3.2, 3.5
    */
   function handleSSEMessage(message: SSEMessage): void {
     const { type, taskId, data } = message;
@@ -276,7 +322,6 @@ export const useTransferStore = defineStore('transfer', () => {
           status: TaskStatus;
           message?: string;
         };
-        console.log(`[TransferStore] SSE status event: ${taskId} -> ${statusData.status}`);
         if (statusData.status) {
           transitionTo(taskId, statusData.status);
         }
@@ -284,21 +329,8 @@ export const useTransferStore = defineStore('transfer', () => {
       }
 
       case 'complete': {
-        const task = tasks.value.get(taskId);
-        console.log('[Transfer Store] Task completed:', taskId, task?.fileName);
-        
+        // 状态转换会自动触发刷新事件和清理
         transitionTo(taskId, 'completed');
-        progressCalculator.clear(taskId);
-        fileCache.delete(taskId);
-        
-        // 显示完成通知
-        if (task) {
-          console.log('[Transfer Store] Showing completion notification');
-          Message.success({
-            content: `文件 "${task.fileName}" 上传完成`,
-            duration: 3000,
-          });
-        }
         break;
       }
 
@@ -330,8 +362,6 @@ export const useTransferStore = defineStore('transfer', () => {
 
   /**
    * 从后端获取任务列表
-   *
-   * Requirements: 1.5, 6.2
    */
   async function fetchTasks(): Promise<void> {
     const response = await getTransferFiles();
@@ -411,14 +441,24 @@ export const useTransferStore = defineStore('transfer', () => {
   }
 
   /**
+   * 开始新的上传批次
+   * @returns 批次 ID
+   */
+  function startUploadSession(): string {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    currentSessionId.value = sessionId;
+    sessionTasks.value.set(sessionId, []);
+    return sessionId;
+  }
+
+  /**
    * 创建新的上传任务
    * @param file 要上传的文件
    * @param parentId 父目录 ID
+   * @param sessionId 可选的批次 ID，如果不提供则使用当前批次
    * @returns 任务 ID
-   *
-   * Requirements: 6.1, 5.4
    */
-  async function createTask(file: File, parentId?: string): Promise<string> {
+  async function createTask(file: File, parentId?: string, sessionId?: string): Promise<string> {
     // 确保回调已初始化
     initExecutorCallbacks();
 
@@ -463,11 +503,21 @@ export const useTransferStore = defineStore('transfer', () => {
     // 缓存文件对象，用于重试
     fileCache.set(taskId, file);
 
+    // 添加到批次
+    const targetSessionId = sessionId || currentSessionId.value;
+    if (targetSessionId) {
+      const sessionTaskList = sessionTasks.value.get(targetSessionId) || [];
+      sessionTaskList.push(taskId);
+      sessionTasks.value.set(targetSessionId, sessionTaskList);
+    }
+
     // 立即转换到 initialized 状态
     transitionTo(taskId, 'initialized');
 
-    // 启动上传执行器（不等待完成，让上传在后台进行）
-    uploadExecutor.start(taskId, file).catch((error) => {
+    // 获取当前并发配置并启动上传执行器
+    // 传递并发配置确保任务使用创建时的配置，不受后续配置变更影响
+    const currentConcurrency = getConcurrency.value;
+    uploadExecutor.start(taskId, file, currentConcurrency).catch((error) => {
       // eslint-disable-next-line no-console
       console.error('[TransferStore] Upload executor error:', error);
     });
@@ -478,8 +528,6 @@ export const useTransferStore = defineStore('transfer', () => {
   /**
    * 暂停任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 1.4, 5.4
    */
   async function pauseTask(taskId: string): Promise<void> {
     const task = tasks.value.get(taskId);
@@ -506,8 +554,6 @@ export const useTransferStore = defineStore('transfer', () => {
   /**
    * 恢复任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 1.4, 5.5
    */
   async function resumeTask(taskId: string): Promise<void> {
     const task = tasks.value.get(taskId);
@@ -535,8 +581,6 @@ export const useTransferStore = defineStore('transfer', () => {
   /**
    * 取消任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 1.4, 5.6
    */
   async function cancelTask(taskId: string): Promise<void> {
     const task = tasks.value.get(taskId);
@@ -563,8 +607,6 @@ export const useTransferStore = defineStore('transfer', () => {
   /**
    * 重试失败的任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 1.4, 5.5
    */
   async function retryTask(taskId: string): Promise<void> {
     const task = tasks.value.get(taskId);
@@ -600,7 +642,10 @@ export const useTransferStore = defineStore('transfer', () => {
       });
     }
 
-    uploadExecutor.start(taskId, file).catch((error) => {
+    // 获取当前并发配置并重新启动上传
+    // 传递并发配置确保任务使用重试时的配置
+    const currentConcurrency = getConcurrency.value;
+    uploadExecutor.start(taskId, file, currentConcurrency).catch((error) => {
       // eslint-disable-next-line no-console
       console.error('[TransferStore] Retry upload executor error:', error);
     });
@@ -610,8 +655,6 @@ export const useTransferStore = defineStore('transfer', () => {
    * 初始化 SSE 连接
    * @param userId 用户 ID
    * @param token 可选的认证 token
-   *
-   * Requirements: 3.2, 6.4, 6.5
    */
   async function initSSE(userId: string, token?: string): Promise<void> {
     await fetchTasks();
@@ -637,8 +680,6 @@ export const useTransferStore = defineStore('transfer', () => {
 
   /**
    * 断开 SSE 连接
-   *
-   * Requirements: 3.6
    */
   function disconnectSSE(): void {
     if (sseMessageUnsubscribe) {
@@ -658,8 +699,6 @@ export const useTransferStore = defineStore('transfer', () => {
   /**
    * 移除任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 6.3
    */
   function removeTask(taskId: string): void {
     tasks.value.delete(taskId);
@@ -686,6 +725,7 @@ export const useTransferStore = defineStore('transfer', () => {
     // State
     tasks,
     sseConnected,
+    currentSessionId,
 
     // Getters
     taskList,
@@ -694,8 +734,11 @@ export const useTransferStore = defineStore('transfer', () => {
     failedTasks,
     pausedTasks,
     cancelledTasks,
+    currentSessionTasks,
+    getConcurrency,
 
     // Actions
+    startUploadSession,
     createTask,
     removeTask,
     transitionTo,

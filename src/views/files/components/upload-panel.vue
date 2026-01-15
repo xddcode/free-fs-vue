@@ -125,8 +125,8 @@
 
   const transferStore = useTransferStore();
   
-  // 使用 transfer store 的任务列表
-  const { taskList } = storeToRefs(transferStore);
+  // 使用当前批次的任务列表，而不是所有任务
+  const { currentSessionTasks: taskList } = storeToRefs(transferStore);
   
   // 面板显示状态（本地管理）
   const showPanel = ref(false);

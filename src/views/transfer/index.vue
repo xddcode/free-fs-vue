@@ -1,16 +1,20 @@
 <script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted } from 'vue';
-  import { IconRefresh } from '@arco-design/web-vue/es/icon';
+  import { IconRefresh, IconSettings } from '@arco-design/web-vue/es/icon';
   import { Message } from '@arco-design/web-vue';
 
   import { useTransferStore } from '@/store/modules/transfer';
   import useUserStore from '@/store/modules/user';
   import type { TransferTask } from '@/types/modules/transfer';
   import TransferTable from './components/transfer-table.vue';
+  import TransferSettingModal from './components/transfer-setting-modal.vue';
 
   // 当前激活的标签页 1-上传 2-下载 3-已完成
   const activeTab = ref(1);
   const loading = ref(false);
+  
+  // 设置弹窗显示状态
+  const settingModalVisible = ref(false);
 
   // 使用 Transfer Store 替代 useTransferManager hook
   const transferStore = useTransferStore();
@@ -83,6 +87,9 @@
         loading.value = false;
       }
     },
+    openSettings: () => {
+      settingModalVisible.value = true;
+    },
   };
 
   // 生命周期：初始化 SSE 连接
@@ -118,11 +125,18 @@
           </a-tabs>
         </div>
         <div class="header-right">
-          <a-tooltip content="刷新">
-            <a-button size="large" @click="actions.refresh">
-              <template #icon><icon-refresh /></template>
-            </a-button>
-          </a-tooltip>
+          <a-space :size="12">
+            <a-tooltip content="传输设置">
+              <a-button size="large" @click="actions.openSettings">
+                <template #icon><icon-settings /></template>
+              </a-button>
+            </a-tooltip>
+            <a-tooltip content="刷新">
+              <a-button size="large" @click="actions.refresh">
+                <template #icon><icon-refresh /></template>
+              </a-button>
+            </a-tooltip>
+          </a-space>
         </div>
       </a-layout-header>
 
@@ -187,6 +201,9 @@
         </div>
       </a-layout-content>
     </a-layout>
+
+    <!-- 传输设置弹窗 -->
+    <transfer-setting-modal v-model:visible="settingModalVisible" />
   </div>
 </template>
 

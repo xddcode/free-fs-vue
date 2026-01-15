@@ -77,7 +77,6 @@ function parseErrorData(data: Record<string, unknown>): SSEErrorData {
  *
  * 实现单例模式，确保每个用户会话只有一个 EventSource 连接
  *
- * Requirements: 3.1, 3.2, 3.4, 3.5, 3.6
  */
 class SSEService {
   /** 单例实例 */
@@ -116,7 +115,6 @@ class SSEService {
    * @param config 可选配置
    * @returns SSEService 实例
    *
-   * Requirements: 3.1 - 单例模式确保单一连接
    */
   public static getInstance(config?: Partial<SSEServiceConfig>): SSEService {
     if (!SSEService.instance) {
@@ -140,13 +138,10 @@ class SSEService {
    * @param userId 用户 ID
    * @param token 可选的认证 token
    *
-   * Requirements: 3.1 - 每个用户会话只有一个连接
    */
   public connect(userId: string, token?: string): void {
     // 如果已经连接到同一用户，不重复连接
     if (this.eventSource && this.currentUserId === userId) {
-      // eslint-disable-next-line no-console
-      console.log('[SSE] Already connected for user:', userId);
       return;
     }
 
@@ -166,8 +161,6 @@ class SSEService {
     try {
       this.eventSource = new EventSource(url);
       this.setupEventListeners();
-      // eslint-disable-next-line no-console
-      console.log('[SSE] Connecting to:', url.replace(/token=[^&]+/, 'token=***'));
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[SSE] Failed to create EventSource:', error);
@@ -177,8 +170,6 @@ class SSEService {
 
   /**
    * 断开 SSE 连接
-   *
-   * Requirements: 3.6 - 用户登出或离开页面时关闭连接
    */
   public disconnect(): void {
     if (this.eventSource) {
@@ -186,8 +177,6 @@ class SSEService {
       this.eventSource = null;
       this.currentUserId = null;
       this.setConnected(false);
-      // eslint-disable-next-line no-console
-      console.log('[SSE] Disconnected');
     }
   }
 
@@ -212,7 +201,6 @@ class SSEService {
    * @param handler 消息处理器
    * @returns 取消注册的函数
    *
-   * Requirements: 3.2 - 消息分发
    */
   public onMessage(handler: SSEMessageHandler): () => void {
     this.messageHandlers.add(handler);
@@ -237,7 +225,6 @@ class SSEService {
    * 设置重连后同步回调
    * @param callback 同步回调函数
    *
-   * Requirements: 3.4 - 重连后同步状态
    */
   public setReconnectSyncCallback(callback: () => Promise<void>): void {
     this.onReconnectSync = callback;
@@ -273,8 +260,6 @@ class SSEService {
     if (this.onReconnectSync) {
       try {
         await this.onReconnectSync();
-        // eslint-disable-next-line no-console
-        console.log('[SSE] Reconnect sync completed');
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[SSE] Reconnect sync failed:', error);
@@ -290,8 +275,6 @@ class SSEService {
 
     // 连接打开
     this.eventSource.onopen = () => {
-      // eslint-disable-next-line no-console
-      console.log('[SSE] Connection opened');
       this.setConnected(true);
     };
 
@@ -306,7 +289,6 @@ class SSEService {
     };
 
     // 监听各种事件类型
-    // Requirements: 3.5 - 处理不同事件类型
     this.eventSource.addEventListener('progress', (event) => {
       this.handleEvent('progress', event);
     });
@@ -384,7 +366,6 @@ class SSEService {
    * @param rawData 原始数据
    * @returns 解析后的 SSEMessage 或 null
    *
-   * Requirements: 3.2 - 消息解析
    */
   private parseMessage(
     type: SSEMessageType,
@@ -440,7 +421,6 @@ class SSEService {
    * 分发消息给所有处理器
    * @param message SSE 消息
    *
-   * Requirements: 3.2 - 消息分发
    */
   private dispatchMessage(message: SSEMessage): void {
     this.messageHandlers.forEach((handler) => {

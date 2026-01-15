@@ -90,3 +90,57 @@ export function getSecurityLogs(params?: SecurityLogQueryParams) {
     params,
   });
 }
+
+/**
+ * 获取用户传输设置
+ */
+export function getTransferSetting() {
+  return request.get<import('@/types/modules/transfer-setting').TransferSetting>(
+    '/apis/user/transfer/setting'
+  );
+}
+
+/**
+ * 更新用户传输设置
+ */
+export function updateTransferSetting(
+  data: import('@/types/modules/transfer-setting').UpdateTransferSettingCmd
+) {
+  return request.put('/apis/user/transfer/setting', data);
+}
+
+/**
+ * 获取文件夹列表（用于路径选择器）
+ * @param path 父路径
+ */
+export function getFolderList(path: string) {
+  return request.get<Array<{
+    name: string;
+    path: string;
+    type: 'folder' | 'drive';
+  }>>('/apis/user/folders', {
+    params: { path },
+  });
+}
+
+/**
+ * 获取系统快捷路径（桌面、下载等）
+ */
+export function getQuickAccessPaths() {
+  return request.get<Array<{
+    name: string;
+    path: string;
+    type: string;
+  }>>('/apis/user/quick-paths');
+}
+
+/**
+ * 获取系统驱动器列表
+ */
+export function getSystemDrives() {
+  return request.get<Array<{
+    name: string;
+    path: string;
+    type: 'drive';
+  }>>('/apis/user/drives');
+}

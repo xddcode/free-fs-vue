@@ -380,10 +380,13 @@
       const fileCount = fileArray.length;
       
       try {
+        // 开始新的上传批次
+        const sessionId = transferStore.startUploadSession();
+        
         // 使用 Transfer Store 创建上传任务
         await Promise.all(
           fileArray.map((file) =>
-            transferStore.createTask(file, fileList.currentParentId.value)
+            transferStore.createTask(file, fileList.currentParentId.value, sessionId)
           )
         );
         
@@ -450,7 +453,14 @@
    */
   const handleBatchDelete = () => {
     if (selectedKeys.value.length === 0) return;
-    operations.openBatchDeleteConfirm(selectedFiles.value);
+    
+    // 保存要删除的文件列表（避免闭包问题）
+    const filesToDelete = [...selectedFiles.value];
+    
+    operations.openBatchDeleteConfirm(filesToDelete, () => {
+      // 删除成功后清空选中状态
+      clearSelection();
+    });
   };
 
   /**
@@ -489,7 +499,14 @@
    */
   const handleBatchMove = () => {
     if (selectedKeys.value.length === 0) return;
-    operations.openBatchMoveModal(selectedFiles.value);
+    
+    // 保存要移动的文件列表
+    const filesToMove = [...selectedFiles.value];
+    
+    operations.openBatchMoveModal(filesToMove, () => {
+      // 移动成功后清空选中状态
+      clearSelection();
+    });
   };
 
   /**

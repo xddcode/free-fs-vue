@@ -33,6 +33,7 @@ export default function useFileOperations(refreshCallback: () => void) {
   const moveModalVisible = ref(false);
   const movingFile = ref<FileItem | null>(null);
   const movingFiles = ref<FileItem[]>([]);
+  const moveSuccessCallback = ref<(() => void) | null>(null);
 
   // 分享相关
   const shareModalVisible = ref(false);
@@ -157,15 +158,22 @@ export default function useFileOperations(refreshCallback: () => void) {
 
   /**
    * 打开批量移动文件弹窗
+   * @param files 要移动的文件列表
+   * @param onSuccess 可选的成功回调函数
    */
-  const openBatchMoveModal = (files: FileItem[]) => {
+  const openBatchMoveModal = (files: FileItem[], onSuccess?: () => void) => {
     movingFile.value = null;
     movingFiles.value = files;
     moveModalVisible.value = true;
+    
+    // 保存成功回调，在移动完成后执行
+    moveSuccessCallback.value = onSuccess || null;
   };
 
   /**
    * 移动文件（支持单个和批量）
+   * @param fileIds 文件ID或ID数组
+   * @param targetDirId 目标目录ID
    */
   const handleMove = async (
     fileIds: string | string[],
@@ -181,6 +189,12 @@ export default function useFileOperations(refreshCallback: () => void) {
       movingFile.value = null;
       movingFiles.value = [];
       refreshCallback();
+      
+      // 执行成功回调（用于清空选中状态等）
+      if (moveSuccessCallback.value) {
+        moveSuccessCallback.value();
+        moveSuccessCallback.value = null;
+      }
     });
   };
 
@@ -235,8 +249,10 @@ export default function useFileOperations(refreshCallback: () => void) {
 
   /**
    * 删除文件（支持单个和批量）
+   * @param fileIds 文件ID或ID数组
+   * @param onSuccess 可选的成功回调函数
    */
-  const handleDelete = async (fileIds: string | string[]) => {
+  const handleDelete = async (fileIds: string | string[], onSuccess?: () => void) => {
     const ids = Array.isArray(fileIds) ? fileIds : [fileIds];
 
     await deleteFiles(ids).then(() => {
@@ -246,6 +262,9 @@ export default function useFileOperations(refreshCallback: () => void) {
           : `已将 ${ids.length} 个文件移到回收站`;
       Message.success(successMsg);
       refreshCallback();
+      
+      // 执行成功回调（用于清空选中状态等）
+      onSuccess?.();
     });
   };
 
@@ -267,8 +286,10 @@ export default function useFileOperations(refreshCallback: () => void) {
 
   /**
    * 打开批量删除确认弹窗
+   * @param files 要删除的文件列表
+   * @param onSuccess 可选的成功回调函数
    */
-  const openBatchDeleteConfirm = (files: FileItem[]) => {
+  const openBatchDeleteConfirm = (files: FileItem[], onSuccess?: () => void) => {
     if (files.length === 0) return;
     Modal.confirm({
       title: '确认批量放入回收站',
@@ -280,7 +301,7 @@ export default function useFileOperations(refreshCallback: () => void) {
       },
       onOk: () => {
         const ids = files.map((f) => f.id);
-        handleDelete(ids);
+        handleDelete(ids, onSuccess);
       },
     });
   };

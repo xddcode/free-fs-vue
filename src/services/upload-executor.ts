@@ -29,6 +29,7 @@ interface UploadTaskContext {
   isCancelled: boolean;
   activeUploads: Map<number, AbortController>;
   retryCount: Map<number, number>;
+  concurrency: number; // 任务专属的并发配置
 }
 
 /**
@@ -76,8 +77,6 @@ function sleep(ms: number): Promise<void> {
 /**
  * 上传执行器
  * 负责分片上传的具体执行逻辑
- *
- * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
  */
 class UploadExecutor {
   private static instance: UploadExecutor | null = null;
@@ -141,7 +140,6 @@ class UploadExecutor {
    * @param fileSize 文件大小（字节）
    * @returns 分片数量
    *
-   * Property 5: Chunk Count Calculation
    */
   public calculateChunkCount(fileSize: number): number {
     return Math.ceil(fileSize / this.CHUNK_SIZE);
@@ -151,11 +149,14 @@ class UploadExecutor {
    * 开始上传任务
    * @param taskId 任务 ID
    * @param file 要上传的文件
-   *
-   * Requirements: 5.1, 5.2, 5.7
+   * @param concurrency 可选的并发数配置，如果不提供则使用当前全局配置
    */
-  public async start(taskId: string, file: File): Promise<void> {
+  public async start(taskId: string, file: File, concurrency?: number): Promise<void> {
     const totalChunks = this.calculateChunkCount(file.size);
+
+    // 如果提供了并发数，使用提供的值；否则使用当前全局配置
+    // 这样可以确保已运行的任务不受配置变更影响
+    const taskConcurrency = concurrency ?? this.concurrency;
 
     // 创建任务上下文
     const context: UploadTaskContext = {
@@ -168,6 +169,7 @@ class UploadExecutor {
       isCancelled: false,
       activeUploads: new Map(),
       retryCount: new Map(),
+      concurrency: taskConcurrency, // 保存任务专属的并发配置
     };
 
     this.taskContexts.set(taskId, context);
@@ -248,17 +250,12 @@ class UploadExecutor {
   /**
    * 暂停上传任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 5.4
-   * Property 8: Pause Stops New Uploads
    */
   public pause(taskId: string): void {
     const context = this.taskContexts.get(taskId);
     if (!context) {
       return;
     }
-
-    console.log(`[UploadExecutor] Pausing task ${taskId}, active uploads: ${context.activeUploads.size}, uploaded chunks: ${context.uploadedChunks.size}/${context.totalChunks}`);
     
     context.isPaused = true;
     // 不中止正在进行的上传，让它们自然完成
@@ -268,17 +265,12 @@ class UploadExecutor {
   /**
    * 恢复上传任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 5.5
-   * Property 9: Resume Continues From Last Chunk
    */
   public async resume(taskId: string): Promise<void> {
     const context = this.taskContexts.get(taskId);
     if (!context) {
       return;
     }
-
-    console.log(`[UploadExecutor] Resuming task ${taskId}, frontend has ${context.uploadedChunks.size}/${context.totalChunks} chunks`);
 
     context.isPaused = false;
 
@@ -287,15 +279,11 @@ class UploadExecutor {
       const uploadedResponse = await getUploadedChunks(taskId);
       const backendUploadedChunks = uploadedResponse.data || [];
       
-      console.log(`[UploadExecutor] Backend reports ${backendUploadedChunks.length} uploaded chunks`);
-      
       // 清空前端记录，以后端为准
       context.uploadedChunks.clear();
       
       // 使用后端返回的已上传分片列表
       backendUploadedChunks.forEach((index) => context.uploadedChunks.add(index));
-      
-      console.log(`[UploadExecutor] Synchronized with backend: ${context.uploadedChunks.size}/${context.totalChunks} chunks`);
       
       // 找出缺失的分片
       const missingChunks: number[] = [];
@@ -303,10 +291,6 @@ class UploadExecutor {
         if (!context.uploadedChunks.has(i)) {
           missingChunks.push(i);
         }
-      }
-      
-      if (missingChunks.length > 0) {
-        console.log(`[UploadExecutor] Found ${missingChunks.length} missing chunks, will re-upload`);
       }
 
       // 更新进度
@@ -321,8 +305,6 @@ class UploadExecutor {
       }
 
       // 所有分片上传完成，开始合并
-      console.log(`[UploadExecutor] Upload complete, uploaded chunks: ${context.uploadedChunks.size}/${context.totalChunks}`);
-      
       if (context.uploadedChunks.size === context.totalChunks) {
         this.notifyTransition(taskId, 'merging');
 
@@ -353,9 +335,6 @@ class UploadExecutor {
   /**
    * 取消上传任务
    * @param taskId 任务 ID
-   *
-   * Requirements: 5.6
-   * Property 10: Cancel Aborts All Pending
    */
   public cancel(taskId: string): void {
     const context = this.taskContexts.get(taskId);
@@ -471,11 +450,9 @@ class UploadExecutor {
    * 并发上传分片
    * @param context 任务上下文
    *
-   * Requirements: 5.2
-   * Property 6: Concurrency Limit
    */
   private async uploadChunks(context: UploadTaskContext): Promise<void> {
-    const { taskId, file, totalChunks, uploadedChunks } = context;
+    const { taskId, file, totalChunks, uploadedChunks, concurrency } = context;
 
     // 获取需要上传的分片索引
     const chunksToUpload: number[] = [];
@@ -524,8 +501,8 @@ class UploadExecutor {
       }
     };
 
-    // 启动并发工作线程
-    const workerCount = Math.min(this.concurrency, chunksToUpload.length);
+    // 启动并发工作线程，使用任务专属的并发配置
+    const workerCount = Math.min(concurrency, chunksToUpload.length);
     const workers = Array.from({ length: workerCount }, () => uploadWorker());
 
     await Promise.all(workers);
@@ -537,8 +514,6 @@ class UploadExecutor {
    * @param file 文件
    * @param chunkIndex 分片索引
    *
-   * Requirements: 5.3, 5.7
-   * Property 7: Retry Limit
    */
   private async uploadChunkWithRetry(
     context: UploadTaskContext,

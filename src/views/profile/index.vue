@@ -15,6 +15,9 @@
           <a-tab-pane key="2" title="安全设置">
             <SecuritySettings />
           </a-tab-pane>
+          <a-tab-pane key="3" title="传输设置">
+            <TransferSettings />
+          </a-tab-pane>
         </a-tabs>
       </a-col>
     </a-row>
@@ -25,6 +28,7 @@
   import UserPanel from './components/user-panel.vue';
   import BasicInformation from './components/basic-information.vue';
   import SecuritySettings from './components/security-settings.vue';
+  import TransferSettings from './components/transfer-settings.vue';
 </script>
 
 <script lang="ts">

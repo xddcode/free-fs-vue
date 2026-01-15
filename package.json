@@ -1,7 +1,7 @@
 {
   "name": "free-fs-vue",
   "description": "free-fs 前端项目 - 一个基于 Vue 3 的文件存储管理系统",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "private": true,
   "author": "xddcode",
   "license": "Apache-2.0",
