@@ -20,6 +20,7 @@ import {
 import { sseService } from '@/services/sse.service';
 import { uploadExecutor } from '@/services/upload-executor';
 import useUserStore from '@/store/modules/user';
+import { getToken } from '@/utils/auth';
 
 /**
  * Transfer Store
@@ -49,8 +50,23 @@ export const useTransferStore = defineStore('transfer', () => {
   /** 文件缓存，用于重试时获取文件对象 */
   const fileCache = new Map<string, File>();
 
+  /** 已触发完成操作的任务集合（防止重复通知） */
+  const completedActionsTriggered = new Set<string>();
+
+  /** 已触发错误通知的任务集合（防止重复通知） */
+  const errorNotificationTriggered = new Set<string>();
+
   /** 是否已初始化回调 */
   let callbacksInitialized = false;
+
+  /** 是否已检查过未完成任务（页面刷新后只检查一次） */
+  let hasCheckedUnfinishedTasks = false;
+
+  /** 轮询定时器 ID */
+  let pollingTimerId: number | null = null;
+
+  /** 轮询间隔（毫秒） */
+  const POLLING_INTERVAL = 3000; // 3秒
 
   // ==================== 初始化上传执行器回调 ====================
 
@@ -214,8 +230,12 @@ export const useTransferStore = defineStore('transfer', () => {
       return false;
     }
 
-    // 如果已经是目标状态，跳过转换（优化）
+    // 如果已经是目标状态，对于 completed 状态仍需检查是否触发过完成操作
     if (task.status === newStatus) {
+      if (newStatus === 'completed' && !completedActionsTriggered.has(taskId)) {
+        // 即使已经是 completed 状态，如果还没触发过完成操作，则触发
+        triggerCompletedActions(task);
+      }
       return true;
     }
 
@@ -223,30 +243,49 @@ export const useTransferStore = defineStore('transfer', () => {
     if (updatedTask) {
       tasks.value.set(taskId, updatedTask);
 
-      // 如果转换到 completed 状态，触发文件列表刷新事件
-      if (newStatus === 'completed') {
-        // 显示完成通知
-        Message.success({
-          content: `文件 "${task.fileName}" 上传完成`,
-          duration: 3000,
-        });
-
-        // 触发文件上传完成事件，通知文件列表刷新
-        window.dispatchEvent(
-          new CustomEvent('file-upload-complete', {
-            detail: { parentId: task.parentId },
-          })
-        );
-
-        // 清理资源
-        progressCalculator.clear(taskId);
-        fileCache.delete(taskId);
+      // 如果转换到 completed 状态，触发完成相关操作
+      if (newStatus === 'completed' && !completedActionsTriggered.has(taskId)) {
+        triggerCompletedActions(task);
       }
+
+      // 检查是否需要启动轮询
+      checkAndStartPolling();
 
       return true;
     }
 
     return false;
+  }
+
+  /**
+   * 触发任务完成相关操作（只触发一次）
+   * @param task 任务对象
+   */
+  function triggerCompletedActions(task: TransferTask): void {
+    // 标记已触发，防止重复
+    completedActionsTriggered.add(task.taskId);
+
+    // 显示完成通知
+    Message.success({
+      content: `文件 "${task.fileName}" 上传完成`,
+      duration: 3000,
+    });
+
+    // 触发文件上传完成事件，通知文件列表刷新
+    window.dispatchEvent(
+      new CustomEvent('file-upload-complete', {
+        detail: { parentId: task.parentId },
+      })
+    );
+
+    // 清理资源
+    progressCalculator.clear(task.taskId);
+    fileCache.delete(task.taskId);
+
+    // 清理上传执行器的任务上下文
+    if (uploadExecutor.getTaskContext(task.taskId)) {
+      uploadExecutor.cancel(task.taskId);
+    }
   }
 
   /**
@@ -265,6 +304,15 @@ export const useTransferStore = defineStore('transfer', () => {
         tasks.value.set(taskId, {
           ...updatedTask,
           errorMessage,
+        });
+      }
+
+      // 显示错误通知（只显示一次）
+      if (!errorNotificationTriggered.has(taskId)) {
+        errorNotificationTriggered.add(taskId);
+        Message.error({
+          content: `文件 "${task.fileName}" 上传失败: ${errorMessage}`,
+          duration: 5000,
         });
       }
     }
@@ -350,8 +398,10 @@ export const useTransferStore = defineStore('transfer', () => {
       }
 
       case 'complete': {
-        // 状态转换会自动触发刷新事件和清理
-        transitionTo(taskId, 'completed');
+        const task = tasks.value.get(taskId);
+        if (task) {
+          transitionTo(taskId, 'completed');
+        }
         break;
       }
 
@@ -360,18 +410,7 @@ export const useTransferStore = defineStore('transfer', () => {
           code: string;
           message: string;
         };
-        const task = tasks.value.get(taskId);
         setTaskError(taskId, errorData.message || '上传失败');
-
-        // 显示错误通知
-        if (task) {
-          Message.error({
-            content: `文件 "${task.fileName}" 上传失败: ${
-              errorData.message || '未知错误'
-            }`,
-            duration: 5000,
-          });
-        }
         break;
       }
 
@@ -397,6 +436,48 @@ export const useTransferStore = defineStore('transfer', () => {
     taskVOs.forEach((vo) => {
       const task = convertVOToTask(vo);
       tasks.value.set(task.taskId, task);
+    });
+
+    // 检查是否有未完成的上传任务
+    await checkUnfinishedTasks();
+  }
+
+  /**
+   * 检查未完成的上传任务
+   * 页面刷新后，自动取消 uploading 状态的任务
+   * 注意：只在页面刷新后执行一次，路由切换不会触发
+   */
+  async function checkUnfinishedTasks(): Promise<void> {
+    // 如果已经检查过，跳过（避免路由切换时重复检查）
+    if (hasCheckedUnfinishedTasks) {
+      return;
+    }
+
+    hasCheckedUnfinishedTasks = true;
+
+    const unfinishedTasks = Array.from(tasks.value.values()).filter(
+      (task) => task.status === 'uploading' || task.status === 'checking'
+    );
+
+    if (unfinishedTasks.length === 0) {
+      return;
+    }
+
+    const cancelPromises = unfinishedTasks.map((task) =>
+      cancelUpload(task.taskId)
+        .then(() => {
+          transitionTo(task.taskId, 'cancelled');
+        })
+        .catch(() => {
+          // 取消失败，保持原状态
+        })
+    );
+
+    await Promise.all(cancelPromises);
+
+    Message.info({
+      content: `已自动取消 ${unfinishedTasks.length} 个未完成的上传任务`,
+      duration: 3000,
     });
   }
 
@@ -655,6 +736,8 @@ export const useTransferStore = defineStore('transfer', () => {
     }
 
     progressCalculator.reset(taskId);
+    completedActionsTriggered.delete(taskId);
+    errorNotificationTriggered.delete(taskId);
 
     if (!transitionTo(taskId, 'initialized')) {
       throw new Error('Failed to transition task to initialized state');
@@ -708,7 +791,94 @@ export const useTransferStore = defineStore('transfer', () => {
       setSseConnected(connected);
     });
 
-    sseService.connect(userId, token);
+    const authToken = token || getToken() || '';
+    sseService.connect(userId, authToken);
+
+    // 检查是否有活跃任务，如果有则启动轮询
+    checkAndStartPolling();
+    
+    setupBeforeUnloadWarning();
+  }
+
+  /**
+   * 启动轮询检查任务状态
+   * 作为 SSE 的备份机制，定期检查任务状态
+   * 只在有活跃任务时轮询
+   */
+  function startPolling(): void {
+    // 如果已经在轮询，不重复启动
+    if (pollingTimerId !== null) {
+      return;
+    }
+    
+    pollingTimerId = window.setInterval(async () => {
+      const activeTasks = Array.from(tasks.value.values()).filter(
+        (task) =>
+          task.status === 'uploading' ||
+          task.status === 'checking' ||
+          task.status === 'merging'
+      );
+
+      // 如果没有活跃任务，停止轮询
+      if (activeTasks.length === 0) {
+        stopPolling();
+        return;
+      }
+
+      try {
+        await syncTasks();
+      } catch {
+        // 静默处理轮询错误
+      }
+    }, POLLING_INTERVAL);
+  }
+
+  /**
+   * 停止轮询
+   */
+  function stopPolling(): void {
+    if (pollingTimerId !== null) {
+      window.clearInterval(pollingTimerId);
+      pollingTimerId = null;
+    }
+  }
+
+  /**
+   * 检查并启动轮询（如果需要）
+   * 在任务状态变化时调用
+   */
+  function checkAndStartPolling(): void {
+    const hasActiveTasks = Array.from(tasks.value.values()).some(
+      (task) =>
+        task.status === 'uploading' ||
+        task.status === 'checking' ||
+        task.status === 'merging'
+    );
+
+    if (hasActiveTasks && pollingTimerId === null) {
+      startPolling();
+    }
+  }
+
+  /**
+   * 设置页面刷新前的警告
+   * 如果有正在上传的任务，提示用户确认
+   * 注意：只在真正的页面刷新/关闭时触发，路由切换不会触发
+   */
+  function setupBeforeUnloadWarning(): void {
+    window.addEventListener('beforeunload', (event) => {
+      const hasUploadingTasks = Array.from(tasks.value.values()).some(
+        (task) =>
+          task.status === 'uploading' ||
+          task.status === 'checking' ||
+          task.status === 'merging'
+      );
+
+      if (hasUploadingTasks) {
+        event.preventDefault();
+        event.returnValue = '有文件正在上传，确定要离开吗？';
+      }
+    });
   }
 
   /**
@@ -727,6 +897,7 @@ export const useTransferStore = defineStore('transfer', () => {
 
     sseService.disconnect();
     setSseConnected(false);
+    stopPolling();
   }
 
   /**
@@ -736,6 +907,8 @@ export const useTransferStore = defineStore('transfer', () => {
   function removeTask(taskId: string): void {
     tasks.value.delete(taskId);
     progressCalculator.clear(taskId);
+    completedActionsTriggered.delete(taskId);
+    errorNotificationTriggered.delete(taskId);
   }
 
   /**

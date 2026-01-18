@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, ref, onMounted, onUnmounted } from 'vue';
+  import { computed, ref, onMounted } from 'vue';
   import { IconRefresh, IconSettings } from '@arco-design/web-vue/es/icon';
   import { Message } from '@arco-design/web-vue';
 
@@ -92,13 +92,18 @@
     },
   };
 
-  // 生命周期：初始化 SSE 连接
+  // 生命周期：确保 SSE 已连接
   onMounted(async () => {
     loading.value = true;
     try {
-      // 使用用户 ID 初始化 SSE 连接（token 可选）
-      const userId = userStore.id || 'default';
-      await transferStore.initSSE(userId);
+      // 如果 SSE 未连接，初始化连接
+      if (!transferStore.sseConnected) {
+        const userId = userStore.id || 'default';
+        await transferStore.initSSE(userId);
+      } else {
+        // 如果已连接，只刷新任务列表
+        await transferStore.fetchTasks();
+      }
     } catch (error) {
       Message.error('初始化传输列表失败');
     } finally {
@@ -106,10 +111,7 @@
     }
   });
 
-  // 生命周期：断开 SSE 连接
-  onUnmounted(() => {
-    transferStore.disconnectSSE();
-  });
+  // 注意：不在 onUnmounted 中断开 SSE，因为 SSE 是全局的，由 App.vue 管理
 </script>
 
 <template>

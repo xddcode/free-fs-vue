@@ -334,4 +334,15 @@ export interface FileTransferTaskVO {
    * 已上传大小（字节）
    */
   uploadedSize?: number;
+
+  /**
+   * 完成事件数据（用于轮询检查）
+   * 当任务完成时，后端会设置此字段
+   * 前端通过轮询检查此字段来判断任务是否完成
+   */
+  completeEventData?: {
+    fileId: string;
+    fileName: string;
+    fileSize: number;
+  };
 }
