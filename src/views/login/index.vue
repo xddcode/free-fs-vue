@@ -30,7 +30,7 @@
       >
         <!-- Logo SVG -->
         <div class="brand-logo-wrapper mb-12">
-          <img src="@/assets/logo.png" alt="Logo" class="brand-logo" />
+          <img src="@/assets/logo-dark.svg?url" alt="Logo" class="brand-logo" />
         </div>
 
         <!-- 文字信息 -->

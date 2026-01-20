@@ -1,0 +1,10 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <!-- 所有的元素都采用了 stroke-width="7" 和 round 端点，保持极简圆润 -->
+    <!-- 第一行：长线 -->
+    <line x1="18" y1="19" x2="46" y2="19" fill="none" stroke="#1D2129" stroke-width="7" stroke-linecap="round"/>
+    <!-- 第二行：中线 + 圆点 -->
+    <line x1="18" y1="32" x2="34" y2="32" fill="none" stroke="#1D2129" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="45" cy="32" r="3.5" fill="#1D2129"/>
+    <!-- 第三行：小短线 -->
+    <line x1="18" y1="45" x2="26" y2="45" fill="none" stroke="#1D2129" stroke-width="7" stroke-linecap="round"/>
+</svg>

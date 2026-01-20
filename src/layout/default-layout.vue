@@ -5,7 +5,12 @@
       <!-- Logo 区域 -->
       <div class="sider-logo" @click="$router.push('/')">
         <div class="logo-icon">
-          <img :src="logoSvg" alt="Logo" />
+          <img
+            :src="logoSvg"
+            alt="Logo"
+            draggable="true"
+            @dragstart="handleLogoDragStart"
+          />
         </div>
         <span class="logo-text">Free Fs</span>
       </div>
@@ -172,7 +177,8 @@
   } from '@arco-design/web-vue/es/icon';
   import { useUserStore, useAppStore, useStorageStore } from '@/store';
   import useUser from '@/hooks/user';
-  import logoSvg from '@/assets/logo.png';
+  import logoDark from '@/assets/logo-dark.svg?url';
+  import logoLight from '@/assets/logo-light.svg?url';
   import { getHomeInfo } from '@/api/home';
   import { formatFileSize } from '@/utils/format';
   import PageLayout from './page-layout.vue';
@@ -190,6 +196,9 @@
       'https://p1-arco.byteimg.com/tos-cn-i-uwbnlip3yd/3ee5f13ee0e24427ad1783099061d4b7.png~tplv-uwbnlip3yd-webp.webp'
   );
   const theme = computed(() => appStore.theme);
+  const logoSvg = computed(() =>
+    theme.value === 'dark' ? logoDark : logoLight
+  );
 
   // 存储信息
   const MAX_STORAGE = 107374182400; // 100GB
@@ -339,6 +348,18 @@
   const handleGoToStorage = () => router.push({ name: 'storage' });
   const goToProfile = () => router.push('/profile');
   const handleLogout = () => logout();
+
+  const handleLogoDragStart = (e: DragEvent) => {
+    e.preventDefault();
+    // 阻止默认的图片拖拽行为
+    e.stopPropagation();
+    // 或者设置拖拽数据为首页链接
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'link';
+      e.dataTransfer.setData('text/uri-list', `${window.location.origin}/`);
+      e.dataTransfer.setData('text/plain', `${window.location.origin}/`);
+    }
+  };
 
   onMounted(async () => {
     storageStore.restoreCurrentPlatform();

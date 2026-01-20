@@ -6,7 +6,9 @@
           alt="logo"
           :src="logoSvg"
           style="width: 48px; height: 48px; cursor: pointer"
+          draggable="true"
           @click="$router.push({ name: 'files' })"
+          @dragstart="handleLogoDragStart"
         />
         <icon-menu-fold
           v-if="appStore.device === 'mobile'"
@@ -162,7 +164,8 @@
   import { IconStorage, IconSwap } from '@arco-design/web-vue/es/icon';
   import { useRouter } from 'vue-router';
   import useUser from '@/hooks/user';
-  import logoSvg from '@/assets/logo.png';
+  import logoDark from '@/assets/logo-dark.svg?url';
+  import logoLight from '@/assets/logo-light.svg?url';
 
   const IconFont = Icon.addFromIconFontCn({
     src: 'https://at.alicdn.com/t/c/font_4759634_2elqr2s9who.js',
@@ -178,6 +181,9 @@
   const avatar = computed(() => userStore.avatar);
   const theme = computed(() => appStore.theme);
   const colorWeak = computed(() => appStore.colorWeak);
+  const logoSvg = computed(() =>
+    theme.value === 'dark' ? logoDark : logoLight
+  );
 
   const isDark = useDark({
     selector: 'body',
@@ -227,7 +233,21 @@
     router.push({ name: 'storage' });
   };
 
-  const toggleDrawerMenu = inject('toggleDrawerMenu', () => {}) as () => void;
+  const handleLogoDragStart = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'link';
+      e.dataTransfer.setData('text/uri-list', `${window.location.origin}/`);
+      e.dataTransfer.setData('text/plain', `${window.location.origin}/`);
+    }
+  };
+
+  const toggleDrawerMenu = inject(
+    'toggleDrawerMenu',
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    () => {}
+  ) as () => void;
 
   onMounted(async () => {
     // 先从 localStorage 恢复，避免闪烁
