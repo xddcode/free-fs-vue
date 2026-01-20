@@ -20,9 +20,7 @@
   const userStore = useUserStore();
   const transferStore = useTransferStore();
 
-  // 在应用挂载时初始化SSE和移除loading
   onMounted(() => {
-    // 移除初始 loading
     const initialLoading = document.getElementById('initial-loading');
     if (initialLoading) {
       initialLoading.style.opacity = '0';
@@ -37,21 +35,17 @@
     }
   });
 
-  // 监听用户登录状态变化
   watch(
     () => userStore.id,
     (newUserId, oldUserId) => {
       if (newUserId && !oldUserId) {
-        // 用户刚登录
         transferStore.initSSE(newUserId);
       } else if (!newUserId && oldUserId) {
-        // 用户登出
         transferStore.disconnectSSE();
       }
     }
   );
 
-  // 在应用卸载时清理SSE
   onUnmounted(() => {
     sseService.disconnect();
   });

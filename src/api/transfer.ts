@@ -11,7 +11,9 @@ import type {
  * 创建上传任务，返回taskId用于后续分片上传
  */
 export function initUpload(params: InitUploadCmd) {
-  return request.post<string>('/apis/transfer/init', params);
+  return request.post<string>('/apis/transfer/init', params, {
+    showErrorMessage: false,
+  } as any);
 }
 
 /**
@@ -19,7 +21,9 @@ export function initUpload(params: InitUploadCmd) {
  * 前端计算完MD5后调用，判断是否秒传
  */
 export function checkUpload(params: CheckUploadCmd) {
-  return request.post<CheckUploadResultVO>('/apis/transfer/check', params);
+  return request.post<CheckUploadResultVO>('/apis/transfer/check', params, {
+    showErrorMessage: false,
+  } as any);
 }
 
 /**
@@ -41,8 +45,9 @@ export function uploadChunk(
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-    timeout: 60000, // 上传分片超时时间设置为60秒
-  });
+    timeout: 60000,
+    showErrorMessage: false, // 禁用拦截器的错误提示，由业务层统一处理
+  } as any);
 }
 
 /**

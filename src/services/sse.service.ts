@@ -103,6 +103,15 @@ class SSEService {
   /** 重连同步回调 */
   private onReconnectSync: (() => Promise<void>) | null = null;
 
+  /** SSE 重连次数 */
+  private reconnectAttempts = 0;
+
+  /** 最大重连次数 */
+  private readonly MAX_RECONNECT_ATTEMPTS = 5;
+
+  /** 重连延迟基数（毫秒） */
+  private readonly RECONNECT_BASE_DELAY = 2000;
+
   /**
    * 私有构造函数，防止外部实例化
    */
@@ -140,19 +149,16 @@ class SSEService {
    *
    */
   public connect(userId: string, token?: string): void {
-    // 如果已经连接到同一用户，不重复连接
     if (this.eventSource && this.currentUserId === userId) {
       return;
     }
 
-    // 如果连接到不同用户，先断开
     if (this.eventSource) {
       this.disconnect();
     }
 
     this.currentUserId = userId;
 
-    // 构建 URL，包含 userId 和 token（如果有）
     let url = `${this.config.baseUrl}${
       this.config.endpoint
     }?userId=${encodeURIComponent(userId)}`;
@@ -163,7 +169,7 @@ class SSEService {
     try {
       this.eventSource = new EventSource(url);
       this.setupEventListeners();
-    } catch {
+    } catch (error) {
       this.setConnected(false);
     }
   }
@@ -271,16 +277,25 @@ class SSEService {
   private setupEventListeners(): void {
     if (!this.eventSource) return;
 
-    // 连接打开
     this.eventSource.onopen = () => {
+      this.reconnectAttempts = 0;
       this.setConnected(true);
     };
 
-    // 连接错误（浏览器会自动重连）
     this.eventSource.onerror = () => {
-      // 只有在 CLOSED 状态时才标记为断开
       if (this.eventSource?.readyState === EventSource.CLOSED) {
         this.setConnected(false);
+        
+        if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+          this.reconnectAttempts += 1;
+          const delay = this.RECONNECT_BASE_DELAY * this.reconnectAttempts;
+          
+          setTimeout(() => {
+            if (this.currentUserId) {
+              this.connect(this.currentUserId);
+            }
+          }, delay);
+        }
       }
     };
 
@@ -302,6 +317,16 @@ class SSEService {
       if (event instanceof MessageEvent) {
         this.handleEvent('error', event);
       }
+    });
+
+    // 监听心跳事件
+    this.eventSource.addEventListener('heartbeat', () => {
+      // 心跳事件，保持连接活跃
+    });
+
+    // 监听连接成功事件
+    this.eventSource.addEventListener('connected', () => {
+      // 连接成功确认
     });
 
     // 通用消息处理（用于未指定事件类型的消息）

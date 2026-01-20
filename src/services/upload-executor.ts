@@ -233,14 +233,11 @@ class UploadExecutor {
         return;
       }
 
-      // 所有分片上传完成，开始合并
+      // 所有分片上传完成
+      // 后端会在最后一个分片上传成功后自动触发合并
+      // 前端通过 SSE 监听合并完成事件
       if (context.uploadedChunks.size === totalChunks) {
         this.notifyTransition(taskId, 'merging');
-
-        await mergeChunks(taskId);
-
-        this.notifyTransition(taskId, 'completed');
-        this.cleanup(taskId);
       }
     } catch (error) {
       // 检查是否是网络错误
@@ -315,16 +312,12 @@ class UploadExecutor {
         return;
       }
 
-      // 所有分片上传完成，开始合并
+      // 所有分片上传完成
+      // 后端会在最后一个分片上传成功后自动触发合并
+      // 前端通过 SSE 监听合并完成事件
       if (context.uploadedChunks.size === context.totalChunks) {
         this.notifyTransition(taskId, 'merging');
-
-        await mergeChunks(taskId);
-
-        this.notifyTransition(taskId, 'completed');
-        this.cleanup(taskId);
       } else {
-        // 理论上不应该到这里，因为 uploadChunks 会上传所有缺失的分片
         throw new Error(
           `分片不完整：已上传 ${context.uploadedChunks.size}/${context.totalChunks}`
         );
