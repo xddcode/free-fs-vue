@@ -19,7 +19,7 @@
 
 [问题反馈](https://gitee.com/dromara/free-fs/issues) · [功能请求](https://gitee.com/dromara/free-fs/issues/new)
 
-[项目文档](https://free-fs-doc.vercel.app/)
+[项目文档](http://free-fs.top/)
 
 </div>
 
